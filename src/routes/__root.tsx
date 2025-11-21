@@ -2,18 +2,11 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
+  Outlet,
 } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-
-import Header from '../components/Header'
-
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
-
-import StoreDevtools from '../lib/demo-store-devtools'
-
+import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import appCss from '../styles.css?url'
-
+import '../lib/i18n'
 import type { QueryClient } from '@tanstack/react-query'
 
 interface MyRouterContext {
@@ -31,7 +24,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Callio Dashboard',
       },
     ],
     links: [
@@ -41,32 +34,18 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
-
-  shellComponent: RootDocument,
+  component: RootComponent,
 })
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootComponent() {
   return (
     <html lang="en">
       <head>
         <HeadContent />
       </head>
       <body>
-        <Header />
-        {children}
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-            StoreDevtools,
-          ]}
-        />
+        <Outlet />
+        <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>
     </html>
