@@ -34,7 +34,7 @@ export function Sidebar() {
     <motion.div
       initial={{ width: 256 }}
       animate={{ width: isCollapsed ? 80 : 256 }}
-      className="h-screen bg-card border-r border-border relative flex flex-col shadow-sm z-10"
+      className="h-full bg-card border-r border-border relative flex flex-col shadow-sm z-10"
     >
       <div className="p-4 flex items-center justify-between border-b border-border h-16">
         <AnimatePresence>
@@ -67,34 +67,41 @@ export function Sidebar() {
               <Link
                 key={item.href}
                 to={item.href}
-                className={cn(
-                  "flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden",
-                  isActive 
-                    ? "bg-primary/10 text-primary font-medium" 
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
+                className="block"
               >
-                <div className="flex items-center">
-                  <AnimatedIcon icon={item.icon} size={20} className={cn(isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-                  <AnimatePresence>
-                    {!isCollapsed && (
-                      <motion.span
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -10 }}
-                        className="ml-3 whitespace-nowrap"
-                      >
-                        {item.label}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </div>
-                {isActive && (
-                  <motion.div
-                    layoutId="active-pill"
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
-                  />
-                )}
+                <motion.div
+                  initial="rest"
+                  whileHover="hover"
+                  whileTap="tap"
+                  className={cn(
+                    "flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden",
+                    isActive 
+                      ? "bg-primary/10 text-primary font-medium" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <div className="flex items-center">
+                    <AnimatedIcon icon={item.icon} size={20} className={cn(isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                    <AnimatePresence>
+                      {!isCollapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
+                          className="ml-3 whitespace-nowrap"
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-pill"
+                      className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
+                    />
+                  )}
+                </motion.div>
               </Link>
             );
           })}
