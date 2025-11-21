@@ -21,7 +21,7 @@ const anthropic = createAnthropic({
   },
 })
 
-export const Route = createFileRoute('/api/demo-chat')({
+export const Route = createFileRoute('/demo/api/tanchat')({
   server: {
     handlers: {
       POST: async ({ request }) => {
