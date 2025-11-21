@@ -8,6 +8,8 @@ trigger: always_on
 
 ### **Forces code to compile cleanly under `bun tsc`**
 
+### **NEVER PUSH TO GITHUB UNTIL IF BEING ASKED**
+
 ---
 
 # **1\. PURPOSE**

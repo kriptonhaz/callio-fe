@@ -1,20 +1,17 @@
 import { useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Phone, 
-  Calendar, 
-  Settings, 
-  ChevronLeft, 
-  ChevronRight,
-  PieChart,
-  FileText
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { AnimatedIcon } from '@/components/AnimatedIcon';
+import { AnimateIcon } from '@/components/animate-ui/icons/icon';
+import { LayoutDashboard } from '@/components/animate-ui/icons/layout-dashboard';
+import { Users } from '@/components/animate-ui/icons/users';
+import { Phone } from '@/components/animate-ui/icons/phone';
+import { Calendar } from '@/components/animate-ui/icons/calendar';
+import { PieChart } from '@/components/animate-ui/icons/pie-chart';
+import { FileText } from '@/components/animate-ui/icons/file-text';
+import { Settings } from '@/components/animate-ui/icons/settings';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -69,39 +66,38 @@ export function Sidebar() {
                 to={item.href}
                 className="block"
               >
-                <motion.div
-                  initial="rest"
-                  whileHover="hover"
-                  whileTap="tap"
-                  className={cn(
-                    "flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden",
-                    isActive 
-                      ? "bg-primary/10 text-primary font-medium" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <div className="flex items-center">
-                    <AnimatedIcon icon={item.icon} size={20} className={cn(isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-                    <AnimatePresence>
-                      {!isCollapsed && (
-                        <motion.span
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          className="ml-3 whitespace-nowrap"
-                        >
-                          {item.label}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
+                <AnimateIcon animateOnHover asChild>
+                  <div
+                    className={cn(
+                      "flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer",
+                      isActive 
+                        ? "bg-primary/10 text-primary font-medium" 
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <div className="flex items-center">
+                      <item.icon size={20} className={cn(isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                      <AnimatePresence>
+                        {!isCollapsed && (
+                          <motion.span
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            className="ml-3 whitespace-nowrap"
+                          >
+                            {item.label}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-pill"
+                        className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
+                      />
+                    )}
                   </div>
-                  {isActive && (
-                    <motion.div
-                      layoutId="active-pill"
-                      className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
-                    />
-                  )}
-                </motion.div>
+                </AnimateIcon>
               </Link>
             );
           })}
