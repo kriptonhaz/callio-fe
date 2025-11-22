@@ -1,6 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, Users, Clock, Activity, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { AnimatedIcon } from '@/components/AnimatedIcon';
+import { Phone } from '@/components/animate-ui/icons/phone';
+import { Users } from '@/components/animate-ui/icons/users';
+import { Clock } from '@/components/animate-ui/icons/clock';
+import { Activity } from '@/components/animate-ui/icons/activity';
+import { ArrowUpRight } from '@/components/animate-ui/icons/arrow-up-right';
+import { ArrowDownRight } from '@/components/animate-ui/icons/arrow-down-right';
+import { AnimateIcon } from '@/components/animate-ui/icons/icon';
 import { useTranslation } from 'react-i18next';
 
 export function KPICards() {
@@ -44,28 +49,30 @@ export function KPICards() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {kpiData.map((kpi, index) => (
-        <Card key={index} className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {kpi.title}
-            </CardTitle>
-            <AnimatedIcon icon={kpi.icon} className={`h-4 w-4 ${kpi.color}`} />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpi.value}</div>
-            <p className="text-xs text-muted-foreground flex items-center mt-1">
-              {kpi.trend === 'up' ? (
-                <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
-              ) : (
-                <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
-              )}
-              <span className={kpi.trend === 'up' ? "text-green-500" : "text-red-500"}>
-                {kpi.change}
-              </span>
-              <span className="ml-1">from last month</span>
-            </p>
-          </CardContent>
-        </Card>
+        <AnimateIcon key={index} animateOnHover asChild>
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {kpi.title}
+              </CardTitle>
+              <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpi.value}</div>
+              <p className="text-xs text-muted-foreground flex items-center mt-1">
+                {kpi.trend === 'up' ? (
+                  <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" animateOnHover />
+                ) : (
+                  <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" animateOnHover />
+                )}
+                <span className={kpi.trend === 'up' ? "text-green-500" : "text-red-500"}>
+                  {kpi.change}
+                </span>
+                <span className="ml-1">from last month</span>
+              </p>
+            </CardContent>
+          </Card>
+        </AnimateIcon>
       ))}
     </div>
   );

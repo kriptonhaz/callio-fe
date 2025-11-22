@@ -1,5 +1,10 @@
 import { useTranslation } from 'react-i18next';
-import { Bell, Search, Moon, Sun, Globe } from 'lucide-react';
+import { Bell } from '@/components/animate-ui/icons/bell';
+import { Search } from '@/components/animate-ui/icons/search';
+import { Moon } from '@/components/animate-ui/icons/moon';
+import { Sun } from '@/components/animate-ui/icons/sun';
+import { Globe } from '@/components/animate-ui/icons/globe';
+import { AnimateIcon } from '@/components/animate-ui/icons/icon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -39,8 +44,10 @@ export function Header() {
   return (
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between sticky top-0 z-10">
       <div className="flex items-center w-1/3">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-full max-w-sm group">
+          <div className="absolute left-2.5 top-2.5 text-muted-foreground">
+            <Search className="h-4 w-4" animateOnHover />
+          </div>
           <Input 
             type="search" 
             placeholder="Search..." 
@@ -52,9 +59,11 @@ export function Header() {
       <div className="flex items-center space-x-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Globe className="h-5 w-5 text-muted-foreground" />
-            </Button>
+            <AnimateIcon animateOnHover asChild>
+              <Button variant="ghost" size="icon">
+                <Globe className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            </AnimateIcon>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => changeLanguage('en')}>
@@ -66,17 +75,21 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
-          {theme === 'light' ? (
-            <Moon className="h-5 w-5 text-muted-foreground" />
-          ) : (
-            <Sun className="h-5 w-5 text-muted-foreground" />
-          )}
-        </Button>
+        <AnimateIcon animateOnHover asChild>
+          <Button variant="ghost" size="icon" onClick={toggleTheme}>
+            {theme === 'light' ? (
+              <Moon className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <Sun className="h-5 w-5 text-muted-foreground" />
+            )}
+          </Button>
+        </AnimateIcon>
 
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-        </Button>
+        <AnimateIcon animateOnHover asChild>
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5 text-muted-foreground" />
+          </Button>
+        </AnimateIcon>
       </div>
     </header>
   );
