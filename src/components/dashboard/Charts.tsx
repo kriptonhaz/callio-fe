@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 const callVolumeData = [
   { time: '09:00', calls: 45 },
@@ -21,11 +22,13 @@ const agentPerformanceData = [
 ];
 
 export function Charts() {
+  const { t } = useTranslation();
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
       <Card className="col-span-4">
         <CardHeader>
-          <CardTitle>Call Volume (Today)</CardTitle>
+          <CardTitle>{t('dashboard.charts.callVolume')}</CardTitle>
         </CardHeader>
         <CardContent className="pl-2">
           <div className="h-[300px]">
@@ -65,7 +68,7 @@ export function Charts() {
       </Card>
       <Card className="col-span-3">
         <CardHeader>
-          <CardTitle>Top Agents Performance</CardTitle>
+          <CardTitle>{t('dashboard.charts.topAgents')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">

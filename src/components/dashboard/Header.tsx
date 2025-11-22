@@ -17,7 +17,7 @@ import {
 import { useEffect, useState } from 'react';
 
 export function Header() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function Header() {
           </div>
           <Input 
             type="search" 
-            placeholder="Search..." 
+            placeholder={t('dashboard.search')} 
             className="pl-9 bg-muted/50 border-none focus-visible:ring-1"
           />
         </div>

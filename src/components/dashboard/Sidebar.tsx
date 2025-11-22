@@ -12,20 +12,22 @@ import { Calendar } from '@/components/animate-ui/icons/calendar';
 import { PieChart } from '@/components/animate-ui/icons/pie-chart';
 import { FileText } from '@/components/animate-ui/icons/file-text';
 import { Settings } from '@/components/animate-ui/icons/settings';
-
-const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-  { icon: Users, label: 'Clients', href: '/clients' },
-  { icon: Phone, label: 'Leads', href: '/leads' },
-  { icon: Calendar, label: 'Appointments', href: '/appointments' },
-  { icon: PieChart, label: 'Reports', href: '/reports' },
-  { icon: FileText, label: 'Recordings', href: '/recordings' },
-  { icon: Settings, label: 'Settings', href: '/settings' },
-];
+import { useTranslation } from 'react-i18next';
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const { t } = useTranslation();
+
+  const menuItems = [
+    { icon: LayoutDashboard, label: t('dashboard.menu.dashboard'), href: '/dashboard' },
+    { icon: Users, label: t('dashboard.menu.clients'), href: '/clients' },
+    { icon: Phone, label: t('dashboard.menu.leads'), href: '/leads' },
+    { icon: Calendar, label: t('dashboard.menu.appointments'), href: '/appointments' },
+    { icon: PieChart, label: t('dashboard.menu.reports'), href: '/reports' },
+    { icon: FileText, label: t('dashboard.menu.recordings'), href: '/recordings' },
+    { icon: Settings, label: t('dashboard.menu.settings'), href: '/settings' },
+  ];
 
   return (
     <motion.div
@@ -118,7 +120,7 @@ export function Sidebar() {
                 className="ml-3 overflow-hidden"
               >
                 <p className="text-sm font-medium truncate">John Doe</p>
-                <p className="text-xs text-muted-foreground truncate">Admin</p>
+                <p className="text-xs text-muted-foreground truncate">{t('dashboard.user.admin')}</p>
               </motion.div>
             )}
           </AnimatePresence>

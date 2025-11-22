@@ -68,7 +68,7 @@ export function KPICards() {
                 <span className={kpi.trend === 'up' ? "text-green-500" : "text-red-500"}>
                   {kpi.change}
                 </span>
-                <span className="ml-1">from last month</span>
+                <span className="ml-1">{t('dashboard.kpi.fromLastMonth')}</span>
               </p>
             </CardContent>
           </Card>
