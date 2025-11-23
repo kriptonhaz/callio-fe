@@ -1,0 +1,250 @@
+import type { PaginationParams, CallDirection, CallStatus, GsmDeviceStatus, GsmPortStatus, PaymentStatus } from '../types';
+
+// Lead Assignments
+export interface LeadAssignment {
+  id: string;
+  leadId: string;
+  campaignId: string;
+  assignedAgentId: string;
+  assignedSupervisorId?: string;
+  status: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateLeadAssignmentRequest {
+  leadId: string;
+  campaignId: string;
+  assignedAgentId: string;
+  assignedSupervisorId?: string;
+  status?: string;
+}
+
+export interface UpdateLeadAssignmentRequest extends Partial<CreateLeadAssignmentRequest> {}
+
+export interface LeadAssignmentsQueryParams extends PaginationParams {
+  status?: string;
+  leadId?: string;
+  campaignId?: string;
+  assignedAgentId?: string;
+  assignedSupervisorId?: string;
+}
+
+// Recordings
+export interface Recording {
+  id: string;
+  agentId: string;
+  leadId?: string;
+  supervisorId?: string;
+  fileUrl: string;
+  durationSeconds: number;
+  transcript?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateRecordingRequest {
+  agentId: string;
+  leadId?: string;
+  supervisorId?: string;
+  fileUrl: string;
+  durationSeconds: number;
+  transcript?: string;
+}
+
+export interface UpdateRecordingRequest extends Partial<CreateRecordingRequest> {}
+
+export interface RecordingsQueryParams extends PaginationParams {
+  search?: string;
+  agentId?: string;
+  leadId?: string;
+  supervisorId?: string;
+}
+
+// Call Logs
+export interface CallLog {
+  id: string;
+  agentId: string;
+  leadId?: string;
+  direction: CallDirection;
+  status: CallStatus;
+  startTime: string;
+  endTime?: string;
+  durationSeconds?: number;
+  sipChannel?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateCallLogRequest {
+  agentId: string;
+  leadId?: string;
+  direction: CallDirection;
+  status: CallStatus;
+  startTime: string;
+  endTime?: string;
+  durationSeconds?: number;
+  sipChannel?: string;
+}
+
+export interface UpdateCallLogRequest extends Partial<CreateCallLogRequest> {}
+
+export interface CallLogsQueryParams extends PaginationParams {
+  direction?: CallDirection;
+  status?: CallStatus;
+  agentId?: string;
+  leadId?: string;
+}
+
+// System Logs
+export interface SystemLog {
+  id: string;
+  userId?: string;
+  action: string;
+  entity: string;
+  entityId?: string;
+  details?: string;
+  createdAt: string;
+}
+
+export interface CreateSystemLogRequest {
+  userId?: string;
+  action: string;
+  entity: string;
+  entityId?: string;
+  details?: string;
+}
+
+export interface SystemLogsQueryParams extends PaginationParams {
+  userId?: string;
+  action?: string;
+  entity?: string;
+}
+
+// GSM Devices
+export interface GsmDevice {
+  id: string;
+  clientId: string;
+  deviceName: string;
+  imei: string;
+  status: GsmDeviceStatus;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateGsmDeviceRequest {
+  clientId: string;
+  deviceName: string;
+  imei: string;
+  status?: GsmDeviceStatus;
+}
+
+export interface UpdateGsmDeviceRequest extends Partial<CreateGsmDeviceRequest> {}
+
+export interface GsmDevicesQueryParams extends PaginationParams {
+  clientId?: string;
+  status?: GsmDeviceStatus;
+}
+
+// GSM Device Ports
+export interface GsmDevicePort {
+  id: string;
+  gsmDeviceId: string;
+  portNumber: number;
+  phoneNumber: string;
+  status: GsmPortStatus;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateGsmDevicePortRequest {
+  gsmDeviceId: string;
+  portNumber: number;
+  phoneNumber: string;
+  status?: GsmPortStatus;
+}
+
+export interface UpdateGsmDevicePortRequest extends Partial<CreateGsmDevicePortRequest> {}
+
+export interface GsmDevicePortsQueryParams extends PaginationParams {
+  gsmDeviceId?: string;
+  status?: GsmPortStatus;
+}
+
+// Payment History
+export interface PaymentHistory {
+  id: string;
+  clientId: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  status: PaymentStatus;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreatePaymentHistoryRequest {
+  clientId: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  status?: PaymentStatus;
+}
+
+export interface UpdatePaymentHistoryRequest extends Partial<CreatePaymentHistoryRequest> {}
+
+export interface PaymentHistoryQueryParams extends PaginationParams {
+  clientId?: string;
+  status?: PaymentStatus;
+}
+
+// Supervisor Coaching Notes
+export interface CoachingNote {
+  id: string;
+  supervisorId: string;
+  agentId: string;
+  leadId?: string;
+  notes: string;
+  rating?: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CreateCoachingNoteRequest {
+  supervisorId: string;
+  agentId: string;
+  leadId?: string;
+  notes: string;
+  rating?: number;
+}
+
+export interface UpdateCoachingNoteRequest extends Partial<CreateCoachingNoteRequest> {}
+
+export interface CoachingNotesQueryParams extends PaginationParams {
+  supervisorId?: string;
+  agentId?: string;
+  leadId?: string;
+}
+
+// Lead History
+export interface LeadHistory {
+  id: string;
+  leadId: string;
+  agentId?: string;
+  action: string;
+  details?: string;
+  createdAt: string;
+}
+
+export interface CreateLeadHistoryRequest {
+  leadId: string;
+  agentId?: string;
+  action: string;
+  details?: string;
+}
+
+export interface LeadHistoryQueryParams extends PaginationParams {
+  leadId?: string;
+  agentId?: string;
+  action?: string;
+}

@@ -273,7 +273,7 @@ Every table must include:
 
 - Typed TanStack Query fetching
 
-- Chakra UI table components
+- Shadcn table components
 
 - Tailwind spacing
 
