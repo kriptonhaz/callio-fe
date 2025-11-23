@@ -54,9 +54,10 @@ export const apiClient: KyInstance = ky.create({
       },
     ],
     afterResponse: [
-      async (_request, _options, response) => {
+      async (request, _options, response) => {
         // Handle 401 Unauthorized - clear tokens and redirect to login
-        if (response.status === 401) {
+        // Don't redirect if the error comes from the login endpoint itself
+        if (response.status === 401 && !request.url.includes('/auth/login')) {
           clearTokens();
           // Redirect to login page
           if (typeof window !== 'undefined') {
@@ -71,25 +72,42 @@ export const apiClient: KyInstance = ky.create({
 });
 
 // Error handler helper
+// Error handler helper
 export const handleApiError = async (error: unknown): Promise<never> => {
-  if (error instanceof Error && 'response' in error) {
-    const response = (error as any).response;
+  // Check if it's a ky HTTPError
+  if (error instanceof Error && error.name === 'HTTPError' && 'response' in error) {
+    const response = (error as any).response as Response;
     
-    if (response) {
-      try {
-        const errorData: ApiError = await response.json();
-        throw new Error(
-          Array.isArray(errorData.message)
-            ? errorData.message.join(', ')
-            : errorData.message
-        );
-      } catch {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    try {
+      // Clone the response to avoid "body used" errors if it was already read
+      const clonedResponse = response.clone();
+      const errorData: ApiError = await clonedResponse.json();
+      
+      throw new Error(
+        Array.isArray(errorData.message)
+          ? errorData.message.join(', ')
+          : errorData.message || errorData.error || 'Unknown API Error'
+      );
+    } catch (e) {
+      // If we successfully parsed the error above, re-throw it
+      if (e instanceof Error && e.message !== 'Body is unusable') {
+        // If the error message is one we just created, throw it
+        if (e.message !== `API Error: ${response.status} ${response.statusText}`) {
+          throw e;
+        }
       }
+      
+      // Fallback to status text
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
     }
   }
   
-  throw error;
+  // Handle standard errors
+  if (error instanceof Error) {
+    throw error;
+  }
+  
+  throw new Error('An unexpected error occurred');
 };
 
 // Helper function to build query string from params

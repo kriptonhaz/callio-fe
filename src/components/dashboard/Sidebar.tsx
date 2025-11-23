@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { useLogout } from '@/hooks/api/useAuth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { AnimateIcon } from '@/components/animate-ui/icons/icon';
@@ -18,6 +19,7 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const { t } = useTranslation();
+  const logout = useLogout();
 
   const menuItems = [
     { icon: LayoutDashboard, label: t('dashboard.menu.dashboard'), href: '/dashboard' },
@@ -107,20 +109,41 @@ export function Sidebar() {
       </div>
 
       <div className="p-4 border-t border-border">
-        <div className="flex items-center">
-          <div className="h-9 w-9 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
-            JD
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="h-9 w-9 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
+              JD
+            </div>
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="ml-3 overflow-hidden"
+                >
+                  <p className="text-sm font-medium truncate">John Doe</p>
+                  <p className="text-xs text-muted-foreground truncate">{t('dashboard.user.admin')}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           <AnimatePresence>
             {!isCollapsed && (
               <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                className="ml-3 overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
               >
-                <p className="text-sm font-medium truncate">John Doe</p>
-                <p className="text-xs text-muted-foreground truncate">{t('dashboard.user.admin')}</p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={logout}
+                  title={t('common.logout', 'Logout')}
+                >
+                  <LogOut size={18} />
+                </Button>
               </motion.div>
             )}
           </AnimatePresence>

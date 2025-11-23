@@ -1,16 +1,19 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Header } from '@/components/dashboard/Header';
-import { authStore } from '@/store/authStore';
+
 
 export const Route = createFileRoute('/dashboard')({
   beforeLoad: ({ location }) => {
     // Basic auth check
-    const state = authStore.state;
-    if (!state.isAuthenticated && location.pathname !== '/login') {
-      throw redirect({
-        to: '/login',
-      });
+    // Basic auth check using localStorage directly since we're using API auth
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('callio_access_token');
+      if (!token && location.pathname !== '/login') {
+        throw redirect({
+          to: '/login',
+        });
+      }
     }
   },
   component: DashboardLayout,

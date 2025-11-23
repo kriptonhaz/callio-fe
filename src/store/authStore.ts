@@ -14,30 +14,21 @@ export interface AuthState {
   isLoading: boolean;
 }
 
+// Initialize from localStorage if available
+const token = typeof window !== 'undefined' ? localStorage.getItem('callio_access_token') : null;
+
 export const authStore = new Store<AuthState>({
-  user: null,
-  isAuthenticated: false,
+  user: null, // We don't have user details in local storage, only token
+  isAuthenticated: !!token,
   isLoading: false,
 });
 
-export const login = async (email: string, role: UserRole) => {
-  authStore.setState((state) => ({ ...state, isLoading: true }));
-  
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  authStore.setState((state) => ({
-    ...state,
-    isLoading: false,
-    isAuthenticated: true,
-    user: {
-      email,
-      name: role.charAt(0).toUpperCase() + role.slice(1),
-      role,
-    },
-  }));
+// Deprecated: Use useLogin hook instead
+export const login = async (_email: string, _role: UserRole) => {
+  console.warn('Using deprecated login function. Please use useLogin hook.');
 };
 
+// Deprecated: Use useLogout hook instead
 export const logout = () => {
   authStore.setState((state) => ({
     ...state,

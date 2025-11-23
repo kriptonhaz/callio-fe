@@ -4,7 +4,10 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
   en: {
     translation: {
-      "login": {
+      "common": {
+      "logout": "Logout"
+    },
+    "login": {
         "title": "Welcome back",
         "subtitle": "Enter your credentials to access your account",
         "email": "Email",
@@ -69,7 +72,10 @@ const resources = {
   },
   id: {
     translation: {
-      "login": {
+      "common": {
+      "logout": "Keluar"
+    },
+    "login": {
         "title": "Selamat datang kembali",
         "subtitle": "Masukkan kredensial Anda untuk mengakses akun",
         "email": "Email",

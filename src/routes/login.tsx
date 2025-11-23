@@ -3,15 +3,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useTranslation } from 'react-i18next';
+import { Loader2, LogIn, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
-import { Loader2, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { login, UserRole } from '@/store/authStore';
 import { AnimatedIcon } from '@/components/AnimatedIcon';
+import { useLogin } from '@/hooks/api/useAuth';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -28,8 +28,8 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { mutate: login, isPending, error } = useLogin();
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -40,28 +40,18 @@ function LoginPage() {
     },
   });
 
-  const onSubmit = async (data: LoginFormValues) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Mock credential check
-      let role: UserRole | null = null;
-      if (data.email === 'super@callio.com' && data.password === 'password123') role = 'superadmin';
-      else if (data.email === 'admin@callio.com' && data.password === 'password123') role = 'admin';
-      else if (data.email === 'agent@callio.com' && data.password === 'password123') role = 'agent';
-
-      if (role) {
-        await login(data.email, role);
-        navigate({ to: '/dashboard' });
-      } else {
-        setError(t('login.error.invalid'));
+  const onSubmit = (data: LoginFormValues) => {
+    login(
+      {
+        email: data.email,
+        password: data.password,
+      },
+      {
+        onSuccess: () => {
+          navigate({ to: '/dashboard' });
+        },
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
 
   return (
@@ -99,7 +89,26 @@ function LoginPage() {
                   <FormItem>
                     <FormLabel>{t('login.password')}</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
+                      <div className="relative">
+                        <Input 
+                          type={showPassword ? "text" : "password"} 
+                          placeholder="••••••••" 
+                          {...field} 
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -133,12 +142,12 @@ function LoginPage() {
 
               {error && (
                 <div className="text-sm font-medium text-destructive text-center">
-                  {error}
+                  {error.message || t('login.error.invalid')}
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     {t('login.signingIn')}
@@ -150,14 +159,6 @@ function LoginPage() {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-2 text-center text-xs text-muted-foreground">
-          <div className="bg-muted p-2 rounded-md w-full">
-            <p>Mock Credentials:</p>
-            <p>super@callio.com / password123</p>
-            <p>admin@callio.com / password123</p>
-            <p>agent@callio.com / password123</p>
-          </div>
-        </CardFooter>
       </Card>
     </div>
   );

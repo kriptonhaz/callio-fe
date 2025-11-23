@@ -8,21 +8,35 @@ export const authKeys = {
   me: () => [...authKeys.all, 'me'] as const,
 };
 
+import { handleApiError } from '@/lib/api/client';
+
 // API functions
 const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    const response = await apiClient.post('auth/login', { json: data }).json<AuthResponse>();
-    return response;
+    try {
+      const response = await apiClient.post('auth/login', { json: data }).json<AuthResponse>();
+      return response;
+    } catch (error) {
+      return handleApiError(error);
+    }
   },
 
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await apiClient.post('auth/register', { json: data }).json<AuthResponse>();
-    return response;
+    try {
+      const response = await apiClient.post('auth/register', { json: data }).json<AuthResponse>();
+      return response;
+    } catch (error) {
+      return handleApiError(error);
+    }
   },
 
   me: async (): Promise<User> => {
-    const response = await apiClient.get('auth/me').json<User>();
-    return response;
+    try {
+      const response = await apiClient.get('auth/me').json<User>();
+      return response;
+    } catch (error) {
+      return handleApiError(error);
+    }
   },
 };
 
