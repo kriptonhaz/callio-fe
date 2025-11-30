@@ -23,7 +23,7 @@ export function Sidebar() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: t('dashboard.menu.dashboard'), href: '/dashboard' },
-    { icon: Users, label: t('dashboard.menu.clients'), href: '/clients' },
+    { icon: Users, label: t('dashboard.menu.clients'), href: '/dashboard/clients' },
     { icon: Phone, label: t('dashboard.menu.leads'), href: '/leads' },
     { icon: Calendar, label: t('dashboard.menu.appointments'), href: '/appointments' },
     { icon: PieChart, label: t('dashboard.menu.reports'), href: '/reports' },
@@ -63,7 +63,9 @@ export function Sidebar() {
       <div className="flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
           {menuItems.map((item) => {
-            const isActive = location.pathname.startsWith(item.href);
+            const isActive = item.href === '/dashboard' 
+              ? location.pathname === '/dashboard' || location.pathname === '/dashboard/'
+              : location.pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}

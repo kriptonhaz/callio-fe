@@ -8,6 +8,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import appCss from '../styles.css?url'
 import '../lib/i18n'
 import type { QueryClient } from '@tanstack/react-query'
+import { Toaster } from '@/components/ui/toaster'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -45,6 +46,7 @@ function RootComponent() {
       </head>
       <body>
         <Outlet />
+        <Toaster />
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
       </body>

@@ -5,9 +5,26 @@ const resources = {
   en: {
     translation: {
       "common": {
-      "logout": "Logout"
-    },
-    "login": {
+        "logout": "Logout",
+        "actions": "Actions",
+        "view": "View",
+        "edit": "Edit",
+        "delete": "Delete",
+        "all": "All",
+        "status": "Status",
+        "noResults": "No results.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving...",
+        "back": "Back",
+        "loading": "Loading...",
+        "error": "Error",
+        "deleteConfirmTitle": "Are you sure?",
+        "notProvided": "Not provided",
+        "createdAt": "Created At",
+        "updatedAt": "Updated At"
+      },
+      "login": {
         "title": "Welcome back",
         "subtitle": "Enter your credentials to access your account",
         "email": "Email",
@@ -67,15 +84,111 @@ const resources = {
         "user": {
           "admin": "Admin"
         }
+      },
+      "clients": {
+        "stats": {
+          "total": "Total Clients",
+          "active": "Active Clients",
+          "new": "New This Month",
+          "inactive": "Inactive"
+        },
+        "searchPlaceholder": "Search clients...",
+        "create": "Add Client",
+        "table": {
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "status": "Status"
+        },
+        "createTitle": "Create Client",
+        "createSubtitle": "Add a new client to the system",
+        "createSuccess": "Client created successfully",
+        "createError": "Failed to create client",
+        "updateSuccess": "Client updated successfully",
+        "updateError": "Failed to update client",
+        "editTitle": "Edit Client",
+        "notFound": "Client not found",
+        "deleteConfirmDescription": "Are you sure you want to delete this client? This action cannot be undone.",
+        "contactInfo": "Contact Information",
+        "systemInfo": "System Information",
+        "tabs": {
+          "overview": "Overview",
+          "users": "Users",
+          "payments": "Payment History",
+          "gsm": "GSM Devices"
+        },
+        "subscription": {
+          "title": "Subscription Information",
+          "plan": "Plan",
+          "expiry": "Expiry Date",
+          "daysRemaining": "days remaining",
+          "expired": "Expired",
+          "active": "Active"
+        },
+        "payments": {
+          "title": "Payment History",
+          "amount": "Amount",
+          "date": "Date",
+          "method": "Method",
+          "period": "Period",
+          "noPayments": "No payment history found"
+        },
+        "users": {
+          "title": "Users",
+          "name": "Name",
+          "email": "Email",
+          "role": "Role",
+          "supervisor": "Supervisor",
+          "addUser": "Add User",
+          "searchPlaceholder": "Search users...",
+          "noUsers": "No users found"
+        },
+        "gsm": {
+          "title": "GSM Devices",
+          "deviceName": "Device Name",
+          "imei": "IMEI",
+          "status": "Status",
+          "noDevices": "No GSM devices assigned"
+        },
+        "form": {
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "status": "Status",
+          "address": "Address",
+          "placeholders": {
+            "name": "Acme Corp",
+            "email": "contact@acme.com",
+            "phone": "+1 234 567 890",
+            "address": "123 Main St, City, Country"
+          }
+        }
       }
     }
   },
   id: {
     translation: {
       "common": {
-      "logout": "Keluar"
-    },
-    "login": {
+        "logout": "Keluar",
+        "actions": "Aksi",
+        "view": "Lihat",
+        "edit": "Ubah",
+        "delete": "Hapus",
+        "all": "Semua",
+        "status": "Status",
+        "noResults": "Tidak ada hasil.",
+        "cancel": "Batal",
+        "save": "Simpan",
+        "saving": "Menyimpan...",
+        "back": "Kembali",
+        "loading": "Memuat...",
+        "error": "Kesalahan",
+        "deleteConfirmTitle": "Apakah Anda yakin?",
+        "notProvided": "Tidak disediakan",
+        "createdAt": "Dibuat Pada",
+        "updatedAt": "Diperbarui Pada"
+      },
+      "login": {
         "title": "Selamat datang kembali",
         "subtitle": "Masukkan kredensial Anda untuk mengakses akun",
         "email": "Email",
@@ -134,6 +247,85 @@ const resources = {
         },
         "user": {
           "admin": "Admin"
+        }
+      },
+      "clients": {
+        "stats": {
+          "total": "Total Klien",
+          "active": "Klien Aktif",
+          "new": "Baru Bulan Ini",
+          "inactive": "Tidak Aktif"
+        },
+        "searchPlaceholder": "Cari klien...",
+        "create": "Tambah Klien",
+        "table": {
+          "name": "Nama",
+          "email": "Email",
+          "phone": "Telepon",
+          "status": "Status"
+        },
+        "createTitle": "Buat Klien",
+        "createSubtitle": "Tambahkan klien baru ke sistem",
+        "createSuccess": "Klien berhasil dibuat",
+        "createError": "Gagal membuat klien",
+        "updateSuccess": "Klien berhasil diperbarui",
+        "updateError": "Gagal memperbarui klien",
+        "editTitle": "Ubah Klien",
+        "notFound": "Klien tidak ditemukan",
+        "deleteConfirmDescription": "Apakah Anda yakin ingin menghapus klien ini? Tindakan ini tidak dapat dibatalkan.",
+        "contactInfo": "Informasi Kontak",
+        "systemInfo": "Informasi Sistem",
+        "tabs": {
+          "overview": "Ringkasan",
+          "users": "Pengguna",
+          "payments": "Riwayat Pembayaran",
+          "gsm": "Perangkat GSM"
+        },
+        "subscription": {
+          "title": "Informasi Langganan",
+          "plan": "Paket",
+          "expiry": "Tanggal Berakhir",
+          "daysRemaining": "hari tersisa",
+          "expired": "Kedaluwarsa",
+          "active": "Aktif"
+        },
+        "payments": {
+          "title": "Riwayat Pembayaran",
+          "amount": "Jumlah",
+          "date": "Tanggal",
+          "method": "Metode",
+          "period": "Periode",
+          "noPayments": "Tidak ada riwayat pembayaran"
+        },
+        "users": {
+          "title": "Pengguna",
+          "name": "Nama",
+          "email": "Email",
+          "role": "Peran",
+          "supervisor": "Supervisor",
+          "addUser": "Tambah Pengguna",
+          "searchPlaceholder": "Cari pengguna...",
+          "noUsers": "Tidak ada pengguna ditemukan"
+        },
+        "gsm": {
+          "title": "Perangkat GSM",
+          "deviceName": "Nama Perangkat",
+          "imei": "IMEI",
+          "status": "Status",
+          "noDevices": "Tidak ada perangkat GSM yang ditugaskan"
+        },
+        "form": {
+          "name": "Nama",
+          "email": "Email",
+          "phone": "Telepon",
+          "status": "Status",
+          "address": "Alamat",
+          "placeholders": {
+            "name": "Perusahaan Acme",
+            "email": "kontak@acme.com",
+            "phone": "+62 812 3456 7890",
+            "address": "Jl. Jend. Sudirman No. 1, Jakarta"
+          }
         }
       }
     }

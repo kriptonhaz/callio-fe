@@ -178,6 +178,7 @@ export interface PaymentHistory {
   amount: number;
   paymentDate: string;
   paymentMethod: string;
+  period?: string; // e.g., "Jan 2025"
   status: PaymentStatus;
   createdAt: string;
   updatedAt?: string;

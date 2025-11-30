@@ -4,26 +4,13 @@ import TanChatAIAssistant from './example-AIAssistant.tsx'
 
 import { useState } from 'react'
 import {
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  Guitar,
   Home,
   Menu,
-  MessagesSquare,
-  Network,
-  SquareFunction,
-  StickyNote,
-  Store,
-  Table,
   X,
 } from 'lucide-react'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
-  const [groupedExpanded, setGroupedExpanded] = useState<
-    Record<string, boolean>
-  >({})
 
   return (
     <>
@@ -77,7 +64,7 @@ export default function Header() {
           </Link>
 
           {/* Demo Links Start */}
-
+          {/*
           <Link
             to="/demo/start/server-funcs"
             onClick={() => setIsOpen(false)}
@@ -253,7 +240,7 @@ export default function Header() {
             <Guitar size={20} />
             <span className="font-medium">Guitar Demo</span>
           </Link>
-
+          */}
           {/* Demo Links End */}
         </nav>
 

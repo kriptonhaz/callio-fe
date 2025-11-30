@@ -1,4 +1,8 @@
-import type { ClientStatus, SubscriptionPlan, PaginationParams } from '../types';
+export enum ClientStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended',
+}
 
 // Client entity
 export interface Client {
@@ -8,11 +12,10 @@ export interface Client {
   phone?: string;
   address?: string;
   status: ClientStatus;
-  subscriptionPlan?: SubscriptionPlan;
-  maxUsers?: number;
-  maxConcurrentCalls?: number;
+  subscriptionPlan?: string; // Plan name (e.g., Basic, Pro, Enterprise)
+  subscriptionExpiry?: string; // ISO date string
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
 }
 
 // Request types
@@ -22,15 +25,24 @@ export interface CreateClientRequest {
   phone?: string;
   address?: string;
   status?: ClientStatus;
-  subscriptionPlan?: SubscriptionPlan;
-  maxUsers?: number;
-  maxConcurrentCalls?: number;
+  subscriptionPlan?: string;
+  subscriptionExpiry?: string;
 }
 
-export interface UpdateClientRequest extends Partial<CreateClientRequest> {}
+export interface UpdateClientRequest {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  status?: ClientStatus;
+  subscriptionPlan?: string;
+  subscriptionExpiry?: string;
+}
 
 // Query parameters
-export interface ClientsQueryParams extends PaginationParams {
+export interface ClientsQueryParams {
+  page?: number;
+  limit?: number;
   search?: string;
   status?: ClientStatus;
 }
