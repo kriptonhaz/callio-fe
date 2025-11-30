@@ -35,6 +35,9 @@ export enum ClientStatus {
 }
 
 export enum UserStatus {
+  PENDING = 'pending_verification',
+  DISABLED = 'disabled',
+  SUSPENDED = 'suspended',
   ACTIVE = 'active',
   INACTIVE = 'inactive',
 }

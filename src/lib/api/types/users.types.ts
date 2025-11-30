@@ -17,7 +17,7 @@ export interface User {
 // Request types
 export interface CreateUserRequest {
   email: string;
-  password: string;
+  passwordHash: string;
   name: string;
   role: UserRole;
   clientId?: string;

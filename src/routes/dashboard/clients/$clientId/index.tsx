@@ -196,7 +196,7 @@ function ClientDetailsPage() {
 
         {/* Users Tab */}
         <TabsContent value="users">
-          <ClientUsersTable users={usersData?.data || []} isLoading={usersLoading} />
+          <ClientUsersTable users={usersData?.data || []} isLoading={usersLoading} clientId={clientId} />
         </TabsContent>
 
         {/* Payment History Tab */}

@@ -34,11 +34,12 @@ const usersApi = {
   },
 };
 
-export const useUsers = (params: UsersQueryParams = {}): UseQueryResult<PaginatedResponse<User>, Error> => {
+export const useUsers = (params: UsersQueryParams = {}, enabled: boolean = true): UseQueryResult<PaginatedResponse<User>, Error> => {
   return useQuery({
     queryKey: usersKeys.list(params),
     queryFn: () => usersApi.getAll(params),
     staleTime: 30 * 1000,
+    enabled: enabled && Object.keys(params).length > 0,
   });
 };
 
