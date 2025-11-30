@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from '@tanstack/react-router';
 import {
   Table,
   TableBody,
@@ -19,14 +18,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Search, MoreHorizontal, UserPlus } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Search, MoreHorizontal, UserPlus, Eye, Edit, Trash } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { User } from '@/lib/api/types/users.types';
+import type { User, CreateUserRequest } from '@/lib/api/types/users.types';
 import { UserRole, UserStatus } from '@/lib/api/types';
-import { useCreateUser } from '@/hooks/api/useUsers';
+import { useCreateUser, useUpdateUser, useDeleteUser } from '@/hooks/api/useUsers';
 import { useUsers } from '@/hooks/api/useUsers';
 import { toast } from 'sonner';
 import {
@@ -50,27 +49,34 @@ const createUserSchema = z.object({
   }),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  passwordHash: z.string().min(6, 'Password must be at least 6 characters'),
+  passwordHash: z.string().optional(), // Made optional for edit
   phone: z.string().optional(),
   supervisorId: z.string().nullable().optional(),
+  status: z.nativeEnum(UserStatus).optional(),
 });
 
 type CreateUserFormValues = z.infer<typeof createUserSchema>;
 
 export function ClientUsersTable({ users, isLoading = false, clientId }: ClientUsersTableProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
-  const [selectedRole, setSelectedRole] = useState<UserRole | ''>('');
+  
+  // Action state
+  const [currentAction, setCurrentAction] = useState<'create' | 'edit' | 'view' | 'delete' | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const { data: supervisors } = useUsers({
     role: UserRole.SUPERVISOR,
     clientId: clientId || undefined,
     limit: 100,
   });
+  
   const { mutate: createUser, isPending: isCreating } = useCreateUser();
+  const { mutate: updateUser, isPending: isUpdating } = useUpdateUser();
+  const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser();
 
+  // Form for Create/Edit
   const form = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
@@ -79,30 +85,136 @@ export function ClientUsersTable({ users, isLoading = false, clientId }: ClientU
       passwordHash: '',
       phone: '',
       supervisorId: null,
+      role: undefined,
     },
   });
 
-  const onSubmit = (data: CreateUserFormValues) => {
-    const payload = {
-      ...data,
-      clientId: clientId!,
-      status: UserStatus.PENDING,
-      supervisorId: data.supervisorId || undefined, // Convert null to undefined
-    };
-
-    createUser(payload, {
-      onSuccess: () => {
-        toast.success(t('clients.users.userCreated', 'User created successfully'));
-        form.reset();
-      },
-      onError: () => {
-        toast.error(t('clients.users.userCreationFailed', 'Failed to create user'));
-      },
+  // Reset form when modal closes or action changes
+  const closeDialog = () => {
+    setCurrentAction(null);
+    setSelectedUser(null);
+    form.reset({
+      name: '',
+      email: '',
+      passwordHash: '',
+      phone: '',
+      supervisorId: null,
+      role: undefined,
     });
   };
 
+  const openCreateDialog = () => {
+    setCurrentAction('create');
+    form.reset({
+      name: '',
+      email: '',
+      passwordHash: '',
+      phone: '',
+      supervisorId: null,
+      role: undefined,
+    });
+  };
+
+  const openEditDialog = (user: User) => {
+    setSelectedUser(user);
+    setCurrentAction('edit');
+    form.reset({
+      name: user.name,
+      email: user.email,
+      passwordHash: 'placeholder', // Password not required for edit, but schema might need it. We'll handle schema separately or use a different one.
+      phone: user.phone || '',
+      supervisorId: user.supervisorId || null,
+      role: user.role,
+    });
+  };
+
+  const openViewDialog = (user: User) => {
+    setSelectedUser(user);
+    setCurrentAction('view');
+    form.reset({
+      name: user.name,
+      email: user.email,
+      passwordHash: '',
+      phone: user.phone || '',
+      supervisorId: user.supervisorId || null,
+      role: user.role,
+      status: user.status,
+    });
+  };
+
+  const openDeleteDialog = (user: User) => {
+    setSelectedUser(user);
+    setCurrentAction('delete');
+  };
+
+  const onSubmit = (data: CreateUserFormValues) => {
+    if (currentAction === 'create') {
+      if (!data.passwordHash) {
+        form.setError('passwordHash', { message: t('validation.passwordRequired', 'Password is required') });
+        return;
+      }
+
+      const payload: CreateUserRequest = {
+        ...data,
+        passwordHash: data.passwordHash,
+        clientId: clientId!,
+        status: UserStatus.PENDING,
+        supervisorId: data.supervisorId || undefined,
+      };
+
+      createUser(payload, {
+        onSuccess: () => {
+          toast.success(t('clients.users.userCreated', 'User created successfully'));
+          closeDialog();
+        },
+        onError: () => {
+          toast.error(t('clients.users.userCreationFailed', 'Failed to create user'));
+        },
+      });
+    } else if (currentAction === 'edit' && selectedUser) {
+      // For edit, we don't send password if it's not changed (or in this case, we don't edit it at all)
+      // We need to construct the payload specifically for edit
+      const payload: any = {
+        clientId: clientId!,
+        role: data.role,
+        name: data.name,
+        phone: data.phone,
+        supervisorId: data.supervisorId || undefined,
+        // Status is missing in the form schema currently, need to add it
+      };
+      
+      // We'll handle status separately in the form render for now or update schema
+       if (data.status) {
+        payload.status = data.status;
+      }
+
+      updateUser({ id: selectedUser.id, data: payload }, {
+        onSuccess: () => {
+          toast.success(t('clients.users.userUpdated', 'User updated successfully'));
+          closeDialog();
+        },
+        onError: () => {
+          toast.error(t('clients.users.userUpdateFailed', 'Failed to update user'));
+        },
+      });
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedUser) {
+      deleteUser(selectedUser.id, {
+        onSuccess: () => {
+          toast.success(t('clients.users.userDeleted', 'User deleted successfully'));
+          closeDialog();
+        },
+        onError: () => {
+          toast.error(t('clients.users.userDeleteFailed', 'Failed to delete user'));
+        },
+      });
+    }
+  };
+
   const handleRoleChange = (role: UserRole) => {
-    setSelectedRole(role);
     if (role !== UserRole.AGENT) {
       form.setValue('supervisorId', null);
     }
@@ -150,8 +262,188 @@ export function ClientUsersTable({ users, isLoading = false, clientId }: ClientU
           statusClasses[status] || 'bg-gray-100 text-gray-800'
         }`}
       >
-        {status}
+        {status.replace(/_/g, ' ').toUpperCase()}
       </span>
+    );
+  };
+
+  // Helper to render form fields based on action
+  const renderFormFields = () => {
+    const isView = currentAction === 'view';
+    const isEdit = currentAction === 'edit';
+    const isCreate = currentAction === 'create';
+
+    return (
+      <div className="space-y-4">
+        <FormField
+          control={form.control}
+          name="role"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('clients.users.role', 'Role')}</FormLabel>
+              <FormControl>
+                {isView ? (
+                  <div className="p-2 border rounded-md bg-muted">{getRoleBadge(field.value)}</div>
+                ) : (
+                  <select
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      handleRoleChange(e.target.value as UserRole);
+                    }}
+                    value={field.value}
+                    disabled={isView}
+                  >
+                    <option value="">{t('clients.users.selectRole', 'Select role')}</option>
+                    <option value="admin">{t('users.role.admin', 'Admin')}</option>
+                    <option value="supervisor">{t('users.role.supervisor', 'Supervisor')}</option>
+                    <option value="agent">{t('users.role.agent', 'Agent')}</option>
+                  </select>
+                )}
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('clients.users.name', 'Name')}</FormLabel>
+                <FormControl>
+                  {isView ? (
+                     <div className="p-2 border rounded-md bg-muted">{field.value}</div>
+                  ) : (
+                    <Input placeholder={t('clients.users.name', 'Enter full name')} {...field} />
+                  )}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('clients.users.email', 'Email')}</FormLabel>
+                <FormControl>
+                  {isView || isEdit ? (
+                     <div className="p-2 border rounded-md bg-muted">{field.value}</div>
+                  ) : (
+                    <Input type="email" placeholder={t('clients.users.email', 'Enter email address')} {...field} />
+                  )}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        {isCreate && (
+          <FormField
+            control={form.control}
+            name="passwordHash"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('clients.users.password', 'Password')}</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder={t('clients.users.password', 'Enter password')} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('clients.users.phone', 'Phone')}</FormLabel>
+              <FormControl>
+                {isView ? (
+                   <div className="p-2 border rounded-md bg-muted">{field.value || '-'}</div>
+                ) : (
+                  <Input placeholder={t('clients.users.phone', 'Enter phone number (optional)')} {...field} />
+                )}
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Supervisor field - only if role is agent */}
+        {(form.watch('role') === 'agent' || (isView && selectedUser?.role === 'agent')) && supervisors && (
+          <FormField
+            control={form.control}
+            name="supervisorId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('clients.users.supervisor', 'Supervisor')}</FormLabel>
+                <FormControl>
+                  {isView ? (
+                     <div className="p-2 border rounded-md bg-muted">
+                        {supervisors.data.find(s => s.id === field.value)?.name || '-'}
+                     </div>
+                  ) : (
+                    <select
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={field.value || ''}
+                      onChange={(e) => field.onChange(e.target.value || null)}
+                      onBlur={field.onBlur}
+                    >
+                      <option value="">{t('clients.users.selectSupervisor', 'Select supervisor')}</option>
+                      {supervisors.data.map((supervisor) => (
+                        <option key={supervisor.id} value={supervisor.id}>
+                          {supervisor.name} ({supervisor.email})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {/* Status field - only for Edit/View */}
+        {(isEdit || isView) && (
+           <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('common.status', 'Status')}</FormLabel>
+                <FormControl>
+                  {isView ? (
+                     <div className="p-2 border rounded-md bg-muted">{getStatusBadge(field.value as UserStatus)}</div>
+                  ) : (
+                    <select
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={field.value}
+                      onChange={field.onChange}
+                    >
+                      {Object.values(UserStatus)
+                        .map((status) => (
+                        <option key={status} value={status}>
+                          {status.replace(/_/g, ' ').toUpperCase()}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+      </div>
     );
   };
 
@@ -160,142 +452,10 @@ export function ClientUsersTable({ users, isLoading = false, clientId }: ClientU
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>{t('clients.users.title', 'Users')}</CardTitle>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                {t('clients.users.addUser', 'Add User')}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{t('clients.users.addUser', 'Add New User')}</DialogTitle>
-                <DialogDescription>
-                  {t('clients.users.addUserDescription', 'Create a new user for the selected client.')}
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('clients.users.role', 'Role')}</FormLabel>
-                        <FormControl>
-                          <select
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            onChange={(e) => {
-                              field.onChange(e.target.value);
-                              handleRoleChange(e.target.value as UserRole);
-                            }}
-                            defaultValue={field.value}
-                          >
-                            <option value="">{t('clients.users.selectRole', 'Select role')}</option>
-                            <option value="admin">{t('users.role.admin', 'Admin')}</option>
-                            <option value="supervisor">{t('users.role.supervisor', 'Supervisor')}</option>
-                            <option value="agent">{t('users.role.agent', 'Agent')}</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('clients.users.name', 'Name')}</FormLabel>
-                          <FormControl>
-                            <Input placeholder={t('clients.users.name', 'Enter full name')} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('clients.users.email', 'Email')}</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder={t('clients.users.email', 'Enter email address')} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="passwordHash"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('clients.users.password', 'Password')}</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder={t('clients.users.password', 'Enter password')} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('clients.users.phone', 'Phone')}</FormLabel>
-                        <FormControl>
-                          <Input placeholder={t('clients.users.phone', 'Enter phone number (optional)')} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {selectedRole === 'agent' && supervisors && (
-                    <FormField
-                      control={form.control}
-                      name="supervisorId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('clients.users.supervisor', 'Supervisor')}</FormLabel>
-                          <FormControl>
-                            <select
-                              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                              value={field.value || ''}
-                              onChange={(e) => field.onChange(e.target.value || null)}
-                              onBlur={field.onBlur}
-                            >
-                              <option value="">{t('clients.users.selectSupervisor', 'Select supervisor')}</option>
-                              {supervisors.data.map((supervisor) => (
-                                <option key={supervisor.id} value={supervisor.id}>
-                                  {supervisor.name} ({supervisor.email})
-                                </option>
-                              ))}
-                            </select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
-                  <DialogFooter>
-                    <Button type="submit" disabled={isCreating}>
-                      {isCreating ? t('common.creating', 'Creating...') : t('clients.users.addUser', 'Add User')}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+          <Button size="sm" className="gap-2" onClick={openCreateDialog}>
+            <UserPlus className="h-4 w-4" />
+            {t('clients.users.addUser', 'Add User')}
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -380,15 +540,17 @@ export function ClientUsersTable({ users, isLoading = false, clientId }: ClientU
                           <DropdownMenuLabel>
                             {t('common.actions', 'Actions')}
                           </DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => navigate({ to: `/dashboard/users/${user.id}` })}
-                          >
+                          <DropdownMenuItem onClick={() => openViewDialog(user)}>
+                            <Eye className="mr-2 h-4 w-4" />
                             {t('common.view', 'View')}
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => navigate({ to: `/dashboard/users/${user.id}/edit` })}
-                          >
+                          <DropdownMenuItem onClick={() => openEditDialog(user)}>
+                            <Edit className="mr-2 h-4 w-4" />
                             {t('common.edit', 'Edit')}
+                          </DropdownMenuItem>
+                           <DropdownMenuItem onClick={() => openDeleteDialog(user)} className="text-red-600 focus:text-red-600">
+                            <Trash className="mr-2 h-4 w-4" />
+                            {t('common.delete', 'Delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -400,6 +562,62 @@ export function ClientUsersTable({ users, isLoading = false, clientId }: ClientU
           </Table>
         </div>
       </CardContent>
+
+      {/* Main Dialog for Create/Edit/View */}
+      <Dialog open={!!currentAction && currentAction !== 'delete'} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {currentAction === 'create' && t('clients.users.addUser', 'Add New User')}
+              {currentAction === 'edit' && t('clients.users.editUser', 'Edit User')}
+              {currentAction === 'view' && t('clients.users.viewUser', 'View User')}
+            </DialogTitle>
+            <DialogDescription>
+              {currentAction === 'create' && t('clients.users.addUserDescription', 'Create a new user for the selected client.')}
+              {currentAction === 'edit' && t('clients.users.editUserDescription', 'Edit user details.')}
+              {currentAction === 'view' && t('clients.users.viewUserDescription', 'View user details.')}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {renderFormFields()}
+              <DialogFooter>
+                 {currentAction !== 'view' && (
+                  <Button type="submit" disabled={isCreating || isUpdating}>
+                    {currentAction === 'create' 
+                      ? (isCreating ? t('common.creating', 'Creating...') : t('clients.users.addUser', 'Add User'))
+                      : (isUpdating ? t('common.updating', 'Updating...') : t('common.saveChanges', 'Save Changes'))
+                    }
+                  </Button>
+                 )}
+                 <Button type="button" variant="outline" onClick={closeDialog}>
+                   {t('common.close', 'Close')}
+                 </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+       <Dialog open={currentAction === 'delete'} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('common.confirmDelete', 'Confirm Delete')}</DialogTitle>
+            <DialogDescription>
+              {t('clients.users.deleteConfirmation', 'Are you sure you want to delete this user? This action cannot be undone.')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeDialog} disabled={isDeleting}>
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+              {isDeleting ? t('common.deleting', 'Deleting...') : t('common.delete', 'Delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
