@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GsmDeviceStatus } from '@/lib/api/types';
+import { GsmDeviceStatus } from '@/lib/api/types/gsm-devices.types';
 import { useCreateGsmDevice } from '@/hooks/api/useGsmDevices';
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';

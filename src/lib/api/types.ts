@@ -83,18 +83,6 @@ export enum CallStatus {
   BUSY = 'busy',
 }
 
-export enum GsmDeviceStatus {
-  ONLINE = 'online',
-  OFFLINE = 'offline',
-  DEGRADED = 'degraded',
-}
-
-export enum GsmPortStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  BUSY = 'busy',
-}
-
 export enum PaymentStatus {
   PENDING = 'pending',
   COMPLETED = 'completed',

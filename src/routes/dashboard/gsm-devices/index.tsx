@@ -2,9 +2,9 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { RoleGuard } from '@/lib/auth-guard';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
-import { GsmDeviceStatus } from '@/lib/api/types';
+
 import { useGsmDevices } from '@/hooks/api/useGsmDevices';
-import { useDebounce } from '../../hooks/useDebounce';
+import { useDebounce } from '@/hooks/useDebounce';
 import { CreateGsmDeviceForm } from '@/components/gsm-devices/CreateGsmDeviceForm';
 import {
   ColumnDef,
@@ -28,13 +28,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
 import {
   Pagination,
   PaginationContent,
@@ -44,7 +38,6 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import {
-  MoreHorizontal,
   Plus,
   Search,
   LayoutGrid,
@@ -55,7 +48,7 @@ import {
   User,
   Key,
 } from 'lucide-react';
-import { GsmDevice } from '@/lib/api/types/remaining-modules.types';
+import { GsmDevice, GsmDeviceStatus } from '@/lib/api/types/gsm-devices.types';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -67,7 +60,7 @@ type GsmDeviceSearch = {
   view?: 'table' | 'card';
 };
 
-export const Route = createFileRoute('/dashboard/gsm-devices')({
+export const Route = createFileRoute('/dashboard/gsm-devices/')({
   component: GsmDevicesPage,
   validateSearch: (search: Record<string, unknown>): GsmDeviceSearch => {
     return {
@@ -160,35 +153,6 @@ function GsmDevicesPage() {
           {row.original.status}
         </Badge>
       ),
-    },
-    {
-      id: 'actions',
-      cell: ({ row }) => {
-        const device = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('common.actions', 'Actions')}</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigate({ to: `/dashboard/gsm-devices/${device.id}` })}
-              >
-                {t('common.view', 'View')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigate({ to: `/dashboard/gsm-devices/${device.id}/edit` })}
-              >
-                {t('common.edit', 'Edit')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
     },
   ];
 
@@ -300,6 +264,8 @@ function GsmDevicesPage() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && 'selected'}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate({ to: `/dashboard/gsm-devices/${row.original.id}` })}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>

@@ -7,11 +7,13 @@ import type {
   CallLog, CreateCallLogRequest, UpdateCallLogRequest, CallLogsQueryParams,
   SystemLog, CreateSystemLogRequest, SystemLogsQueryParams,
 
-  GsmDevicePort, CreateGsmDevicePortRequest, UpdateGsmDevicePortRequest, GsmDevicePortsQueryParams,
   PaymentHistory, CreatePaymentHistoryRequest, UpdatePaymentHistoryRequest, PaymentHistoryQueryParams,
   CoachingNote, CreateCoachingNoteRequest, UpdateCoachingNoteRequest, CoachingNotesQueryParams,
   LeadHistory, CreateLeadHistoryRequest, LeadHistoryQueryParams,
 } from '@/lib/api/types/remaining-modules.types';
+import {
+  GsmDevicePort, CreateGsmDevicePortRequest, UpdateGsmDevicePortRequest, GsmDevicePortsQueryParams,
+} from '@/lib/api/types/gsm-devices.types';
 
 // ========== LEAD ASSIGNMENTS ==========
 

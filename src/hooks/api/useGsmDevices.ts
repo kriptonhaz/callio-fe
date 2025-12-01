@@ -3,7 +3,7 @@ import { apiClient, buildQueryString } from '@/lib/api/client';
 import type { PaginatedResponse } from '@/lib/api/types';
 import type {
   GsmDevice, CreateGsmDeviceRequest, UpdateGsmDeviceRequest, GsmDevicesQueryParams,
-} from '@/lib/api/types/remaining-modules.types';
+} from '@/lib/api/types/gsm-devices.types';
 
 export const gsmDevicesKeys = {
   all: ['gsm-devices'] as const,
@@ -66,3 +66,9 @@ export const useDeleteGsmDevice = () => {
     },
   });
 };
+
+export const useGsmDevicePorts = (gsmDeviceId: string) => useQuery({
+  queryKey: [...gsmDevicesKeys.detail(gsmDeviceId), 'ports'],
+  queryFn: async () => await apiClient.get(`gsm-devices/${gsmDeviceId}/ports`).json<any>(), // Adjust return type as needed
+  enabled: !!gsmDeviceId,
+});

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Smartphone, Signal, Activity } from 'lucide-react';
-import type { GsmDevice } from '@/lib/api/types/remaining-modules.types';
+import type { GsmDevice } from '@/lib/api/types/gsm-devices.types';
 
 interface GsmDevicesCardProps {
   devices: GsmDevice[];

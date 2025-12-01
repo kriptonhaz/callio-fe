@@ -1,4 +1,4 @@
-import type { PaginationParams, CallDirection, CallStatus, GsmDeviceStatus, GsmPortStatus, PaymentStatus } from '../types';
+import type { PaginationParams, CallDirection, CallStatus, PaymentStatus } from '../types';
 
 // Lead Assignments
 export interface LeadAssignment {
@@ -121,67 +121,12 @@ export interface SystemLogsQueryParams extends PaginationParams {
   entity?: string;
 }
 
-// GSM Devices
-export interface GsmDevice {
-  id: string;
-  clientId: string;
-  name: string;
-  remoteUrl: string;
-  username: string;
-  password: string;
-  totalPorts: number;
-  model?: string;
-  firmwareVersion?: string;
-  imei: string;
-  status: GsmDeviceStatus;
-  createdAt: string;
-  updatedAt?: string;
-}
 
-export interface CreateGsmDeviceRequest {
-  name: string;
-  remoteUrl: string;
-  username: string;
-  password: string;
-  totalPorts: number;
-  model?: string;
-  firmwareVersion?: string;
-  status?: GsmDeviceStatus;
-  clientId?: string;
-  imei?: string;
-}
-export interface UpdateGsmDeviceRequest extends Partial<CreateGsmDeviceRequest> {}
 
-export interface GsmDevicesQueryParams extends PaginationParams {
-  search?: string;
-  clientId?: string;
-  status?: GsmDeviceStatus;
-}
 
-// GSM Device Ports
-export interface GsmDevicePort {
-  id: string;
-  gsmDeviceId: string;
-  portNumber: number;
-  phoneNumber: string;
-  status: GsmPortStatus;
-  createdAt: string;
-  updatedAt?: string;
-}
 
-export interface CreateGsmDevicePortRequest {
-  gsmDeviceId: string;
-  portNumber: number;
-  phoneNumber: string;
-  status?: GsmPortStatus;
-}
 
-export interface UpdateGsmDevicePortRequest extends Partial<CreateGsmDevicePortRequest> {}
 
-export interface GsmDevicePortsQueryParams extends PaginationParams {
-  gsmDeviceId?: string;
-  status?: GsmPortStatus;
-}
 
 // Payment History
 export interface PaymentHistory {
