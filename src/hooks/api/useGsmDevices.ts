@@ -3,7 +3,9 @@ import { apiClient, buildQueryString } from '@/lib/api/client';
 import type { PaginatedResponse } from '@/lib/api/types';
 import type {
   GsmDevice, CreateGsmDeviceRequest, UpdateGsmDeviceRequest, GsmDevicesQueryParams,
+  CreateGsmDevicePortRequest, GsmDevicePort,
 } from '@/lib/api/types/gsm-devices.types';
+import type { GoipStatusResponse } from '@/lib/api/types/goip.types';
 
 export const gsmDevicesKeys = {
   all: ['gsm-devices'] as const,
@@ -69,6 +71,24 @@ export const useDeleteGsmDevice = () => {
 
 export const useGsmDevicePorts = (gsmDeviceId: string) => useQuery({
   queryKey: [...gsmDevicesKeys.detail(gsmDeviceId), 'ports'],
-  queryFn: async () => await apiClient.get(`gsm-devices/${gsmDeviceId}/ports`).json<any>(), // Adjust return type as needed
+  queryFn: async () => await apiClient.get(`gsm-devices/${gsmDeviceId}/ports`).json<GsmDevicePort[]>(),
   enabled: !!gsmDeviceId,
+});
+
+export const useCreateGsmDevicePort = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: CreateGsmDevicePortRequest) => await apiClient.post('gsm-device-ports', { json: data }).json<GsmDevicePort>(),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: [...gsmDevicesKeys.detail(variables.deviceId), 'ports'] });
+    },
+  });
+};
+
+export const useGoipStatus = (deviceId: string) => useQuery({
+  queryKey: ['goip-status', deviceId],
+  queryFn: async () => await apiClient.get(`goip/status?deviceId=${deviceId}`).json<GoipStatusResponse>(),
+  enabled: !!deviceId,
+  refetchInterval: 5000, // Poll every 5 seconds
+  staleTime: 0, // Always consider data stale to ensure fresh data
 });

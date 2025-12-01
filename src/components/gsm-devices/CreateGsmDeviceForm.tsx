@@ -20,11 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GsmDeviceStatus } from '@/lib/api/types/gsm-devices.types';
-import { useCreateGsmDevice } from '@/hooks/api/useGsmDevices';
+import { GsmDeviceStatus, GsmDevice } from '@/lib/api/types/gsm-devices.types';
+import { useCreateGsmDevice, useUpdateGsmDevice } from '@/hooks/api/useGsmDevices';
 import { toast } from 'sonner';
 import { Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const createGsmDeviceSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -44,12 +44,17 @@ type CreateGsmDeviceFormValues = z.infer<typeof createGsmDeviceSchema>;
 interface CreateGsmDeviceFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialValues?: GsmDevice;
 }
 
-export function CreateGsmDeviceForm({ open, onOpenChange }: CreateGsmDeviceFormProps) {
+export function CreateGsmDeviceForm({ open, onOpenChange, initialValues }: CreateGsmDeviceFormProps) {
   const { t } = useTranslation();
-  const { mutate: createGsmDevice, isPending } = useCreateGsmDevice();
+  const { mutate: createGsmDevice, isPending: isCreatePending } = useCreateGsmDevice();
+  const { mutate: updateGsmDevice, isPending: isUpdatePending } = useUpdateGsmDevice();
   const [showPassword, setShowPassword] = useState(false);
+  
+  const isEditing = !!initialValues;
+  const isPending = isCreatePending || isUpdatePending;
 
   const form = useForm<CreateGsmDeviceFormValues>({
     resolver: zodResolver(createGsmDeviceSchema),
@@ -65,31 +70,82 @@ export function CreateGsmDeviceForm({ open, onOpenChange }: CreateGsmDeviceFormP
     },
   });
 
-  const onSubmit = (data: CreateGsmDeviceFormValues) => {
-    createGsmDevice(
-      data,
-      {
-        onSuccess: () => {
-          toast.success(t('gsmDevices.createSuccess', 'GSM Device created successfully'));
-          form.reset();
-          onOpenChange(false);
-        },
-        onError: (error: any) => {
-          toast.error(
-            error?.message || t('gsmDevices.createError', 'Failed to create GSM device')
-          );
-        },
+  useEffect(() => {
+    if (open) {
+      if (initialValues) {
+        form.reset({
+          name: initialValues.name,
+          remoteUrl: initialValues.remoteUrl,
+          username: initialValues.username,
+          password: initialValues.password,
+          model: initialValues.model || '',
+          totalPorts: initialValues.totalPorts,
+          status: initialValues.status,
+          firmwareVersion: initialValues.firmwareVersion || '',
+        });
+      } else {
+        form.reset({
+          name: '',
+          remoteUrl: '',
+          username: '',
+          password: '',
+          model: '',
+          totalPorts: 1,
+          status: GsmDeviceStatus.OFFLINE,
+          firmwareVersion: '',
+        });
       }
-    );
+    }
+  }, [open, initialValues, form]);
+
+  const onSubmit = (data: CreateGsmDeviceFormValues) => {
+    if (isEditing && initialValues) {
+      updateGsmDevice(
+        { id: initialValues.id, data },
+        {
+          onSuccess: () => {
+            toast.success(t('gsmDevices.updateSuccess', 'GSM Device updated successfully'));
+            onOpenChange(false);
+          },
+          onError: (error: any) => {
+            toast.error(
+              error?.message || t('gsmDevices.updateError', 'Failed to update GSM device')
+            );
+          },
+        }
+      );
+    } else {
+      createGsmDevice(
+        data,
+        {
+          onSuccess: () => {
+            toast.success(t('gsmDevices.createSuccess', 'GSM Device created successfully'));
+            form.reset();
+            onOpenChange(false);
+          },
+          onError: (error: any) => {
+            toast.error(
+              error?.message || t('gsmDevices.createError', 'Failed to create GSM device')
+            );
+          },
+        }
+      );
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{t('gsmDevices.create', 'Add GSM Device')}</DialogTitle>
+          <DialogTitle>
+            {isEditing 
+              ? t('gsmDevices.edit', 'Edit GSM Device') 
+              : t('gsmDevices.create', 'Add GSM Device')}
+          </DialogTitle>
           <DialogDescription>
-            {t('gsmDevices.createDescription', 'Add a new GSM device to the system')}
+            {isEditing
+              ? t('gsmDevices.editDescription', 'Update the details of the GSM device')
+              : t('gsmDevices.createDescription', 'Add a new GSM device to the system')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -253,7 +309,9 @@ export function CreateGsmDeviceForm({ open, onOpenChange }: CreateGsmDeviceFormP
                 {t('common.cancel', 'Cancel')}
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending ? t('common.creating', 'Creating...') : t('common.create', 'Create')}
+                {isPending 
+                  ? (isEditing ? t('common.updating', 'Updating...') : t('common.creating', 'Creating...'))
+                  : (isEditing ? t('common.update', 'Update') : t('common.create', 'Create'))}
               </Button>
             </DialogFooter>
           </form>

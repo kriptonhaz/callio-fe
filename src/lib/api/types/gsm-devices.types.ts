@@ -7,8 +7,9 @@ export enum GsmDeviceStatus {
 }
 
 export enum GsmPortStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
+  AVAILABLE = 'available',
+  IN_USE = 'in_use',
+  DISABLED = 'disabled',
   ERROR = 'error',
 }
 
@@ -53,18 +54,26 @@ export interface GsmDevicesQueryParams extends PaginationParams {
 // GSM Device Ports
 export interface GsmDevicePort {
   id: string;
-  gsmDeviceId: string;
+  deviceId: string;
   portNumber: number;
-  phoneNumber: string;
+  msisdn: string;
+  imei: string | null;
+  imsi: string | null;
+  operator: string | null;
+  balance: number | null;
+  lastCallAt: string | null;
+  lastCallDurationSeconds: number | null;
   status: GsmPortStatus;
+  asteriskChannel: string | null;
+  temperatureCelsius: number | null;
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
 }
 
 export interface CreateGsmDevicePortRequest {
-  gsmDeviceId: string;
+  deviceId: string;
   portNumber: number;
-  phoneNumber: string;
+  msisdn: string;
   status?: GsmPortStatus;
 }
 
