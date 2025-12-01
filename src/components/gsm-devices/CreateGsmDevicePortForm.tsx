@@ -20,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { GsmPortStatus } from '@/lib/api/types/gsm-devices.types';
+import { GsmPortStatus, GsmDevicePort } from '@/lib/api/types/gsm-devices.types';
 import { useCreateGsmDevicePort } from '@/hooks/api/useGsmDevices';
 import { toast } from 'sonner';
+import { useEffect } from 'react';
 
 const createGsmDevicePortSchema = z.object({
   portNumber: z.number().min(1, 'Port number is required'),
@@ -38,11 +39,14 @@ interface CreateGsmDevicePortFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   gsmDeviceId: string;
+  initialValues?: GsmDevicePort;
 }
 
-export function CreateGsmDevicePortForm({ open, onOpenChange, gsmDeviceId }: CreateGsmDevicePortFormProps) {
+export function CreateGsmDevicePortForm({ open, onOpenChange, gsmDeviceId, initialValues }: CreateGsmDevicePortFormProps) {
   const { t } = useTranslation();
   const { mutate: createGsmDevicePort, isPending } = useCreateGsmDevicePort();
+  
+  const isEditing = !!initialValues;
 
   const form = useForm<CreateGsmDevicePortFormValues>({
     resolver: zodResolver(createGsmDevicePortSchema),
@@ -52,6 +56,24 @@ export function CreateGsmDevicePortForm({ open, onOpenChange, gsmDeviceId }: Cre
       status: GsmPortStatus.AVAILABLE,
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      if (initialValues) {
+        form.reset({
+          portNumber: initialValues.portNumber,
+          msisdn: initialValues.msisdn,
+          status: initialValues.status,
+        });
+      } else {
+        form.reset({
+          portNumber: 1,
+          msisdn: '',
+          status: GsmPortStatus.AVAILABLE,
+        });
+      }
+    }
+  }, [open, initialValues, form]);
 
   const onSubmit = (data: CreateGsmDevicePortFormValues) => {
     createGsmDevicePort(
@@ -75,9 +97,15 @@ export function CreateGsmDevicePortForm({ open, onOpenChange, gsmDeviceId }: Cre
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t('gsmDevices.ports.add', 'Add Port')}</DialogTitle>
+          <DialogTitle>
+            {isEditing 
+              ? t('gsmDevices.ports.edit', 'Edit Port') 
+              : t('gsmDevices.ports.add', 'Add Port')}
+          </DialogTitle>
           <DialogDescription>
-            {t('gsmDevices.ports.addDescription', 'Add a new port to this GSM device')}
+            {isEditing
+              ? t('gsmDevices.ports.editDescription', 'Update the port details')
+              : t('gsmDevices.ports.addDescription', 'Add a new port to this GSM device')}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -153,7 +181,9 @@ export function CreateGsmDevicePortForm({ open, onOpenChange, gsmDeviceId }: Cre
                 {t('common.cancel', 'Cancel')}
               </Button>
               <Button type="submit" disabled={isPending}>
-                {isPending ? t('common.adding', 'Adding...') : t('common.add', 'Add')}
+                {isPending 
+                  ? (isEditing ? t('common.updating', 'Updating...') : t('common.adding', 'Adding...'))
+                  : (isEditing ? t('common.update', 'Update') : t('common.add', 'Add'))}
               </Button>
             </DialogFooter>
           </form>

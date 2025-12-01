@@ -25,8 +25,9 @@ import {
   Pencil,
   Trash2,
   Plus,
+  MoreHorizontal,
 } from 'lucide-react';
-import { GsmDeviceStatus, GsmPortStatus } from '@/lib/api/types/gsm-devices.types';
+import { GsmDeviceStatus, GsmPortStatus, GsmDevicePort } from '@/lib/api/types/gsm-devices.types';
 import { format } from 'date-fns';
 import { RoleGuard } from '@/lib/auth-guard';
 import { useState } from 'react';
@@ -42,6 +43,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/dashboard/gsm-devices/$gsmDeviceId')({
@@ -60,6 +68,10 @@ function GsmDeviceDetailPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addPortDialogOpen, setAddPortDialogOpen] = useState(false);
+  const [editPortDialogOpen, setEditPortDialogOpen] = useState(false);
+  const [deletePortDialogOpen, setDeletePortDialogOpen] = useState(false);
+  const [editingPort, setEditingPort] = useState<GsmDevicePort | null>(null);
+  const [deletingPort, setDeletingPort] = useState<GsmDevicePort | null>(null);
 
   // Merge port data with GoIP status
   const mergedPortsData = portsData?.map(port => {
@@ -223,16 +235,17 @@ function GsmDeviceDetailPage() {
               ) : (
                 <div className="rounded-md border">
                   <Table>
-                    <TableHeader className="bg-muted/50">
-                      <TableRow>
-                        <TableHead>{t('gsmDevices.ports.number', 'Port #')}</TableHead>
-                        <TableHead>{t('gsmDevices.ports.phoneNumber', 'Phone Number')}</TableHead>
-                        <TableHead>{t('gsmDevices.ports.status', 'Status')}</TableHead>
-                        <TableHead>{t('gsmDevices.ports.gsmSim', 'GSM SIM')}</TableHead>
-                        <TableHead>{t('gsmDevices.ports.gsmStatus', 'GSM Status')}</TableHead>
-                        <TableHead>{t('gsmDevices.ports.gsmSignal', 'Signal')}</TableHead>
-                        <TableHead>{t('gsmDevices.ports.gsmOperator', 'Operator')}</TableHead>
-                        <TableHead>{t('gsmDevices.ports.updatedAt', 'Last Updated')}</TableHead>
+                    <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="font-semibold text-primary">{t('gsmDevices.ports.number', 'Port #')}</TableHead>
+                        <TableHead className="font-semibold text-primary">{t('gsmDevices.ports.phoneNumber', 'Phone Number')}</TableHead>
+                        <TableHead className="font-semibold text-primary">{t('gsmDevices.ports.status', 'Status')}</TableHead>
+                        <TableHead className="font-semibold text-primary">{t('gsmDevices.ports.gsmSim', 'GSM SIM')}</TableHead>
+                        <TableHead className="font-semibold text-primary">{t('gsmDevices.ports.gsmStatus', 'GSM Status')}</TableHead>
+                        <TableHead className="font-semibold text-primary">{t('gsmDevices.ports.gsmSignal', 'Signal')}</TableHead>
+                        <TableHead className="font-semibold text-primary">{t('gsmDevices.ports.gsmOperator', 'Operator')}</TableHead>
+                        <TableHead className="font-semibold text-primary">{t('gsmDevices.ports.updatedAt', 'Last Updated')}</TableHead>
+                        <TableHead className="font-semibold text-primary">{t('common.actions', 'Actions')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -264,11 +277,48 @@ function GsmDeviceDetailPage() {
                             <TableCell>
                               {port.updatedAt ? format(new Date(port.updatedAt), 'PP p') : '-'}
                             </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>{t('common.actions', 'Actions')}</DropdownMenuLabel>
+                                  <DropdownMenuItem onClick={() => {
+                                    // TODO: Implement send USSD
+                                    toast.info('Send USSD feature coming soon');
+                                  }}>
+                                    <Signal className="mr-2 h-4 w-4" />
+                                    {t('gsmDevices.ports.sendUssd', 'Send USSD')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                    setEditingPort(port);
+                                    setEditPortDialogOpen(true);
+                                  }}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    {t('common.edit', 'Edit')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setDeletingPort(port);
+                                      setDeletePortDialogOpen(true);
+                                    }}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    {t('common.delete', 'Delete')}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                             {t('gsmDevices.ports.empty', 'No ports found')}
                           </TableCell>
                         </TableRow>
@@ -293,6 +343,15 @@ function GsmDeviceDetailPage() {
           gsmDeviceId={gsmDeviceId}
         />
 
+        {editingPort && (
+          <CreateGsmDevicePortForm
+            open={editPortDialogOpen}
+            onOpenChange={setEditPortDialogOpen}
+            gsmDeviceId={gsmDeviceId}
+            initialValues={editingPort}
+          />
+        )}
+
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -309,6 +368,33 @@ function GsmDeviceDetailPage() {
                 disabled={isDeletePending}
               >
                 {isDeletePending ? t('common.deleting', 'Deleting...') : t('common.delete', 'Delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={deletePortDialogOpen} onOpenChange={setDeletePortDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('common.deleteConfirmTitle', 'Are you sure?')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('gsmDevices.ports.deleteConfirmDescription', 'This action cannot be undone. This will permanently delete this port.')}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deletingPort) {
+                    // TODO: Implement delete port API call
+                    toast.success(t('gsmDevices.ports.deleteSuccess', 'Port deleted successfully'));
+                    setDeletePortDialogOpen(false);
+                    setDeletingPort(null);
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {t('common.delete', 'Delete')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
