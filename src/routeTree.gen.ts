@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -18,6 +19,11 @@ import { Route as DashboardClientsCreateRouteImport } from './routes/dashboard/c
 import { Route as DashboardClientsClientIdIndexRouteImport } from './routes/dashboard/clients/$clientId/index'
 import { Route as DashboardClientsClientIdEditRouteImport } from './routes/dashboard/clients/$clientId/edit'
 
+const VerifyRoute = VerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/verify': typeof VerifyRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
   '/dashboard/clients': typeof DashboardClientsIndexRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/verify': typeof VerifyRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
   '/dashboard/clients': typeof DashboardClientsIndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
+  '/verify': typeof VerifyRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
   '/dashboard/clients/': typeof DashboardClientsIndexRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/login'
+    | '/verify'
     | '/dashboard/'
     | '/dashboard/clients/create'
     | '/dashboard/clients'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/verify'
     | '/dashboard'
     | '/dashboard/clients/create'
     | '/dashboard/clients'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/login'
+    | '/verify'
     | '/dashboard/'
     | '/dashboard/clients/create'
     | '/dashboard/clients/'
@@ -127,10 +139,18 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   LoginRoute: typeof LoginRoute
+  VerifyRoute: typeof VerifyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -214,6 +234,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
   LoginRoute: LoginRoute,
+  VerifyRoute: VerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

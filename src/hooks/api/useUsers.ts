@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
-import { apiClient, buildQueryString } from '@/lib/api/client';
+import { apiClient, buildQueryString, handleApiError } from '@/lib/api/client';
 import type { PaginatedResponse } from '@/lib/api/types';
 import type { User, CreateUserRequest, UpdateUserRequest, UsersQueryParams } from '@/lib/api/types/users.types';
 
@@ -31,6 +31,14 @@ const usersApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`users/${id}`);
+  },
+
+  verify: async (token: string): Promise<void> => {
+    try {
+      await apiClient.post('users/verify', { json: { token } });
+    } catch (error) {
+      await handleApiError(error);
+    }
   },
 };
 
@@ -81,5 +89,11 @@ export const useDeleteUser = (): UseMutationResult<void, Error, string> => {
       queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
       queryClient.removeQueries({ queryKey: usersKeys.detail(id) });
     },
+  });
+};
+
+export const useVerifyUser = (): UseMutationResult<void, Error, string> => {
+  return useMutation({
+    mutationFn: usersApi.verify,
   });
 };
