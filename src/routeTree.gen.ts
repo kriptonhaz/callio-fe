@@ -14,6 +14,14 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardReportsRouteImport } from './routes/dashboard/reports'
+import { Route as DashboardRecordingsRouteImport } from './routes/dashboard/recordings'
+import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
+import { Route as DashboardLeadsRouteImport } from './routes/dashboard/leads'
+import { Route as DashboardGsmDevicesRouteImport } from './routes/dashboard/gsm-devices'
+import { Route as DashboardCampaignsRouteImport } from './routes/dashboard/campaigns'
 import { Route as DashboardClientsIndexRouteImport } from './routes/dashboard/clients/index'
 import { Route as DashboardClientsCreateRouteImport } from './routes/dashboard/clients/create'
 import { Route as DashboardClientsClientIdIndexRouteImport } from './routes/dashboard/clients/$clientId/index'
@@ -44,6 +52,46 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardUsersRoute = DashboardUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardReportsRoute = DashboardReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardRecordingsRoute = DashboardRecordingsRouteImport.update({
+  id: '/recordings',
+  path: '/recordings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardLogsRoute = DashboardLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardLeadsRoute = DashboardLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardGsmDevicesRoute = DashboardGsmDevicesRouteImport.update({
+  id: '/gsm-devices',
+  path: '/gsm-devices',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCampaignsRoute = DashboardCampaignsRouteImport.update({
+  id: '/campaigns',
+  path: '/campaigns',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardClientsIndexRoute = DashboardClientsIndexRouteImport.update({
   id: '/clients/',
   path: '/clients/',
@@ -72,6 +120,14 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
+  '/dashboard/campaigns': typeof DashboardCampaignsRoute
+  '/dashboard/gsm-devices': typeof DashboardGsmDevicesRoute
+  '/dashboard/leads': typeof DashboardLeadsRoute
+  '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/recordings': typeof DashboardRecordingsRoute
+  '/dashboard/reports': typeof DashboardReportsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
   '/dashboard/clients': typeof DashboardClientsIndexRoute
@@ -82,6 +138,14 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
+  '/dashboard/campaigns': typeof DashboardCampaignsRoute
+  '/dashboard/gsm-devices': typeof DashboardGsmDevicesRoute
+  '/dashboard/leads': typeof DashboardLeadsRoute
+  '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/recordings': typeof DashboardRecordingsRoute
+  '/dashboard/reports': typeof DashboardReportsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
   '/dashboard/clients': typeof DashboardClientsIndexRoute
@@ -94,6 +158,14 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
+  '/dashboard/campaigns': typeof DashboardCampaignsRoute
+  '/dashboard/gsm-devices': typeof DashboardGsmDevicesRoute
+  '/dashboard/leads': typeof DashboardLeadsRoute
+  '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/recordings': typeof DashboardRecordingsRoute
+  '/dashboard/reports': typeof DashboardReportsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
   '/dashboard/clients/': typeof DashboardClientsIndexRoute
@@ -107,6 +179,14 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/verify'
+    | '/dashboard/campaigns'
+    | '/dashboard/gsm-devices'
+    | '/dashboard/leads'
+    | '/dashboard/logs'
+    | '/dashboard/recordings'
+    | '/dashboard/reports'
+    | '/dashboard/settings'
+    | '/dashboard/users'
     | '/dashboard/'
     | '/dashboard/clients/create'
     | '/dashboard/clients'
@@ -117,6 +197,14 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/verify'
+    | '/dashboard/campaigns'
+    | '/dashboard/gsm-devices'
+    | '/dashboard/leads'
+    | '/dashboard/logs'
+    | '/dashboard/recordings'
+    | '/dashboard/reports'
+    | '/dashboard/settings'
+    | '/dashboard/users'
     | '/dashboard'
     | '/dashboard/clients/create'
     | '/dashboard/clients'
@@ -128,6 +216,14 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/verify'
+    | '/dashboard/campaigns'
+    | '/dashboard/gsm-devices'
+    | '/dashboard/leads'
+    | '/dashboard/logs'
+    | '/dashboard/recordings'
+    | '/dashboard/reports'
+    | '/dashboard/settings'
+    | '/dashboard/users'
     | '/dashboard/'
     | '/dashboard/clients/create'
     | '/dashboard/clients/'
@@ -179,6 +275,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/users': {
+      id: '/dashboard/users'
+      path: '/users'
+      fullPath: '/dashboard/users'
+      preLoaderRoute: typeof DashboardUsersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/reports': {
+      id: '/dashboard/reports'
+      path: '/reports'
+      fullPath: '/dashboard/reports'
+      preLoaderRoute: typeof DashboardReportsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/recordings': {
+      id: '/dashboard/recordings'
+      path: '/recordings'
+      fullPath: '/dashboard/recordings'
+      preLoaderRoute: typeof DashboardRecordingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/logs': {
+      id: '/dashboard/logs'
+      path: '/logs'
+      fullPath: '/dashboard/logs'
+      preLoaderRoute: typeof DashboardLogsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/leads': {
+      id: '/dashboard/leads'
+      path: '/leads'
+      fullPath: '/dashboard/leads'
+      preLoaderRoute: typeof DashboardLeadsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/gsm-devices': {
+      id: '/dashboard/gsm-devices'
+      path: '/gsm-devices'
+      fullPath: '/dashboard/gsm-devices'
+      preLoaderRoute: typeof DashboardGsmDevicesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/campaigns': {
+      id: '/dashboard/campaigns'
+      path: '/campaigns'
+      fullPath: '/dashboard/campaigns'
+      preLoaderRoute: typeof DashboardCampaignsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/clients/': {
       id: '/dashboard/clients/'
       path: '/clients'
@@ -211,6 +363,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardRouteChildren {
+  DashboardCampaignsRoute: typeof DashboardCampaignsRoute
+  DashboardGsmDevicesRoute: typeof DashboardGsmDevicesRoute
+  DashboardLeadsRoute: typeof DashboardLeadsRoute
+  DashboardLogsRoute: typeof DashboardLogsRoute
+  DashboardRecordingsRoute: typeof DashboardRecordingsRoute
+  DashboardReportsRoute: typeof DashboardReportsRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardUsersRoute: typeof DashboardUsersRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardClientsCreateRoute: typeof DashboardClientsCreateRoute
   DashboardClientsIndexRoute: typeof DashboardClientsIndexRoute
@@ -219,6 +379,14 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardCampaignsRoute: DashboardCampaignsRoute,
+  DashboardGsmDevicesRoute: DashboardGsmDevicesRoute,
+  DashboardLeadsRoute: DashboardLeadsRoute,
+  DashboardLogsRoute: DashboardLogsRoute,
+  DashboardRecordingsRoute: DashboardRecordingsRoute,
+  DashboardReportsRoute: DashboardReportsRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardUsersRoute: DashboardUsersRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardClientsCreateRoute: DashboardClientsCreateRoute,
   DashboardClientsIndexRoute: DashboardClientsIndexRoute,

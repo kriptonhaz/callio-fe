@@ -51,12 +51,13 @@ export const useUsers = (params: UsersQueryParams = {}, enabled: boolean = true)
   });
 };
 
-export const useUser = (id: string): UseQueryResult<User, Error> => {
+export const useUser = (id: string, options?: { refetchInterval?: number }): UseQueryResult<User, Error> => {
   return useQuery({
     queryKey: usersKeys.detail(id),
     queryFn: () => usersApi.getById(id),
     enabled: !!id,
     staleTime: 30 * 1000,
+    ...options,
   });
 };
 

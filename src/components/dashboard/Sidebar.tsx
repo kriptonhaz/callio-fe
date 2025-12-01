@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link, useLocation } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
@@ -13,7 +13,12 @@ import { Calendar } from '@/components/animate-ui/icons/calendar';
 import { PieChart } from '@/components/animate-ui/icons/pie-chart';
 import { FileText } from '@/components/animate-ui/icons/file-text';
 import { Settings } from '@/components/animate-ui/icons/settings';
+import { Globe } from '@/components/animate-ui/icons/globe';
+import { Activity } from '@/components/animate-ui/icons/activity';
 import { useTranslation } from 'react-i18next';
+import { decodeJwt } from '@/lib/jwt';
+import { getAccessToken } from '@/lib/api/client';
+import { useUser } from '@/hooks/api/useUsers';
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -21,15 +26,56 @@ export function Sidebar() {
   const { t } = useTranslation();
   const logout = useLogout();
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: t('dashboard.menu.dashboard'), href: '/dashboard' },
-    { icon: Users, label: t('dashboard.menu.clients'), href: '/dashboard/clients' },
-    { icon: Phone, label: t('dashboard.menu.leads'), href: '/leads' },
-    { icon: Calendar, label: t('dashboard.menu.appointments'), href: '/appointments' },
-    { icon: PieChart, label: t('dashboard.menu.reports'), href: '/reports' },
-    { icon: FileText, label: t('dashboard.menu.recordings'), href: '/recordings' },
-    { icon: Settings, label: t('dashboard.menu.settings'), href: '/settings' },
-  ];
+  // Role determination logic
+  const token = getAccessToken();
+  const decodedToken = useMemo(() => token ? decodeJwt(token) : null, [token]);
+  const userId = decodedToken?.sub;
+  const jwtRole = decodedToken?.role;
+
+  // Periodically fetch user to verify role (double security)
+  const { data: user } = useUser(userId || '', { refetchInterval: 60000 });
+  
+  // Effective role: prefer API data, fallback to JWT
+  const role = user?.role || jwtRole;
+
+  const menuItems = useMemo(() => {
+    const commonItems = [
+      { icon: LayoutDashboard, label: t('dashboard.menu.dashboard'), href: '/dashboard' },
+    ];
+
+    if (role === 'superadmin') {
+      return [
+        ...commonItems,
+        { icon: Globe, label: t('dashboard.menu.gsmDevices', 'GSM Devices'), href: '/dashboard/gsm-devices' },
+        { icon: Users, label: t('dashboard.menu.client', 'Client'), href: '/dashboard/clients' },
+        { icon: Activity, label: t('dashboard.menu.log', 'Log'), href: '/dashboard/logs' },
+        { icon: Settings, label: t('dashboard.menu.settings'), href: '/dashboard/settings' },
+      ];
+    }
+
+    if (role === 'admin' || role === 'supervisor') {
+      return [
+        ...commonItems,
+        { icon: Users, label: t('dashboard.menu.users', 'Users'), href: '/dashboard/users' },
+        { icon: Calendar, label: t('dashboard.menu.campaign', 'Campaign'), href: '/dashboard/campaigns' },
+        { icon: Phone, label: t('dashboard.menu.leads'), href: '/dashboard/leads' },
+        { icon: PieChart, label: t('dashboard.menu.reports'), href: '/dashboard/reports' },
+        { icon: FileText, label: t('dashboard.menu.recordings'), href: '/dashboard/recordings' },
+        { icon: Settings, label: t('dashboard.menu.settings'), href: '/dashboard/settings' },
+      ];
+    }
+
+    if (role === 'agent') {
+      return [
+        ...commonItems,
+        { icon: Calendar, label: t('dashboard.menu.campaign', 'Campaign'), href: '/dashboard/campaigns' },
+        { icon: Settings, label: t('dashboard.menu.settings'), href: '/dashboard/settings' },
+      ];
+    }
+
+    // Default fallback
+    return commonItems;
+  }, [role, t]);
 
   return (
     <motion.div
@@ -114,7 +160,7 @@ export function Sidebar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="h-9 w-9 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
-              JD
+              {user?.name?.charAt(0) || decodedToken?.email?.charAt(0) || 'U'}
             </div>
             <AnimatePresence>
               {!isCollapsed && (
@@ -124,8 +170,8 @@ export function Sidebar() {
                   exit={{ opacity: 0, width: 0 }}
                   className="ml-3 overflow-hidden"
                 >
-                  <p className="text-sm font-medium truncate">John Doe</p>
-                  <p className="text-xs text-muted-foreground truncate">{t('dashboard.user.admin')}</p>
+                  <p className="text-sm font-medium truncate">{user?.name || decodedToken?.email || 'User'}</p>
+                  <p className="text-xs text-muted-foreground truncate capitalize">{role || 'Guest'}</p>
                 </motion.div>
               )}
             </AnimatePresence>
