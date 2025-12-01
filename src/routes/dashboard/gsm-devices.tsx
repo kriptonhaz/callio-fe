@@ -52,6 +52,8 @@ import {
   Smartphone,
   Signal,
   Wifi,
+  User,
+  Key,
 } from 'lucide-react';
 import { GsmDevice } from '@/lib/api/types/remaining-modules.types';
 import { Badge } from '@/components/ui/badge';
@@ -117,6 +119,26 @@ function GsmDevicesPage() {
         <div className="flex items-center gap-2">
           <Wifi className="h-4 w-4 text-muted-foreground" />
           <span>{row.original.remoteUrl}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'username',
+      header: t('gsmDevices.table.username', 'Username'),
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <User className="h-4 w-4 text-muted-foreground" />
+          <span>{row.original.username}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'password',
+      header: t('gsmDevices.table.password', 'Password'),
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Key className="h-4 w-4 text-muted-foreground" />
+          <span>{row.original.password}</span>
         </div>
       ),
     },

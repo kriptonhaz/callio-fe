@@ -127,6 +127,8 @@ export interface GsmDevice {
   clientId: string;
   name: string;
   remoteUrl: string;
+  username: string;
+  password: string;
   totalPorts: number;
   model?: string;
   firmwareVersion?: string;
@@ -139,12 +141,15 @@ export interface GsmDevice {
 export interface CreateGsmDeviceRequest {
   name: string;
   remoteUrl: string;
+  username: string;
+  password: string;
   totalPorts: number;
   model?: string;
   firmwareVersion?: string;
   status?: GsmDeviceStatus;
+  clientId?: string;
+  imei?: string;
 }
-
 export interface UpdateGsmDeviceRequest extends Partial<CreateGsmDeviceRequest> {}
 
 export interface GsmDevicesQueryParams extends PaginationParams {

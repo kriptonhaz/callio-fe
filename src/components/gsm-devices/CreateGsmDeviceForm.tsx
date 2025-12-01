@@ -23,10 +23,14 @@ import {
 import { GsmDeviceStatus } from '@/lib/api/types';
 import { useCreateGsmDevice } from '@/hooks/api/useGsmDevices';
 import { toast } from 'sonner';
+import { Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 
 const createGsmDeviceSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   remoteUrl: z.string().min(1, 'Remote URL is required'),
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
   model: z.string().optional(),
   totalPorts: z.number().min(1, 'Total ports must be at least 1'),
   status: z.nativeEnum(GsmDeviceStatus, {
@@ -45,12 +49,15 @@ interface CreateGsmDeviceFormProps {
 export function CreateGsmDeviceForm({ open, onOpenChange }: CreateGsmDeviceFormProps) {
   const { t } = useTranslation();
   const { mutate: createGsmDevice, isPending } = useCreateGsmDevice();
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<CreateGsmDeviceFormValues>({
     resolver: zodResolver(createGsmDeviceSchema),
     defaultValues: {
       name: '',
       remoteUrl: '',
+      username: '',
+      password: '',
       model: '',
       totalPorts: 1,
       status: GsmDeviceStatus.OFFLINE,
@@ -114,6 +121,55 @@ export function CreateGsmDeviceForm({ open, onOpenChange }: CreateGsmDeviceFormP
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('gsmDevices.form.username', 'Username')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('gsmDevices.form.usernamePlaceholder', 'admin')} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('gsmDevices.form.password', 'Password')}</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder={t('gsmDevices.form.passwordPlaceholder', '********')}
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
