@@ -92,3 +92,25 @@ export const useGoipStatus = (deviceId: string) => useQuery({
   refetchInterval: 5000, // Poll every 5 seconds
   staleTime: 0, // Always consider data stale to ensure fresh data
 });
+
+import { SendUssdRequest, DisconnectUssdRequest, UssdResultResponse } from '@/lib/api/types/ussd.types';
+
+export const useSendUssd = () => {
+  return useMutation({
+    mutationFn: async (data: SendUssdRequest) => await apiClient.post('goip/ussd/send', { json: data }).json(),
+  });
+};
+
+export const useDisconnectUssd = () => {
+  return useMutation({
+    mutationFn: async (data: DisconnectUssdRequest) => await apiClient.post('goip/ussd/disconnect', { json: data }).json(),
+  });
+};
+
+export const useUssdResult = (deviceId: string, enabled: boolean) => useQuery({
+  queryKey: ['ussd-result', deviceId],
+  queryFn: async () => await apiClient.get(`goip/ussd/result?deviceId=${deviceId}`).json<UssdResultResponse>(),
+  enabled: !!deviceId && enabled,
+  refetchInterval: 2000, // Poll every 2 seconds
+  staleTime: 0,
+});

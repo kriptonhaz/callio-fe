@@ -33,6 +33,7 @@ import { RoleGuard } from '@/lib/auth-guard';
 import { useState } from 'react';
 import { CreateGsmDeviceForm } from '@/components/gsm-devices/CreateGsmDeviceForm';
 import { CreateGsmDevicePortForm } from '@/components/gsm-devices/CreateGsmDevicePortForm';
+import { SendUssdModal } from '@/components/gsm-devices/SendUssdModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,8 +71,10 @@ function GsmDeviceDetailPage() {
   const [addPortDialogOpen, setAddPortDialogOpen] = useState(false);
   const [editPortDialogOpen, setEditPortDialogOpen] = useState(false);
   const [deletePortDialogOpen, setDeletePortDialogOpen] = useState(false);
+  const [ussdDialogOpen, setUssdDialogOpen] = useState(false);
   const [editingPort, setEditingPort] = useState<GsmDevicePort | null>(null);
   const [deletingPort, setDeletingPort] = useState<GsmDevicePort | null>(null);
+  const [ussdPort, setUssdPort] = useState<GsmDevicePort | null>(null);
 
   // Merge port data with GoIP status
   const mergedPortsData = portsData?.map(port => {
@@ -288,8 +291,8 @@ function GsmDeviceDetailPage() {
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuLabel>{t('common.actions', 'Actions')}</DropdownMenuLabel>
                                   <DropdownMenuItem onClick={() => {
-                                    // TODO: Implement send USSD
-                                    toast.info('Send USSD feature coming soon');
+                                    setUssdPort(port);
+                                    setUssdDialogOpen(true);
                                   }}>
                                     <Signal className="mr-2 h-4 w-4" />
                                     {t('gsmDevices.ports.sendUssd', 'Send USSD')}
@@ -349,6 +352,15 @@ function GsmDeviceDetailPage() {
             onOpenChange={setEditPortDialogOpen}
             gsmDeviceId={gsmDeviceId}
             initialValues={editingPort}
+          />
+        )}
+
+        {ussdPort && (
+          <SendUssdModal
+            open={ussdDialogOpen}
+            onOpenChange={setUssdDialogOpen}
+            deviceId={gsmDeviceId}
+            portNumber={ussdPort.portNumber}
           />
         )}
 
