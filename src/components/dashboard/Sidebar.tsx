@@ -13,7 +13,7 @@ import { Calendar } from '@/components/animate-ui/icons/calendar';
 import { PieChart } from '@/components/animate-ui/icons/pie-chart';
 import { FileText } from '@/components/animate-ui/icons/file-text';
 import { Settings } from '@/components/animate-ui/icons/settings';
-import { Globe } from '@/components/animate-ui/icons/globe';
+import { Router } from '@/components/animate-ui/icons/router';
 import { Activity } from '@/components/animate-ui/icons/activity';
 import { useTranslation } from 'react-i18next';
 import { decodeJwt } from '@/lib/jwt';
@@ -46,7 +46,7 @@ export function Sidebar() {
     if (role === 'superadmin') {
       return [
         ...commonItems,
-        { icon: Globe, label: t('dashboard.menu.gsmDevices', 'GSM Devices'), href: '/dashboard/gsm-devices' },
+        { icon: Router, label: t('dashboard.menu.gsmDevices', 'GSM Devices'), href: '/dashboard/gsm-devices' },
         { icon: Users, label: t('dashboard.menu.client', 'Client'), href: '/dashboard/clients' },
         { icon: Activity, label: t('dashboard.menu.log', 'Log'), href: '/dashboard/logs' },
         { icon: Settings, label: t('dashboard.menu.settings'), href: '/dashboard/settings' },

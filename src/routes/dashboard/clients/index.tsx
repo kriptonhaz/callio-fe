@@ -22,13 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
 import {
   Pagination,
   PaginationContent,
@@ -38,11 +32,12 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import {
-  MoreHorizontal,
   Plus,
   Search,
+  UserPlus,
+  UserMinus,
 } from 'lucide-react';
-import { Users, UserPlus, UserMinus, UserCheck } from '@/components/animate-ui/icons';
+import { Users, UserCheck } from '@/components/animate-ui/icons';
 import { useClients } from '@/hooks/api/useClients';
 import { Client, ClientStatus } from '@/lib/api/types/clients.types';
 import { useDebounce } from '../../../hooks/useDebounce';
@@ -121,36 +116,6 @@ function ClientListPage() {
         );
       },
     },
-    {
-      id: 'actions',
-      cell: ({ row }) => {
-        const client = row.original;
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('common.actions', 'Actions')}</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigate({ to: `/dashboard/clients/${client.id}` })}
-              >
-                {t('common.view', 'View')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigate({ to: `/dashboard/clients/${client.id}/edit` })}
-              >
-                {t('common.edit', 'Edit')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
   ];
 
   const table = useReactTable({
@@ -205,7 +170,7 @@ function ClientListPage() {
                 {t('clients.stats.new', 'New This Month')}
               </CardTitle>
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <UserPlus className="h-5 w-5 text-purple-600 dark:text-purple-400" animateOnHover/>
+                <UserPlus className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
             </CardHeader>
             <CardContent>
@@ -218,7 +183,7 @@ function ClientListPage() {
                 {t('clients.stats.inactive', 'Inactive')}
               </CardTitle>
               <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <UserMinus className="h-5 w-5 text-orange-600 dark:text-orange-400" animateOnHover/>
+                <UserMinus className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
             </CardHeader>
             <CardContent>
@@ -289,6 +254,8 @@ function ClientListPage() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && 'selected'}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate({ to: `/dashboard/clients/$clientId`, params: { clientId: row.original.id } })}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>

@@ -36,6 +36,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ClientUsersTableProps {
   users: User[];
@@ -285,20 +292,23 @@ export function ClientUsersTable({ users, isLoading = false, clientId }: ClientU
                 {isView ? (
                   <div className="p-2 border rounded-md bg-muted">{getRoleBadge(field.value)}</div>
                 ) : (
-                  <select
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                      handleRoleChange(e.target.value as UserRole);
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleRoleChange(value as UserRole);
                     }}
                     value={field.value}
                     disabled={isView}
                   >
-                    <option value="">{t('clients.users.selectRole', 'Select role')}</option>
-                    <option value="admin">{t('users.role.admin', 'Admin')}</option>
-                    <option value="supervisor">{t('users.role.supervisor', 'Supervisor')}</option>
-                    <option value="agent">{t('users.role.agent', 'Agent')}</option>
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('clients.users.selectRole', 'Select role')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">{t('users.role.admin', 'Admin')}</SelectItem>
+                      <SelectItem value="supervisor">{t('users.role.supervisor', 'Supervisor')}</SelectItem>
+                      <SelectItem value="agent">{t('users.role.agent', 'Agent')}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 )}
               </FormControl>
               <FormMessage />

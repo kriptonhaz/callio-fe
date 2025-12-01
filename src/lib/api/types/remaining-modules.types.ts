@@ -125,7 +125,11 @@ export interface SystemLogsQueryParams extends PaginationParams {
 export interface GsmDevice {
   id: string;
   clientId: string;
-  deviceName: string;
+  name: string;
+  remoteUrl: string;
+  totalPorts: number;
+  model?: string;
+  firmwareVersion?: string;
   imei: string;
   status: GsmDeviceStatus;
   createdAt: string;
@@ -133,15 +137,18 @@ export interface GsmDevice {
 }
 
 export interface CreateGsmDeviceRequest {
-  clientId: string;
-  deviceName: string;
-  imei: string;
+  name: string;
+  remoteUrl: string;
+  totalPorts: number;
+  model?: string;
+  firmwareVersion?: string;
   status?: GsmDeviceStatus;
 }
 
 export interface UpdateGsmDeviceRequest extends Partial<CreateGsmDeviceRequest> {}
 
 export interface GsmDevicesQueryParams extends PaginationParams {
+  search?: string;
   clientId?: string;
   status?: GsmDeviceStatus;
 }

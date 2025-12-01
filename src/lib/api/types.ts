@@ -84,9 +84,9 @@ export enum CallStatus {
 }
 
 export enum GsmDeviceStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  MAINTENANCE = 'maintenance',
+  ONLINE = 'online',
+  OFFLINE = 'offline',
+  DEGRADED = 'degraded',
 }
 
 export enum GsmPortStatus {

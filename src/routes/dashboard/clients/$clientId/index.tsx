@@ -3,7 +3,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useClient, useDeleteClient } from '@/hooks/api/useClients';
 import { useUsers } from '@/hooks/api/useUsers';
-import { usePaymentHistory, useGsmDevices } from '@/hooks/api/useRemainingModules';
+import { usePaymentHistory } from '@/hooks/api/useRemainingModules';
+import { useGsmDevices } from '@/hooks/api/useGsmDevices';
 import { Button } from '@/components/ui/button';
 import {
   Card,
