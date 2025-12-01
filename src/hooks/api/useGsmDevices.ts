@@ -114,3 +114,14 @@ export const useUssdResult = (deviceId: string, enabled: boolean) => useQuery({
   refetchInterval: 2000, // Poll every 2 seconds
   staleTime: 0,
 });
+
+export const useDeleteGsmDevicePort = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => await apiClient.delete(`gsm-device-ports/${id}`).json(),
+    onSuccess: () => {
+      // Invalidate all GSM device details to refresh ports list
+      qc.invalidateQueries({ queryKey: gsmDevicesKeys.all });
+    },
+  });
+};

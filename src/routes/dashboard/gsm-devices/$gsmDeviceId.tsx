@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useGsmDevice, useGsmDevicePorts, useDeleteGsmDevice, useGoipStatus } from '@/hooks/api/useGsmDevices';
+import { useGsmDevice, useGsmDevicePorts, useDeleteGsmDevice, useGoipStatus, useDeleteGsmDevicePort } from '@/hooks/api/useGsmDevices';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -65,6 +65,7 @@ function GsmDeviceDetailPage() {
   const { data: portsData, isLoading: isPortsLoading } = useGsmDevicePorts(gsmDeviceId);
   const { data: goipStatus } = useGoipStatus(gsmDeviceId);
   const { mutate: deleteGsmDevice, isPending: isDeletePending } = useDeleteGsmDevice();
+  const { mutate: deleteGsmDevicePort, isPending: isDeletePortPending } = useDeleteGsmDevicePort();
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -398,15 +399,22 @@ function GsmDeviceDetailPage() {
               <AlertDialogAction
                 onClick={() => {
                   if (deletingPort) {
-                    // TODO: Implement delete port API call
-                    toast.success(t('gsmDevices.ports.deleteSuccess', 'Port deleted successfully'));
-                    setDeletePortDialogOpen(false);
-                    setDeletingPort(null);
+                    deleteGsmDevicePort({ id: deletingPort.id }, {
+                      onSuccess: () => {
+                        toast.success(t('gsmDevices.ports.deleteSuccess', 'Port deleted successfully'));
+                        setDeletePortDialogOpen(false);
+                        setDeletingPort(null);
+                      },
+                      onError: (error: any) => {
+                        toast.error(error?.message || t('gsmDevices.ports.deleteError', 'Failed to delete port'));
+                      }
+                    });
                   }
                 }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={isDeletePortPending}
               >
-                {t('common.delete', 'Delete')}
+                {isDeletePortPending ? t('common.deleting', 'Deleting...') : t('common.delete', 'Delete')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
