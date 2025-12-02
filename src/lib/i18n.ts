@@ -22,7 +22,14 @@ const resources = {
         "deleteConfirmTitle": "Are you sure?",
         "notProvided": "Not provided",
         "createdAt": "Created At",
-        "updatedAt": "Updated At"
+        "updatedAt": "Updated At",
+        "add": "Add",
+        "adding": "Adding...",
+        "update": "Update",
+        "updating": "Updating...",
+        "send": "Send",
+        "close": "Close",
+        "deleting": "Deleting..."
       },
       "login": {
         "title": "Welcome back",
@@ -163,6 +170,54 @@ const resources = {
             "address": "123 Main St, City, Country"
           }
         }
+      },
+      "gsmDevices": {
+        "title": "GSM Devices",
+        "details": {
+          "summary": "Device Summary",
+          "ports": "Device Ports"
+        },
+        "status": "Status",
+        "remoteUrl": "Remote URL",
+        "username": "Username",
+        "password": "Password",
+        "totalPorts": "Total Ports",
+        "model": "Model",
+        "firmware": "Firmware",
+        "deleteSuccess": "GSM Device deleted successfully",
+        "deleteError": "Failed to delete GSM device",
+        "deleteConfirmDescription": "This action cannot be undone. This will permanently delete the GSM device and all associated data.",
+        "ports": {
+          "add": "Add Port",
+          "edit": "Edit Port",
+          "number": "Port #",
+          "phoneNumber": "Phone Number",
+          "status": "Status",
+          "gsmSim": "GSM SIM",
+          "gsmStatus": "GSM Status",
+          "gsmSignal": "Signal",
+          "gsmOperator": "Operator",
+          "updatedAt": "Last Updated",
+          "sendUssd": "Send USSD",
+          "empty": "No ports found",
+          "addDescription": "Add a new port to this GSM device",
+          "editDescription": "Update the port details",
+          "deleteSuccess": "Port deleted successfully",
+          "deleteError": "Failed to delete port",
+          "deleteConfirmDescription": "This action cannot be undone. This will permanently delete this port."
+        },
+        "ussd": {
+          "title": "Send USSD",
+          "description": "Send USSD code to Port {{port}}",
+          "code": "USSD Code",
+          "result": "Result",
+          "disconnect": "Disconnect",
+          "waitingForResult": "Waiting for response...",
+          "sendSuccess": "USSD code sent",
+          "sendError": "Failed to send USSD code",
+          "disconnectSuccess": "USSD session disconnected",
+          "disconnectError": "Failed to disconnect USSD"
+        }
       }
     }
   },
@@ -186,7 +241,14 @@ const resources = {
         "deleteConfirmTitle": "Apakah Anda yakin?",
         "notProvided": "Tidak disediakan",
         "createdAt": "Dibuat Pada",
-        "updatedAt": "Diperbarui Pada"
+        "updatedAt": "Diperbarui Pada",
+        "add": "Tambah",
+        "adding": "Menambahkan...",
+        "update": "Perbarui",
+        "updating": "Memperbarui...",
+        "send": "Kirim",
+        "close": "Tutup",
+        "deleting": "Menghapus..."
       },
       "login": {
         "title": "Selamat datang kembali",
@@ -326,6 +388,54 @@ const resources = {
             "phone": "+62 812 3456 7890",
             "address": "Jl. Jend. Sudirman No. 1, Jakarta"
           }
+        }
+      },
+      "gsmDevices": {
+        "title": "Perangkat GSM",
+        "details": {
+          "summary": "Ringkasan Perangkat",
+          "ports": "Port Perangkat"
+        },
+        "status": "Status",
+        "remoteUrl": "URL Jarak Jauh",
+        "username": "Nama Pengguna",
+        "password": "Kata Sandi",
+        "totalPorts": "Total Port",
+        "model": "Model",
+        "firmware": "Firmware",
+        "deleteSuccess": "Perangkat GSM berhasil dihapus",
+        "deleteError": "Gagal menghapus perangkat GSM",
+        "deleteConfirmDescription": "Tindakan ini tidak dapat dibatalkan. Ini akan menghapus perangkat GSM dan semua data terkait secara permanen.",
+        "ports": {
+          "add": "Tambah Port",
+          "edit": "Ubah Port",
+          "number": "Port #",
+          "phoneNumber": "Nomor Telepon",
+          "status": "Status",
+          "gsmSim": "SIM GSM",
+          "gsmStatus": "Status GSM",
+          "gsmSignal": "Sinyal",
+          "gsmOperator": "Operator",
+          "updatedAt": "Terakhir Diperbarui",
+          "sendUssd": "Kirim USSD",
+          "empty": "Tidak ada port ditemukan",
+          "addDescription": "Tambahkan port baru ke perangkat GSM ini",
+          "editDescription": "Perbarui detail port",
+          "deleteSuccess": "Port berhasil dihapus",
+          "deleteError": "Gagal menghapus port",
+          "deleteConfirmDescription": "Tindakan ini tidak dapat dibatalkan. Ini akan menghapus port ini secara permanen."
+        },
+        "ussd": {
+          "title": "Kirim USSD",
+          "description": "Kirim kode USSD ke Port {{port}}",
+          "code": "Kode USSD",
+          "result": "Hasil",
+          "disconnect": "Putuskan",
+          "waitingForResult": "Menunggu respons...",
+          "sendSuccess": "Kode USSD terkirim",
+          "sendError": "Gagal mengirim kode USSD",
+          "disconnectSuccess": "Sesi USSD diputus",
+          "disconnectError": "Gagal memutus USSD"
         }
       }
     }
