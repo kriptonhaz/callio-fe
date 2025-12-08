@@ -4,6 +4,7 @@ import type { PaginatedResponse } from '@/lib/api/types';
 import type {
   GsmDevice, CreateGsmDeviceRequest, UpdateGsmDeviceRequest, GsmDevicesQueryParams,
   CreateGsmDevicePortRequest, GsmDevicePort,
+  UpdateGsmDevicePortRequest,
 } from '@/lib/api/types/gsm-devices.types';
 import type { GoipStatusResponse } from '@/lib/api/types/goip.types';
 
@@ -81,6 +82,16 @@ export const useCreateGsmDevicePort = () => {
     mutationFn: async (data: CreateGsmDevicePortRequest) => await apiClient.post('gsm-device-ports', { json: data }).json<GsmDevicePort>(),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: [...gsmDevicesKeys.detail(variables.deviceId), 'ports'] });
+    },
+  });
+};
+
+export const useUpdateGsmDevicePort = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: UpdateGsmDevicePortRequest }) => await apiClient.patch(`gsm-device-ports/${id}`, { json: data }).json<GsmDevicePort>(),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: [...gsmDevicesKeys.detail(variables.data.deviceId), 'ports'] });
     },
   });
 };

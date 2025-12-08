@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { GsmPortStatus, GsmDevicePort } from '@/lib/api/types/gsm-devices.types';
-import { useCreateGsmDevicePort } from '@/hooks/api/useGsmDevices';
+import { useCreateGsmDevicePort, useUpdateGsmDevicePort } from '@/hooks/api/useGsmDevices';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 
@@ -44,9 +44,11 @@ interface CreateGsmDevicePortFormProps {
 
 export function CreateGsmDevicePortForm({ open, onOpenChange, gsmDeviceId, initialValues }: CreateGsmDevicePortFormProps) {
   const { t } = useTranslation();
-  const { mutate: createGsmDevicePort, isPending } = useCreateGsmDevicePort();
-  
+  const { mutate: createGsmDevicePort, isPending: isCreatePending } = useCreateGsmDevicePort();
+  const { mutate: updateGsmDevicePort, isPending: isUpdatePending } = useUpdateGsmDevicePort();
+
   const isEditing = !!initialValues;
+  const isPending = isEditing ? isUpdatePending : isCreatePending;
 
   const form = useForm<CreateGsmDevicePortFormValues>({
     resolver: zodResolver(createGsmDevicePortSchema),
@@ -76,21 +78,39 @@ export function CreateGsmDevicePortForm({ open, onOpenChange, gsmDeviceId, initi
   }, [open, initialValues, form]);
 
   const onSubmit = (data: CreateGsmDevicePortFormValues) => {
-    createGsmDevicePort(
-      { ...data, deviceId: gsmDeviceId },
-      {
-        onSuccess: () => {
-          toast.success(t('gsmDevices.ports.createSuccess', 'Port added successfully'));
-          form.reset();
-          onOpenChange(false);
-        },
-        onError: (error: any) => {
-          toast.error(
-            error?.message || t('gsmDevices.ports.createError', 'Failed to add port')
-          );
-        },
-      }
-    );
+    if (isEditing && initialValues) {
+      updateGsmDevicePort(
+        { id: initialValues.id, data: { ...data, deviceId: gsmDeviceId } },
+        {
+          onSuccess: () => {
+            toast.success(t('gsmDevices.ports.updateSuccess', 'Port updated successfully'));
+            form.reset();
+            onOpenChange(false);
+          },
+          onError: (error: any) => {
+            toast.error(
+              error?.message || t('gsmDevices.ports.updateError', 'Failed to update port')
+            );
+          },
+        }
+      );
+    } else {
+      createGsmDevicePort(
+        { ...data, deviceId: gsmDeviceId },
+        {
+          onSuccess: () => {
+            toast.success(t('gsmDevices.ports.createSuccess', 'Port added successfully'));
+            form.reset();
+            onOpenChange(false);
+          },
+          onError: (error: any) => {
+            toast.error(
+              error?.message || t('gsmDevices.ports.createError', 'Failed to add port')
+            );
+          },
+        }
+      );
+    }
   };
 
   return (

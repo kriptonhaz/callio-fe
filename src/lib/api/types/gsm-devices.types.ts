@@ -77,7 +77,7 @@ export interface CreateGsmDevicePortRequest {
   status?: GsmPortStatus;
 }
 
-export interface UpdateGsmDevicePortRequest extends Partial<CreateGsmDevicePortRequest> {}
+export interface UpdateGsmDevicePortRequest extends CreateGsmDevicePortRequest {}
 
 export interface GsmDevicePortsQueryParams extends PaginationParams {
   gsmDeviceId?: string;
