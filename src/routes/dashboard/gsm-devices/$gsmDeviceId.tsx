@@ -32,6 +32,7 @@ import {
   Trash2,
   Plus,
   MoreHorizontal,
+  Settings,
 } from 'lucide-react'
 import {
   GsmDeviceStatus,
@@ -44,6 +45,7 @@ import { useState } from 'react'
 import { CreateGsmDeviceForm } from '@/components/gsm-devices/CreateGsmDeviceForm'
 import { CreateGsmDevicePortForm } from '@/components/gsm-devices/CreateGsmDevicePortForm'
 import { SendUssdModal } from '@/components/gsm-devices/SendUssdModal'
+import { SipConfigModal } from '@/components/gsm-devices/SipConfigModal'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,9 +88,11 @@ function GsmDeviceDetailPage() {
   const [editPortDialogOpen, setEditPortDialogOpen] = useState(false)
   const [deletePortDialogOpen, setDeletePortDialogOpen] = useState(false)
   const [ussdDialogOpen, setUssdDialogOpen] = useState(false)
+  const [sipConfigDialogOpen, setSipConfigDialogOpen] = useState(false)
   const [editingPort, setEditingPort] = useState<GsmDevicePort | null>(null)
   const [deletingPort, setDeletingPort] = useState<GsmDevicePort | null>(null)
   const [ussdPort, setUssdPort] = useState<GsmDevicePort | null>(null)
+  const [sipConfigPort, setSipConfigPort] = useState<GsmDevicePort | null>(null)
 
   // Merge port data with GoIP status
   const mergedPortsData = portsData?.map((port) => {
@@ -400,6 +404,18 @@ function GsmDeviceDetailPage() {
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => {
+                                      setSipConfigPort(port)
+                                      setSipConfigDialogOpen(true)
+                                    }}
+                                  >
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    {t(
+                                      'gsmDevices.ports.sipConfig',
+                                      'SIP Config',
+                                    )}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
                                       setEditingPort(port)
                                       setEditPortDialogOpen(true)
                                     }}
@@ -467,6 +483,15 @@ function GsmDeviceDetailPage() {
             onOpenChange={setUssdDialogOpen}
             deviceId={gsmDeviceId}
             portNumber={ussdPort.portNumber}
+          />
+        )}
+
+        {sipConfigPort && (
+          <SipConfigModal
+            open={sipConfigDialogOpen}
+            onOpenChange={setSipConfigDialogOpen}
+            deviceId={gsmDeviceId}
+            portNumber={sipConfigPort.portNumber}
           />
         )}
 
