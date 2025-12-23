@@ -102,3 +102,87 @@ export const useDeletePricing = (): UseMutationResult<void, Error, string> => {
     },
   })
 }
+
+// ============================================
+// Client Pricing Hooks
+// ============================================
+
+import { clientPricingApi } from '@/lib/api/pricing'
+import type {
+  ClientPricing,
+  CreateClientPricingRequest,
+  UpdateClientPricingRequest,
+} from '@/lib/api/types/pricing.types'
+
+// Query keys for client pricing
+export const clientPricingKeys = {
+  all: ['clientPricing'] as const,
+  lists: () => [...clientPricingKeys.all, 'list'] as const,
+  list: (clientId: string) => [...clientPricingKeys.lists(), clientId] as const,
+}
+
+// Get active pricing for a client
+export function useClientPricing(
+  clientId: string,
+): UseQueryResult<ClientPricing[], Error> {
+  return useQuery({
+    queryKey: clientPricingKeys.list(clientId),
+    queryFn: () => clientPricingApi.getActive(clientId),
+    enabled: !!clientId,
+  })
+}
+
+// Create client pricing
+export function useCreateClientPricing(): UseMutationResult<
+  ClientPricing,
+  Error,
+  { clientId: string; data: CreateClientPricingRequest }
+> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ clientId, data }) => clientPricingApi.create(clientId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: clientPricingKeys.list(variables.clientId),
+      })
+    },
+  })
+}
+
+// Update client pricing
+export function useUpdateClientPricing(): UseMutationResult<
+  ClientPricing,
+  Error,
+  { clientId: string; id: string; data: UpdateClientPricingRequest }
+> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ clientId, id, data }) =>
+      clientPricingApi.update(clientId, id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: clientPricingKeys.list(variables.clientId),
+      })
+    },
+  })
+}
+
+// Delete client pricing
+export function useDeleteClientPricing(): UseMutationResult<
+  void,
+  Error,
+  { clientId: string; id: string }
+> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ clientId, id }) => clientPricingApi.delete(clientId, id),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: clientPricingKeys.list(variables.clientId),
+      })
+    },
+  })
+}

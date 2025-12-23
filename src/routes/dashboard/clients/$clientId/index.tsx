@@ -1,85 +1,105 @@
-import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useTranslation } from 'react-i18next';
-import { useClient, useDeleteClient } from '@/hooks/api/useClients';
-import { useUsers } from '@/hooks/api/useUsers';
-import { usePaymentHistory } from '@/hooks/api/useRemainingModules';
-import { useGsmDevices } from '@/hooks/api/useGsmDevices';
-import { Button } from '@/components/ui/button';
+import { useState } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
+import { useClient, useDeleteClient } from '@/hooks/api/useClients'
+import { useUsers } from '@/hooks/api/useUsers'
+import { usePaymentHistory } from '@/hooks/api/useRemainingModules'
+import { useGsmDevices } from '@/hooks/api/useGsmDevices'
+import { useClientPricing } from '@/hooks/api/usePricing'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Edit, Trash2, Mail, Phone, MapPin, Calendar } from 'lucide-react';
-import { ClientStatus } from '@/lib/api/types/clients.types';
-import { SubscriptionCard } from '@/components/clients/SubscriptionCard';
-import { PaymentHistoryTable } from '@/components/clients/PaymentHistoryTable';
-import { ClientUsersTable } from '@/components/clients/ClientUsersTable';
-import { GsmDevicesCard } from '@/components/clients/GsmDevicesCard';
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+} from 'lucide-react'
+import { ClientStatus } from '@/lib/api/types/clients.types'
+import { SubscriptionCard } from '@/components/clients/SubscriptionCard'
+import { PaymentHistoryTable } from '@/components/clients/PaymentHistoryTable'
+import { ClientUsersTable } from '@/components/clients/ClientUsersTable'
+import { GsmDevicesCard } from '@/components/clients/GsmDevicesCard'
+import { ClientPricingTable } from '@/components/clients/ClientPricingTable'
 
 export const Route = createFileRoute('/dashboard/clients/$clientId/')({
   component: ClientDetailsPage,
-});
+})
 
 function ClientDetailsPage() {
-  const { clientId } = Route.useParams();
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [paymentPage, setPaymentPage] = useState(1);
+  const { clientId } = Route.useParams()
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState('overview')
+  const [paymentPage, setPaymentPage] = useState(1)
 
   // Fetch client data
-  const { data: client, isLoading, error } = useClient(clientId);
-  const deleteClient = useDeleteClient();
+  const { data: client, isLoading, error } = useClient(clientId)
+  const deleteClient = useDeleteClient()
 
   // Fetch related data (conditionally based on active tab)
-  const { data: usersData, isLoading: usersLoading } = useUsers({ clientId });
+  const { data: usersData, isLoading: usersLoading } = useUsers({ clientId })
   const { data: paymentsData, isLoading: paymentsLoading } = usePaymentHistory({
     clientId,
     page: paymentPage,
     limit: 10,
-  });
-  const { data: gsmDevicesData, isLoading: gsmLoading } = useGsmDevices({ clientId });
+  })
+  const { data: gsmDevicesData, isLoading: gsmLoading } = useGsmDevices({
+    clientId,
+  })
+  const { data: pricingData, isLoading: pricingLoading } =
+    useClientPricing(clientId)
 
   const handleDelete = () => {
     if (
       window.confirm(
         t(
           'clients.deleteConfirmDescription',
-          'Are you sure you want to delete this client? This action cannot be undone.'
-        )
+          'Are you sure you want to delete this client? This action cannot be undone.',
+        ),
       )
     ) {
       deleteClient.mutate(clientId, {
         onSuccess: () => {
-          navigate({ to: '/dashboard/clients', search: { page: 1, limit: 10 } });
+          navigate({ to: '/dashboard/clients', search: { page: 1, limit: 10 } })
         },
-      });
+      })
     }
-  };
+  }
 
   if (isLoading) {
-    return <div className="p-8 text-center">{t('common.loading', 'Loading...')}</div>;
+    return (
+      <div className="p-8 text-center">{t('common.loading', 'Loading...')}</div>
+    )
   }
 
   if (error || !client) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
-        <h2 className="text-2xl font-bold text-red-600">{t('common.error', 'Error')}</h2>
-        <p className="mt-2 text-gray-600">{t('clients.notFound', 'Client not found')}</p>
+        <h2 className="text-2xl font-bold text-red-600">
+          {t('common.error', 'Error')}
+        </h2>
+        <p className="mt-2 text-gray-600">
+          {t('clients.notFound', 'Client not found')}
+        </p>
         <Button
           variant="outline"
           className="mt-4"
-          onClick={() => navigate({ to: '/dashboard/clients', search: { page: 1, limit: 10 } })}
+          onClick={() =>
+            navigate({
+              to: '/dashboard/clients',
+              search: { page: 1, limit: 10 },
+            })
+          }
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           {t('common.back', 'Back to Clients')}
         </Button>
       </div>
-    );
+    )
   }
 
   return (
@@ -90,7 +110,12 @@ function ClientDetailsPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate({ to: '/dashboard/clients', search: { page: 1, limit: 10 } })}
+            onClick={() =>
+              navigate({
+                to: '/dashboard/clients',
+                search: { page: 1, limit: 10 },
+              })
+            }
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -108,14 +133,18 @@ function ClientDetailsPage() {
               >
                 {client.status}
               </span>
-              <span className="text-sm text-muted-foreground">ID: {client.id}</span>
+              <span className="text-sm text-muted-foreground">
+                ID: {client.id}
+              </span>
             </div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
-            onClick={() => navigate({ to: `/dashboard/clients/${client.id}/edit` })}
+            onClick={() =>
+              navigate({ to: `/dashboard/clients/${client.id}/edit` })
+            }
           >
             <Edit className="mr-2 h-4 w-4" />
             {t('common.edit', 'Edit')}
@@ -130,13 +159,22 @@ function ClientDetailsPage() {
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">{t('clients.tabs.overview', 'Overview')}</TabsTrigger>
-          <TabsTrigger value="users">{t('clients.tabs.users', 'Users')}</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">
+            {t('clients.tabs.overview', 'Overview')}
+          </TabsTrigger>
+          <TabsTrigger value="users">
+            {t('clients.tabs.users', 'Users')}
+          </TabsTrigger>
+          <TabsTrigger value="pricing">
+            {t('clients.tabs.pricing', 'Pricing')}
+          </TabsTrigger>
           <TabsTrigger value="payments">
             {t('clients.tabs.payments', 'Payment History')}
           </TabsTrigger>
-          <TabsTrigger value="gsm">{t('clients.tabs.gsm', 'GSM Devices')}</TabsTrigger>
+          <TabsTrigger value="gsm">
+            {t('clients.tabs.gsm', 'GSM Devices')}
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -144,7 +182,9 @@ function ClientDetailsPage() {
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>{t('clients.contactInfo', 'Contact Information')}</CardTitle>
+                <CardTitle>
+                  {t('clients.contactInfo', 'Contact Information')}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-3">
@@ -153,11 +193,15 @@ function ClientDetailsPage() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <Phone className="h-5 w-5 text-muted-foreground" />
-                  <span>{client.phone || t('common.notProvided', 'Not provided')}</span>
+                  <span>
+                    {client.phone || t('common.notProvided', 'Not provided')}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <MapPin className="h-5 w-5 text-muted-foreground" />
-                  <span>{client.address || t('common.notProvided', 'Not provided')}</span>
+                  <span>
+                    {client.address || t('common.notProvided', 'Not provided')}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -170,7 +214,9 @@ function ClientDetailsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>{t('clients.systemInfo', 'System Information')}</CardTitle>
+              <CardTitle>
+                {t('clients.systemInfo', 'System Information')}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center space-x-3">
@@ -197,7 +243,19 @@ function ClientDetailsPage() {
 
         {/* Users Tab */}
         <TabsContent value="users">
-          <ClientUsersTable users={usersData?.data || []} isLoading={usersLoading} clientId={clientId} />
+          <ClientUsersTable
+            users={usersData?.data || []}
+            isLoading={usersLoading}
+            clientId={clientId}
+          />
+        </TabsContent>
+
+        {/* Pricing Tab */}
+        <TabsContent value="pricing">
+          <ClientPricingTable
+            pricing={pricingData || []}
+            isLoading={pricingLoading}
+          />
         </TabsContent>
 
         {/* Payment History Tab */}
@@ -213,9 +271,12 @@ function ClientDetailsPage() {
 
         {/* GSM Devices Tab */}
         <TabsContent value="gsm">
-          <GsmDevicesCard devices={gsmDevicesData?.data || []} isLoading={gsmLoading} />
+          <GsmDevicesCard
+            devices={gsmDevicesData?.data || []}
+            isLoading={gsmLoading}
+          />
         </TabsContent>
       </Tabs>
     </div>
-  );
+  )
 }

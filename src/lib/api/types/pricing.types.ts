@@ -34,3 +34,77 @@ export interface DefaultPricingQueryParams extends PaginationParams {
   serviceType?: string
   isActive?: boolean
 }
+
+// Client Pricing enums
+export enum ServiceType {
+  VOICE = 'voice',
+  SMS = 'sms',
+  DATA = 'data',
+}
+
+export enum UnitType {
+  SECOND = 'second',
+  MINUTE = 'minute',
+  MESSAGE = 'message',
+  MB = 'mb',
+  GB = 'gb',
+}
+
+export enum Currency {
+  IDR = 'IDR',
+  USD = 'USD',
+}
+
+// Client Pricing entity
+export interface SalesPerson {
+  id: string
+  name: string
+}
+
+export interface ClientPricing {
+  id: string
+  clientId: string
+  serviceType: ServiceType
+  pricePerUnit: string
+  unitType: UnitType
+  currency: Currency
+  salesPersonId: string
+  effectiveFrom: string
+  effectiveUntil: string | null
+  isActive: boolean
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  salesPerson: SalesPerson
+}
+
+// Client Pricing Request types
+export interface CreateClientPricingRequest {
+  clientId: string
+  serviceType: ServiceType
+  pricePerUnit: string
+  unitType: UnitType
+  currency: Currency
+  salesPersonId: string
+  effectiveFrom: string
+  effectiveUntil?: string | null
+  notes?: string | null
+}
+
+export interface UpdateClientPricingRequest {
+  serviceType?: ServiceType
+  pricePerUnit?: string
+  unitType?: UnitType
+  currency?: Currency
+  salesPersonId?: string
+  effectiveFrom?: string
+  effectiveUntil?: string | null
+  isActive?: boolean
+  notes?: string | null
+}
+
+// Client Pricing Query parameters
+export interface ClientPricingQueryParams extends PaginationParams {
+  clientId?: string
+  isActive?: boolean
+}

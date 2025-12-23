@@ -4,6 +4,9 @@ import type {
   CreateDefaultPricingRequest,
   UpdateDefaultPricingRequest,
   DefaultPricingQueryParams,
+  ClientPricing,
+  CreateClientPricingRequest,
+  UpdateClientPricingRequest,
 } from './types/pricing.types'
 import type { PaginatedResponse } from './types'
 
@@ -50,5 +53,43 @@ export const pricingApi = {
   // Delete default pricing
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`pricing/defaults/${id}`)
+  },
+}
+
+// ============================================
+// Client Pricing API
+// ============================================
+export const clientPricingApi = {
+  // Get active pricing for a client
+  getActive: async (clientId: string): Promise<ClientPricing[]> => {
+    return apiClient
+      .get(`clients/${clientId}/pricing/active`)
+      .json<ClientPricing[]>()
+  },
+
+  // Create client pricing
+  create: async (
+    clientId: string,
+    data: CreateClientPricingRequest,
+  ): Promise<ClientPricing> => {
+    return apiClient
+      .post(`clients/${clientId}/pricing`, { json: data })
+      .json<ClientPricing>()
+  },
+
+  // Update client pricing
+  update: async (
+    clientId: string,
+    id: string,
+    data: UpdateClientPricingRequest,
+  ): Promise<ClientPricing> => {
+    return apiClient
+      .patch(`clients/${clientId}/pricing/${id}`, { json: data })
+      .json<ClientPricing>()
+  },
+
+  // Delete client pricing
+  delete: async (clientId: string, id: string): Promise<void> => {
+    await apiClient.delete(`clients/${clientId}/pricing/${id}`)
   },
 }
