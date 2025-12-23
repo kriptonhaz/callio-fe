@@ -1,0 +1,395 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { RoleGuard } from '@/lib/auth-guard'
+import { useTranslation } from 'react-i18next'
+import { useState } from 'react'
+
+import { useUsers, useDeleteUser } from '@/hooks/api/useUsers'
+import { useDebounce } from '@/hooks/useDebounce'
+import { InternalUserForm } from '@/components/internal-user/CreateInternalUserForm'
+import { DeleteUserDialog } from '@/components/internal-user/DeleteUserDialog'
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
+  Plus,
+  Search,
+  Users as UsersIcon,
+  MoreHorizontal,
+  Edit,
+  Trash,
+} from 'lucide-react'
+import { User } from '@/lib/api/types/users.types'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { toast } from 'sonner'
+
+type InternalUserSearch = {
+  page: number
+  limit: number
+  search?: string
+}
+
+export const Route = createFileRoute('/dashboard/internal-user/')({
+  component: InternalUserPage,
+  validateSearch: (search: Record<string, unknown>): InternalUserSearch => {
+    return {
+      page: Number(search?.page ?? 1),
+      limit: Number(search?.limit ?? 10),
+      search: (search?.search as string) || undefined,
+    }
+  },
+})
+
+function InternalUserPage() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const searchParams = Route.useSearch()
+  const [searchValue, setSearchValue] = useState(searchParams.search || '')
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const debouncedSearch = useDebounce(searchValue, 500)
+  const { mutate: deleteUser } = useDeleteUser()
+
+  const { data, isLoading, error } = useUsers({
+    page: searchParams.page,
+    limit: searchParams.limit,
+    search: debouncedSearch,
+    nullClientId: true, // Filter for users without clientId (internal users)
+  })
+
+  const updateParams = (updates: Partial<InternalUserSearch>) => {
+    navigate({
+      search: ((prev: InternalUserSearch) => ({ ...prev, ...updates })) as any,
+    })
+  }
+
+  const getStatusVariant = (
+    status: string,
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    switch (status) {
+      case 'active':
+        return 'default'
+      case 'inactive':
+        return 'secondary'
+      case 'suspended':
+        return 'destructive'
+      default:
+        return 'outline'
+    }
+  }
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user)
+  }
+
+  const handleDelete = (user: User) => {
+    setDeletingUser(user)
+  }
+
+  const confirmDelete = () => {
+    if (deletingUser) {
+      deleteUser(deletingUser.id, {
+        onSuccess: () => {
+          toast.success(
+            t('internalUser.deleteSuccess', 'User deleted successfully'),
+          )
+          setDeletingUser(null)
+        },
+        onError: (error: any) => {
+          toast.error(
+            error?.message ||
+              t('internalUser.deleteError', 'Failed to delete user'),
+          )
+        },
+      })
+    }
+  }
+
+  const columns: ColumnDef<User>[] = [
+    {
+      accessorKey: 'name',
+      header: t('internalUser.table.name', 'Name'),
+      cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
+    },
+    {
+      accessorKey: 'email',
+      header: t('internalUser.table.email', 'Email'),
+      cell: ({ row }) => (
+        <div className="text-muted-foreground">{row.original.email}</div>
+      ),
+    },
+    {
+      accessorKey: 'phone',
+      header: t('internalUser.table.phone', 'Phone'),
+      cell: ({ row }) => (
+        <div className="text-muted-foreground">{row.original.phone || '-'}</div>
+      ),
+    },
+    {
+      accessorKey: 'role',
+      header: t('internalUser.table.role', 'Role'),
+      cell: ({ row }) => (
+        <Badge variant="outline" className="capitalize">
+          {row.original.role}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'status',
+      header: t('internalUser.table.status', 'Status'),
+      cell: ({ row }) => (
+        <Badge
+          variant={getStatusVariant(row.original.status)}
+          className="capitalize"
+        >
+          {row.original.status}
+        </Badge>
+      ),
+    },
+    {
+      id: 'actions',
+      header: () => (
+        <div className="text-right">{t('common.actions', 'Actions')}</div>
+      ),
+      cell: ({ row }) => (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>
+                {t('common.actions', 'Actions')}
+              </DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                <Edit className="mr-2 h-4 w-4" />
+                {t('common.edit', 'Edit')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDelete(row.original)}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                {t('common.delete', 'Delete')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ]
+
+  const table = useReactTable({
+    data: data?.data || [],
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    pageCount: data?.meta.totalPages || -1,
+  })
+
+  if (error) {
+    return (
+      <RoleGuard allowedRoles={['superadmin']}>
+        <div className="p-4 text-red-500">Error loading internal users</div>
+      </RoleGuard>
+    )
+  }
+
+  return (
+    <RoleGuard allowedRoles={['superadmin']}>
+      <div className="space-y-6 p-4">
+        <h1 className="text-2xl font-bold">
+          {t('internalUser.title', 'Internal Users')}
+        </h1>
+
+        {/* Search and Actions */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t(
+                'internalUser.searchPlaceholder',
+                'Search users...',
+              )}
+              value={searchValue}
+              onChange={(e) => {
+                setSearchValue(e.target.value)
+              }}
+              className="pl-8 max-w-sm"
+            />
+          </div>
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('internalUser.create', 'Add User')}
+          </Button>
+        </div>
+
+        {/* Content */}
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : data?.data.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/10">
+            <div className="bg-background p-4 rounded-full mb-4">
+              <UsersIcon className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold">
+              {t('internalUser.empty.title', 'No Internal Users Found')}
+            </h3>
+            <p className="text-muted-foreground max-w-sm mt-2 mb-6">
+              {t(
+                'internalUser.empty.description',
+                'Get started by adding your first internal user to the system.',
+              )}
+            </p>
+            <Button
+              onClick={() => {
+                console.log('Add user clicked')
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {t('internalUser.create', 'Add User')}
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow
+                    key={headerGroup.id}
+                    className="hover:bg-transparent"
+                  >
+                    {headerGroup.headers.map((header) => (
+                      <TableHead
+                        key={header.id}
+                        className="font-semibold text-primary"
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && 'selected'}
+                    className="cursor-pointer hover:bg-muted/50"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {data && data.meta.totalPages > 1 && (
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() =>
+                      updateParams({ page: Math.max(1, searchParams.page - 1) })
+                    }
+                    className={
+                      searchParams.page <= 1
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink isActive>{searchParams.page}</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() =>
+                      updateParams({ page: searchParams.page + 1 })
+                    }
+                    className={
+                      !data?.meta.totalPages ||
+                      searchParams.page >= data.meta.totalPages
+                        ? 'pointer-events-none opacity-50'
+                        : 'cursor-pointer'
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+      </div>
+
+      <InternalUserForm
+        open={createDialogOpen || !!editingUser}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreateDialogOpen(false)
+            setEditingUser(null)
+          }
+        }}
+        initialValues={editingUser || undefined}
+      />
+
+      <DeleteUserDialog
+        open={!!deletingUser}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
+        onConfirm={confirmDelete}
+        userName={deletingUser?.name || ''}
+      />
+    </RoleGuard>
+  )
+}

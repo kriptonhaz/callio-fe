@@ -21,6 +21,7 @@ import { Route as DashboardRecordingsRouteImport } from './routes/dashboard/reco
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
 import { Route as DashboardLeadsRouteImport } from './routes/dashboard/leads'
 import { Route as DashboardCampaignsRouteImport } from './routes/dashboard/campaigns'
+import { Route as DashboardInternalUserIndexRouteImport } from './routes/dashboard/internal-user/index'
 import { Route as DashboardGsmDevicesIndexRouteImport } from './routes/dashboard/gsm-devices/index'
 import { Route as DashboardClientsIndexRouteImport } from './routes/dashboard/clients/index'
 import { Route as DashboardGsmDevicesGsmDeviceIdRouteImport } from './routes/dashboard/gsm-devices/$gsmDeviceId'
@@ -88,6 +89,12 @@ const DashboardCampaignsRoute = DashboardCampaignsRouteImport.update({
   path: '/campaigns',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardInternalUserIndexRoute =
+  DashboardInternalUserIndexRouteImport.update({
+    id: '/internal-user/',
+    path: '/internal-user/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardGsmDevicesIndexRoute =
   DashboardGsmDevicesIndexRouteImport.update({
     id: '/gsm-devices/',
@@ -140,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/gsm-devices/$gsmDeviceId': typeof DashboardGsmDevicesGsmDeviceIdRoute
   '/dashboard/clients': typeof DashboardClientsIndexRoute
   '/dashboard/gsm-devices': typeof DashboardGsmDevicesIndexRoute
+  '/dashboard/internal-user': typeof DashboardInternalUserIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesByTo {
   '/dashboard/gsm-devices/$gsmDeviceId': typeof DashboardGsmDevicesGsmDeviceIdRoute
   '/dashboard/clients': typeof DashboardClientsIndexRoute
   '/dashboard/gsm-devices': typeof DashboardGsmDevicesIndexRoute
+  '/dashboard/internal-user': typeof DashboardInternalUserIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
 }
@@ -180,6 +189,7 @@ export interface FileRoutesById {
   '/dashboard/gsm-devices/$gsmDeviceId': typeof DashboardGsmDevicesGsmDeviceIdRoute
   '/dashboard/clients/': typeof DashboardClientsIndexRoute
   '/dashboard/gsm-devices/': typeof DashboardGsmDevicesIndexRoute
+  '/dashboard/internal-user/': typeof DashboardInternalUserIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId/': typeof DashboardClientsClientIdIndexRoute
 }
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices/$gsmDeviceId'
     | '/dashboard/clients'
     | '/dashboard/gsm-devices'
+    | '/dashboard/internal-user'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId'
   fileRoutesByTo: FileRoutesByTo
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices/$gsmDeviceId'
     | '/dashboard/clients'
     | '/dashboard/gsm-devices'
+    | '/dashboard/internal-user'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId'
   id:
@@ -241,6 +253,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices/$gsmDeviceId'
     | '/dashboard/clients/'
     | '/dashboard/gsm-devices/'
+    | '/dashboard/internal-user/'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId/'
   fileRoutesById: FileRoutesById
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCampaignsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/internal-user/': {
+      id: '/dashboard/internal-user/'
+      path: '/internal-user'
+      fullPath: '/dashboard/internal-user'
+      preLoaderRoute: typeof DashboardInternalUserIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/gsm-devices/': {
       id: '/dashboard/gsm-devices/'
       path: '/gsm-devices'
@@ -396,6 +416,7 @@ interface DashboardRouteChildren {
   DashboardGsmDevicesGsmDeviceIdRoute: typeof DashboardGsmDevicesGsmDeviceIdRoute
   DashboardClientsIndexRoute: typeof DashboardClientsIndexRoute
   DashboardGsmDevicesIndexRoute: typeof DashboardGsmDevicesIndexRoute
+  DashboardInternalUserIndexRoute: typeof DashboardInternalUserIndexRoute
   DashboardClientsClientIdEditRoute: typeof DashboardClientsClientIdEditRoute
   DashboardClientsClientIdIndexRoute: typeof DashboardClientsClientIdIndexRoute
 }
@@ -413,6 +434,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardGsmDevicesGsmDeviceIdRoute: DashboardGsmDevicesGsmDeviceIdRoute,
   DashboardClientsIndexRoute: DashboardClientsIndexRoute,
   DashboardGsmDevicesIndexRoute: DashboardGsmDevicesIndexRoute,
+  DashboardInternalUserIndexRoute: DashboardInternalUserIndexRoute,
   DashboardClientsClientIdEditRoute: DashboardClientsClientIdEditRoute,
   DashboardClientsClientIdIndexRoute: DashboardClientsClientIdIndexRoute,
 }

@@ -1,81 +1,138 @@
-import { useState, useMemo } from 'react';
-import { Link, useLocation } from '@tanstack/react-router';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
-import { useLogout } from '@/hooks/api/useAuth';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { AnimateIcon } from '@/components/animate-ui/icons/icon';
-import { LayoutDashboard } from '@/components/animate-ui/icons/layout-dashboard';
-import { Users } from '@/components/animate-ui/icons/users';
-import { Phone } from '@/components/animate-ui/icons/phone';
-import { Calendar } from '@/components/animate-ui/icons/calendar';
-import { PieChart } from '@/components/animate-ui/icons/pie-chart';
-import { FileText } from '@/components/animate-ui/icons/file-text';
-import { Settings } from '@/components/animate-ui/icons/settings';
-import { Router } from '@/components/animate-ui/icons/router';
-import { Activity } from '@/components/animate-ui/icons/activity';
-import { useTranslation } from 'react-i18next';
-import { decodeJwt } from '@/lib/jwt';
-import { getAccessToken } from '@/lib/api/client';
-import { useUser } from '@/hooks/api/useUsers';
+import { useState, useMemo } from 'react'
+import { Link, useLocation } from '@tanstack/react-router'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
+import { useLogout } from '@/hooks/api/useAuth'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { AnimateIcon } from '@/components/animate-ui/icons/icon'
+import { LayoutDashboard } from '@/components/animate-ui/icons/layout-dashboard'
+import { Users } from '@/components/animate-ui/icons/users'
+import { Phone } from '@/components/animate-ui/icons/phone'
+import { Calendar } from '@/components/animate-ui/icons/calendar'
+import { PieChart } from '@/components/animate-ui/icons/pie-chart'
+import { FileText } from '@/components/animate-ui/icons/file-text'
+import { Settings } from '@/components/animate-ui/icons/settings'
+import { Router } from '@/components/animate-ui/icons/router'
+import { Activity } from '@/components/animate-ui/icons/activity'
+import { useTranslation } from 'react-i18next'
+import { decodeJwt } from '@/lib/jwt'
+import { getAccessToken } from '@/lib/api/client'
+import { useUser } from '@/hooks/api/useUsers'
 
 export function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const location = useLocation();
-  const { t } = useTranslation();
-  const logout = useLogout();
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const location = useLocation()
+  const { t } = useTranslation()
+  const logout = useLogout()
 
   // Role determination logic
-  const token = getAccessToken();
-  const decodedToken = useMemo(() => token ? decodeJwt(token) : null, [token]);
-  const userId = decodedToken?.sub;
-  const jwtRole = decodedToken?.role;
+  const token = getAccessToken()
+  const decodedToken = useMemo(() => (token ? decodeJwt(token) : null), [token])
+  const userId = decodedToken?.sub
+  const jwtRole = decodedToken?.role
 
   // Periodically fetch user to verify role (double security)
-  const { data: user } = useUser(userId || '', { refetchInterval: 60000 });
-  
+  const { data: user } = useUser(userId || '', { refetchInterval: 60000 })
+
   // Effective role: prefer API data, fallback to JWT
-  const role = user?.role || jwtRole;
+  const role = user?.role || jwtRole
 
   const menuItems = useMemo(() => {
     const commonItems = [
-      { icon: LayoutDashboard, label: t('dashboard.menu.dashboard'), href: '/dashboard' },
-    ];
+      {
+        icon: LayoutDashboard,
+        label: t('dashboard.menu.dashboard'),
+        href: '/dashboard',
+      },
+    ]
 
     if (role === 'superadmin') {
       return [
         ...commonItems,
-        { icon: Router, label: t('dashboard.menu.gsmDevices', 'GSM Devices'), href: '/dashboard/gsm-devices' },
-        { icon: Users, label: t('dashboard.menu.client', 'Client'), href: '/dashboard/clients' },
-        { icon: Activity, label: t('dashboard.menu.log', 'Log'), href: '/dashboard/logs' },
-        { icon: Settings, label: t('dashboard.menu.settings'), href: '/dashboard/settings' },
-      ];
+        {
+          icon: Router,
+          label: t('dashboard.menu.gsmDevices', 'GSM Devices'),
+          href: '/dashboard/gsm-devices',
+        },
+        {
+          icon: Users,
+          label: t('dashboard.menu.internalUser', 'Internal User'),
+          href: '/dashboard/internal-user',
+        },
+        {
+          icon: Users,
+          label: t('dashboard.menu.client', 'Client'),
+          href: '/dashboard/clients',
+        },
+        {
+          icon: Activity,
+          label: t('dashboard.menu.log', 'Log'),
+          href: '/dashboard/logs',
+        },
+        {
+          icon: Settings,
+          label: t('dashboard.menu.settings'),
+          href: '/dashboard/settings',
+        },
+      ]
     }
 
     if (role === 'admin' || role === 'supervisor') {
       return [
         ...commonItems,
-        { icon: Users, label: t('dashboard.menu.users', 'Users'), href: '/dashboard/users' },
-        { icon: Calendar, label: t('dashboard.menu.campaign', 'Campaign'), href: '/dashboard/campaigns' },
-        { icon: Phone, label: t('dashboard.menu.leads'), href: '/dashboard/leads' },
-        { icon: PieChart, label: t('dashboard.menu.reports'), href: '/dashboard/reports' },
-        { icon: FileText, label: t('dashboard.menu.recordings'), href: '/dashboard/recordings' },
-        { icon: Settings, label: t('dashboard.menu.settings'), href: '/dashboard/settings' },
-      ];
+        {
+          icon: Users,
+          label: t('dashboard.menu.users', 'Users'),
+          href: '/dashboard/users',
+        },
+        {
+          icon: Calendar,
+          label: t('dashboard.menu.campaign', 'Campaign'),
+          href: '/dashboard/campaigns',
+        },
+        {
+          icon: Phone,
+          label: t('dashboard.menu.leads'),
+          href: '/dashboard/leads',
+        },
+        {
+          icon: PieChart,
+          label: t('dashboard.menu.reports'),
+          href: '/dashboard/reports',
+        },
+        {
+          icon: FileText,
+          label: t('dashboard.menu.recordings'),
+          href: '/dashboard/recordings',
+        },
+        {
+          icon: Settings,
+          label: t('dashboard.menu.settings'),
+          href: '/dashboard/settings',
+        },
+      ]
     }
 
     if (role === 'agent') {
       return [
         ...commonItems,
-        { icon: Calendar, label: t('dashboard.menu.campaign', 'Campaign'), href: '/dashboard/campaigns' },
-        { icon: Settings, label: t('dashboard.menu.settings'), href: '/dashboard/settings' },
-      ];
+        {
+          icon: Calendar,
+          label: t('dashboard.menu.campaign', 'Campaign'),
+          href: '/dashboard/campaigns',
+        },
+        {
+          icon: Settings,
+          label: t('dashboard.menu.settings'),
+          href: '/dashboard/settings',
+        },
+      ]
     }
 
     // Default fallback
-    return commonItems;
-  }, [role, t]);
+    return commonItems
+  }, [role, t])
 
   return (
     <motion.div
@@ -109,26 +166,31 @@ export function Sidebar() {
       <div className="flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
           {menuItems.map((item) => {
-            const isActive = item.href === '/dashboard' 
-              ? location.pathname === '/dashboard' || location.pathname === '/dashboard/'
-              : location.pathname.startsWith(item.href);
+            const isActive =
+              item.href === '/dashboard'
+                ? location.pathname === '/dashboard' ||
+                  location.pathname === '/dashboard/'
+                : location.pathname.startsWith(item.href)
             return (
-              <Link
-                key={item.href}
-                to={item.href}
-                className="block"
-              >
+              <Link key={item.href} to={item.href} className="block">
                 <AnimateIcon animateOnHover asChild>
                   <div
                     className={cn(
-                      "flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer",
-                      isActive 
-                        ? "bg-primary/10 text-primary font-medium" 
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      'flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
+                      isActive
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                     )}
                   >
                     <div className="flex items-center">
-                      <item.icon size={20} className={cn(isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                      <item.icon
+                        size={20}
+                        className={cn(
+                          isActive
+                            ? 'text-primary'
+                            : 'text-muted-foreground group-hover:text-foreground',
+                        )}
+                      />
                       <AnimatePresence>
                         {!isCollapsed && (
                           <motion.span
@@ -151,7 +213,7 @@ export function Sidebar() {
                   </div>
                 </AnimateIcon>
               </Link>
-            );
+            )
           })}
         </nav>
       </div>
@@ -170,8 +232,12 @@ export function Sidebar() {
                   exit={{ opacity: 0, width: 0 }}
                   className="ml-3 overflow-hidden"
                 >
-                  <p className="text-sm font-medium truncate">{user?.name || decodedToken?.email || 'User'}</p>
-                  <p className="text-xs text-muted-foreground truncate capitalize">{role || 'Guest'}</p>
+                  <p className="text-sm font-medium truncate">
+                    {user?.name || decodedToken?.email || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate capitalize">
+                    {role || 'Guest'}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -198,5 +264,5 @@ export function Sidebar() {
         </div>
       </div>
     </motion.div>
-  );
+  )
 }

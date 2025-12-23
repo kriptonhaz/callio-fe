@@ -2,29 +2,29 @@
 
 // Pagination
 export interface PaginationParams {
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  page?: number
+  limit?: number
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
 }
 
 export interface PaginationMeta {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
+  page: number
+  limit: number
+  total: number
+  totalPages: number
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
-  meta: PaginationMeta;
+  data: T[]
+  meta: PaginationMeta
 }
 
 // Error Handling
 export interface ApiError {
-  statusCode: number;
-  message: string | string[];
-  error: string;
+  statusCode: number
+  message: string | string[]
+  error: string
 }
 
 // Status Enums
@@ -47,6 +47,7 @@ export enum UserRole {
   ADMIN = 'admin',
   SUPERVISOR = 'supervisor',
   AGENT = 'agent',
+  SALES = 'sales',
 }
 
 export enum CampaignStatus {
