@@ -21,11 +21,13 @@ import { Route as DashboardRecordingsRouteImport } from './routes/dashboard/reco
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
 import { Route as DashboardLeadsRouteImport } from './routes/dashboard/leads'
 import { Route as DashboardCampaignsRouteImport } from './routes/dashboard/campaigns'
+import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
 import { Route as DashboardInternalUserIndexRouteImport } from './routes/dashboard/internal-user/index'
 import { Route as DashboardGsmDevicesIndexRouteImport } from './routes/dashboard/gsm-devices/index'
 import { Route as DashboardClientsIndexRouteImport } from './routes/dashboard/clients/index'
 import { Route as DashboardGsmDevicesGsmDeviceIdRouteImport } from './routes/dashboard/gsm-devices/$gsmDeviceId'
 import { Route as DashboardClientsCreateRouteImport } from './routes/dashboard/clients/create'
+import { Route as DashboardSettingsDefaultPricingIndexRouteImport } from './routes/dashboard/settings/default-pricing/index'
 import { Route as DashboardClientsClientIdIndexRouteImport } from './routes/dashboard/clients/$clientId/index'
 import { Route as DashboardClientsClientIdEditRouteImport } from './routes/dashboard/clients/$clientId/edit'
 
@@ -89,6 +91,11 @@ const DashboardCampaignsRoute = DashboardCampaignsRouteImport.update({
   path: '/campaigns',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardSettingsRoute,
+} as any)
 const DashboardInternalUserIndexRoute =
   DashboardInternalUserIndexRouteImport.update({
     id: '/internal-user/',
@@ -117,6 +124,12 @@ const DashboardClientsCreateRoute = DashboardClientsCreateRouteImport.update({
   path: '/clients/create',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSettingsDefaultPricingIndexRoute =
+  DashboardSettingsDefaultPricingIndexRouteImport.update({
+    id: '/default-pricing/',
+    path: '/default-pricing/',
+    getParentRoute: () => DashboardSettingsRoute,
+  } as any)
 const DashboardClientsClientIdIndexRoute =
   DashboardClientsClientIdIndexRouteImport.update({
     id: '/clients/$clientId/',
@@ -140,7 +153,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/settings': typeof DashboardSettingsRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
@@ -148,8 +161,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/clients': typeof DashboardClientsIndexRoute
   '/dashboard/gsm-devices': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user': typeof DashboardInternalUserIndexRoute
+  '/dashboard/settings/': typeof DashboardSettingsIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -160,7 +175,6 @@ export interface FileRoutesByTo {
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
@@ -168,8 +182,10 @@ export interface FileRoutesByTo {
   '/dashboard/clients': typeof DashboardClientsIndexRoute
   '/dashboard/gsm-devices': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user': typeof DashboardInternalUserIndexRoute
+  '/dashboard/settings': typeof DashboardSettingsIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -182,7 +198,7 @@ export interface FileRoutesById {
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/settings': typeof DashboardSettingsRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/clients/create': typeof DashboardClientsCreateRoute
@@ -190,8 +206,10 @@ export interface FileRoutesById {
   '/dashboard/clients/': typeof DashboardClientsIndexRoute
   '/dashboard/gsm-devices/': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user/': typeof DashboardInternalUserIndexRoute
+  '/dashboard/settings/': typeof DashboardSettingsIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId/': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/settings/default-pricing/': typeof DashboardSettingsDefaultPricingIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -213,8 +231,10 @@ export interface FileRouteTypes {
     | '/dashboard/clients'
     | '/dashboard/gsm-devices'
     | '/dashboard/internal-user'
+    | '/dashboard/settings/'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId'
+    | '/dashboard/settings/default-pricing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -225,7 +245,6 @@ export interface FileRouteTypes {
     | '/dashboard/logs'
     | '/dashboard/recordings'
     | '/dashboard/reports'
-    | '/dashboard/settings'
     | '/dashboard/users'
     | '/dashboard'
     | '/dashboard/clients/create'
@@ -233,8 +252,10 @@ export interface FileRouteTypes {
     | '/dashboard/clients'
     | '/dashboard/gsm-devices'
     | '/dashboard/internal-user'
+    | '/dashboard/settings'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId'
+    | '/dashboard/settings/default-pricing'
   id:
     | '__root__'
     | '/'
@@ -254,8 +275,10 @@ export interface FileRouteTypes {
     | '/dashboard/clients/'
     | '/dashboard/gsm-devices/'
     | '/dashboard/internal-user/'
+    | '/dashboard/settings/'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId/'
+    | '/dashboard/settings/default-pricing/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -351,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCampaignsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/settings/': {
+      id: '/dashboard/settings/'
+      path: '/'
+      fullPath: '/dashboard/settings/'
+      preLoaderRoute: typeof DashboardSettingsIndexRouteImport
+      parentRoute: typeof DashboardSettingsRoute
+    }
     '/dashboard/internal-user/': {
       id: '/dashboard/internal-user/'
       path: '/internal-user'
@@ -386,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardClientsCreateRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/settings/default-pricing/': {
+      id: '/dashboard/settings/default-pricing/'
+      path: '/default-pricing'
+      fullPath: '/dashboard/settings/default-pricing'
+      preLoaderRoute: typeof DashboardSettingsDefaultPricingIndexRouteImport
+      parentRoute: typeof DashboardSettingsRoute
+    }
     '/dashboard/clients/$clientId/': {
       id: '/dashboard/clients/$clientId/'
       path: '/clients/$clientId'
@@ -403,13 +440,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardSettingsRouteChildren {
+  DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
+  DashboardSettingsDefaultPricingIndexRoute: typeof DashboardSettingsDefaultPricingIndexRoute
+}
+
+const DashboardSettingsRouteChildren: DashboardSettingsRouteChildren = {
+  DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
+  DashboardSettingsDefaultPricingIndexRoute:
+    DashboardSettingsDefaultPricingIndexRoute,
+}
+
+const DashboardSettingsRouteWithChildren =
+  DashboardSettingsRoute._addFileChildren(DashboardSettingsRouteChildren)
+
 interface DashboardRouteChildren {
   DashboardCampaignsRoute: typeof DashboardCampaignsRoute
   DashboardLeadsRoute: typeof DashboardLeadsRoute
   DashboardLogsRoute: typeof DashboardLogsRoute
   DashboardRecordingsRoute: typeof DashboardRecordingsRoute
   DashboardReportsRoute: typeof DashboardReportsRoute
-  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRouteWithChildren
   DashboardUsersRoute: typeof DashboardUsersRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardClientsCreateRoute: typeof DashboardClientsCreateRoute
@@ -427,7 +478,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardLogsRoute: DashboardLogsRoute,
   DashboardRecordingsRoute: DashboardRecordingsRoute,
   DashboardReportsRoute: DashboardReportsRoute,
-  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardSettingsRoute: DashboardSettingsRouteWithChildren,
   DashboardUsersRoute: DashboardUsersRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardClientsCreateRoute: DashboardClientsCreateRoute,

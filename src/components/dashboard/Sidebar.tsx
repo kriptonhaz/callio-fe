@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LogOut, ChevronDown } from 'lucide-react'
 import { useLogout } from '@/hooks/api/useAuth'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import { FileText } from '@/components/animate-ui/icons/file-text'
 import { Settings } from '@/components/animate-ui/icons/settings'
 import { Router } from '@/components/animate-ui/icons/router'
 import { Activity } from '@/components/animate-ui/icons/activity'
+import { ChartLine } from '@/components/animate-ui/icons/chart-line'
 import { useTranslation } from 'react-i18next'
 import { decodeJwt } from '@/lib/jwt'
 import { getAccessToken } from '@/lib/api/client'
@@ -22,6 +23,7 @@ import { useUser } from '@/hooks/api/useUsers'
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['settings']) // Default expand Settings
   const location = useLocation()
   const { t } = useTranslation()
   const logout = useLogout()
@@ -74,6 +76,14 @@ export function Sidebar() {
           icon: Settings,
           label: t('dashboard.menu.settings'),
           href: '/dashboard/settings',
+          id: 'settings',
+          children: [
+            {
+              icon: ChartLine,
+              label: t('dashboard.menu.defaultPricing', 'Default Pricing'),
+              href: '/dashboard/settings/default-pricing',
+            },
+          ],
         },
       ]
     }
@@ -134,6 +144,14 @@ export function Sidebar() {
     return commonItems
   }, [role, t])
 
+  const toggleMenu = (menuId: string) => {
+    setExpandedMenus((prev) =>
+      prev.includes(menuId)
+        ? prev.filter((id) => id !== menuId)
+        : [...prev, menuId],
+    )
+  }
+
   return (
     <motion.div
       initial={{ width: 256 }}
@@ -165,54 +183,167 @@ export function Sidebar() {
 
       <div className="flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
-          {menuItems.map((item) => {
+          {menuItems.map((item: any) => {
             const isActive =
               item.href === '/dashboard'
                 ? location.pathname === '/dashboard' ||
                   location.pathname === '/dashboard/'
                 : location.pathname.startsWith(item.href)
+            const hasChildren = item.children && item.children.length > 0
+            const isExpanded = item.id ? expandedMenus.includes(item.id) : false
+
             return (
-              <Link key={item.href} to={item.href} className="block">
-                <AnimateIcon animateOnHover asChild>
-                  <div
-                    className={cn(
-                      'flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
-                      isActive
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                    )}
-                  >
-                    <div className="flex items-center">
-                      <item.icon
-                        size={20}
+              <div key={item.href}>
+                {hasChildren ? (
+                  // Expandable menu item
+                  <div>
+                    <AnimateIcon animateOnHover asChild>
+                      <div
+                        onClick={() => item.id && toggleMenu(item.id)}
                         className={cn(
+                          'flex items-center justify-between px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
                           isActive
-                            ? 'text-primary'
-                            : 'text-muted-foreground group-hover:text-foreground',
+                            ? 'bg-primary/10 text-primary font-medium'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                         )}
-                      />
-                      <AnimatePresence>
-                        {!isCollapsed && (
-                          <motion.span
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                            className="ml-3 whitespace-nowrap"
-                          >
-                            {item.label}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-pill"
-                        className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
-                      />
-                    )}
+                      >
+                        <div className="flex items-center">
+                          <item.icon
+                            size={20}
+                            className={cn(
+                              isActive
+                                ? 'text-primary'
+                                : 'text-muted-foreground group-hover:text-foreground',
+                            )}
+                          />
+                          <AnimatePresence>
+                            {!isCollapsed && (
+                              <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className="ml-3 whitespace-nowrap"
+                              >
+                                {item.label}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                        <AnimatePresence>
+                          {!isCollapsed && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{
+                                opacity: 1,
+                                rotate: isExpanded ? 180 : 0,
+                              }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <ChevronDown size={16} />
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </AnimateIcon>
+                    {/* Children submenu */}
+                    <AnimatePresence>
+                      {isExpanded && !isCollapsed && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden pl-4 mt-1"
+                        >
+                          {item.children.map((child: any) => {
+                            const childIsActive = location.pathname.startsWith(
+                              child.href,
+                            )
+                            return (
+                              <Link
+                                key={child.href}
+                                to={child.href}
+                                className="block"
+                              >
+                                <div
+                                  className={cn(
+                                    'flex items-center px-3 py-2 rounded-md transition-colors group relative overflow-hidden cursor-pointer text-sm',
+                                    childIsActive
+                                      ? 'bg-primary/10 text-primary font-medium'
+                                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                  )}
+                                >
+                                  <child.icon
+                                    size={18}
+                                    className={cn(
+                                      childIsActive
+                                        ? 'text-primary'
+                                        : 'text-muted-foreground group-hover:text-foreground',
+                                    )}
+                                  />
+                                  <span className="ml-3 whitespace-nowrap">
+                                    {child.label}
+                                  </span>
+                                  {childIsActive && (
+                                    <motion.div
+                                      layoutId="active-pill-child"
+                                      className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
+                                    />
+                                  )}
+                                </div>
+                              </Link>
+                            )
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </AnimateIcon>
-              </Link>
+                ) : (
+                  // Regular menu item
+                  <Link to={item.href} className="block">
+                    <AnimateIcon animateOnHover asChild>
+                      <div
+                        className={cn(
+                          'flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
+                          isActive
+                            ? 'bg-primary/10 text-primary font-medium'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                        )}
+                      >
+                        <div className="flex items-center">
+                          <item.icon
+                            size={20}
+                            className={cn(
+                              isActive
+                                ? 'text-primary'
+                                : 'text-muted-foreground group-hover:text-foreground',
+                            )}
+                          />
+                          <AnimatePresence>
+                            {!isCollapsed && (
+                              <motion.span
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className="ml-3 whitespace-nowrap"
+                              >
+                                {item.label}
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                        {isActive && (
+                          <motion.div
+                            layoutId="active-pill"
+                            className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
+                          />
+                        )}
+                      </div>
+                    </AnimateIcon>
+                  </Link>
+                )}
+              </div>
             )
           })}
         </nav>
