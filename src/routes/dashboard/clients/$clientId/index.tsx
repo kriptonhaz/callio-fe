@@ -6,6 +6,7 @@ import { useUsers } from '@/hooks/api/useUsers'
 import { usePaymentHistory } from '@/hooks/api/useRemainingModules'
 import { useGsmDevices } from '@/hooks/api/useGsmDevices'
 import { useClientPricing } from '@/hooks/api/usePricing'
+import { useClientServices } from '@/hooks/api/useServices'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -24,6 +25,7 @@ import { PaymentHistoryTable } from '@/components/clients/PaymentHistoryTable'
 import { ClientUsersTable } from '@/components/clients/ClientUsersTable'
 import { GsmDevicesCard } from '@/components/clients/GsmDevicesCard'
 import { ClientPricingTable } from '@/components/clients/ClientPricingTable'
+import { ClientServicesCard } from '@/components/clients/ClientServicesCard'
 
 export const Route = createFileRoute('/dashboard/clients/$clientId/')({
   component: ClientDetailsPage,
@@ -52,6 +54,8 @@ function ClientDetailsPage() {
   })
   const { data: pricingData, isLoading: pricingLoading } =
     useClientPricing(clientId)
+  const { data: servicesData, isLoading: servicesLoading } =
+    useClientServices(clientId)
 
   const handleDelete = () => {
     if (
@@ -210,35 +214,45 @@ function ClientDetailsPage() {
               subscriptionPlan={client.subscriptionPlan}
               subscriptionExpiry={client.subscriptionExpiry}
             />
-          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {t('clients.systemInfo', 'System Information')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">
-                    {t('common.createdAt', 'Created At')}
-                  </span>
-                  <span>{new Date(client.createdAt).toLocaleDateString()}</span>
+            <ClientServicesCard
+              services={servicesData || []}
+              isLoading={servicesLoading}
+            />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {t('clients.systemInfo', 'System Information')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground">
+                      {t('common.createdAt', 'Created At')}
+                    </span>
+
+                    <span>
+                      {new Date(client.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-5 w-5 text-muted-foreground" />
-                <div className="flex flex-col">
-                  <span className="text-sm text-muted-foreground">
-                    {t('common.updatedAt', 'Updated At')}
-                  </span>
-                  <span>{new Date(client.updatedAt).toLocaleDateString()}</span>
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground">
+                      {t('common.updatedAt', 'Updated At')}
+                    </span>
+                    <span>
+                      {new Date(client.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Users Tab */}
