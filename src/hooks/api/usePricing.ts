@@ -112,6 +112,8 @@ import type {
   ClientPricing,
   CreateClientPricingRequest,
   UpdateClientPricingRequest,
+  EffectivePricing,
+  UpdateEffectivePricingRequest,
 } from '@/lib/api/types/pricing.types'
 
 // Query keys for client pricing
@@ -121,14 +123,33 @@ export const clientPricingKeys = {
   list: (clientId: string) => [...clientPricingKeys.lists(), clientId] as const,
 }
 
-// Get active pricing for a client
+// Get effective pricing for a client (includes custom and default pricing)
 export function useClientPricing(
   clientId: string,
-): UseQueryResult<ClientPricing[], Error> {
+): UseQueryResult<EffectivePricing[], Error> {
   return useQuery({
     queryKey: clientPricingKeys.list(clientId),
-    queryFn: () => clientPricingApi.getActive(clientId),
+    queryFn: () => clientPricingApi.getEffective(clientId),
     enabled: !!clientId,
+  })
+}
+
+// Update effective pricing for a client
+export function useUpdateEffectivePricing(): UseMutationResult<
+  void,
+  Error,
+  { clientId: string; data: UpdateEffectivePricingRequest }
+> {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ clientId, data }) =>
+      clientPricingApi.updateEffective(clientId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: clientPricingKeys.list(variables.clientId),
+      })
+    },
   })
 }
 

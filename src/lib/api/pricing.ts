@@ -7,6 +7,8 @@ import type {
   ClientPricing,
   CreateClientPricingRequest,
   UpdateClientPricingRequest,
+  EffectivePricing,
+  UpdateEffectivePricingRequest,
 } from './types/pricing.types'
 import type { PaginatedResponse } from './types'
 
@@ -65,6 +67,24 @@ export const clientPricingApi = {
     return apiClient
       .get(`clients/${clientId}/pricing/active`)
       .json<ClientPricing[]>()
+  },
+
+  // Get effective pricing for a client (includes custom and default pricing)
+  getEffective: async (clientId: string): Promise<EffectivePricing[]> => {
+    const response = await apiClient
+      .get(`clients/${clientId}/pricing/effective`)
+      .json<{ data: EffectivePricing[] }>()
+    return response.data
+  },
+
+  // Update effective pricing for a client
+  updateEffective: async (
+    clientId: string,
+    data: UpdateEffectivePricingRequest,
+  ): Promise<void> => {
+    await apiClient.patch(`clients/${clientId}/pricing/effective`, {
+      json: data,
+    })
   },
 
   // Create client pricing

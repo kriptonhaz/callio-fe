@@ -269,6 +269,7 @@ function ClientDetailsPage() {
           <ClientPricingTable
             pricing={pricingData || []}
             isLoading={pricingLoading}
+            clientId={clientId}
           />
         </TabsContent>
 

@@ -108,3 +108,33 @@ export interface ClientPricingQueryParams extends PaginationParams {
   clientId?: string
   isActive?: boolean
 }
+
+// Pricing Source enum
+export enum PricingSource {
+  CUSTOM = 'custom',
+  DEFAULT = 'default',
+}
+
+// Effective Pricing entity (for getEffective endpoint)
+export interface EffectivePricing {
+  serviceType: ServiceType
+  pricePerUnit: number
+  unitType: UnitType
+  currency: Currency
+  pricingSource: PricingSource
+  pricingId: string
+  effectiveFrom: string
+  salesPerson: SalesPerson | null
+}
+
+// Update Effective Pricing Request
+export interface UpdateEffectivePricingRequest {
+  serviceType: ServiceType
+  pricePerUnit: number
+  unitType: UnitType
+  currency: Currency
+  salesPersonId: string | null
+  effectiveFrom: string
+  effectiveUntil?: string | null
+  notes?: string | null
+}
