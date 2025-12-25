@@ -6,6 +6,7 @@ import { useState } from 'react'
 import {
   useSipExtensions,
   useCreateSipExtension,
+  useBulkCreateSipExtension,
   useDeleteSipExtension,
 } from '@/hooks/api/useSipExtensions'
 import {
@@ -118,6 +119,17 @@ const formSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 })
 
+const bulkFormSchema = z
+  .object({
+    rangeStart: z.number().int().min(1, 'Range start must be at least 1'),
+    rangeEnd: z.number().int().min(1, 'Range end must be at least 1'),
+    type: z.enum(['user', 'goip']),
+  })
+  .refine((data) => data.rangeEnd >= data.rangeStart, {
+    message: 'Range end must be greater than or equal to range start',
+    path: ['rangeEnd'],
+  })
+
 export const Route = createFileRoute('/dashboard/sip-extensions/')({
   component: SipExtensionsPage,
   validateSearch: (search: Record<string, unknown>): SipExtensionSearch => {
@@ -139,6 +151,7 @@ function SipExtensionsPage() {
 
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [bulkCreateDialogOpen, setBulkCreateDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingExtension, setDeletingExtension] =
     useState<SipExtension | null>(null)
@@ -157,6 +170,7 @@ function SipExtensionsPage() {
 
   // Create and delete mutations
   const createMutation = useCreateSipExtension()
+  const bulkCreateMutation = useBulkCreateSipExtension()
   const deleteMutation = useDeleteSipExtension()
 
   // Form
@@ -166,6 +180,15 @@ function SipExtensionsPage() {
       id: '',
       type: 'user',
       password: '',
+    },
+  })
+
+  const bulkForm = useForm<z.infer<typeof bulkFormSchema>>({
+    resolver: zodResolver(bulkFormSchema),
+    defaultValues: {
+      rangeStart: 1001,
+      rangeEnd: 1100,
+      type: 'user',
     },
   })
 
@@ -181,6 +204,18 @@ function SipExtensionsPage() {
       form.reset()
     } catch (error) {
       toast.error('Failed to create SIP extension')
+    }
+  }
+
+  // Handle bulk create submission
+  const onBulkSubmit = async (values: z.infer<typeof bulkFormSchema>) => {
+    try {
+      const result = await bulkCreateMutation.mutateAsync(values)
+      toast.success(`Successfully created ${result.created} extensions`)
+      setBulkCreateDialogOpen(false)
+      bulkForm.reset()
+    } catch (error) {
+      toast.error('Failed to bulk create SIP extensions')
     }
   }
 
@@ -433,6 +468,13 @@ function SipExtensionsPage() {
             <Plus className="mr-2 h-4 w-4" />
             {t('sipExtensions.create', 'Add Extension')}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setBulkCreateDialogOpen(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Bulk Create
+          </Button>
         </div>
 
         {/* Content */}
@@ -643,6 +685,110 @@ function SipExtensionsPage() {
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
                   {createMutation.isPending ? 'Creating...' : 'Create'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Create Extension Dialog */}
+      <Dialog
+        open={bulkCreateDialogOpen}
+        onOpenChange={setBulkCreateDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Create SIP Extensions</DialogTitle>
+            <DialogDescription>
+              Create multiple SIP extensions in a range.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...bulkForm}>
+            <form
+              onSubmit={bulkForm.handleSubmit(onBulkSubmit)}
+              className="space-y-4"
+            >
+              <FormField
+                control={bulkForm.control}
+                name="rangeStart"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Range Start</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="1001"
+                        {...field}
+                        type="number"
+                        value={field.value}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value) || 0)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={bulkForm.control}
+                name="rangeEnd"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Range End</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="1100"
+                        {...field}
+                        type="number"
+                        value={field.value}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value) || 0)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={bulkForm.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select extension type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="goip">GoIP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setBulkCreateDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={bulkCreateMutation.isPending}>
+                  {bulkCreateMutation.isPending ? 'Creating...' : 'Create'}
                 </Button>
               </DialogFooter>
             </form>

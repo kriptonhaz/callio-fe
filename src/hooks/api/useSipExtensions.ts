@@ -5,6 +5,7 @@ import type {
   SipExtension,
   SipExtensionsQueryParams,
   CreateSipExtensionRequest,
+  BulkCreateSipExtensionRequest,
 } from '@/lib/api/types/sip-extension.types'
 
 export const sipExtensionsKeys = {
@@ -30,6 +31,14 @@ const sipExtensionsApi = {
       .json<SipExtension>()
   },
 
+  bulkCreate: async (
+    data: BulkCreateSipExtensionRequest,
+  ): Promise<{ created: number }> => {
+    return await apiClient
+      .post('sip/extensions/bulk-create', { json: data })
+      .json<{ created: number }>()
+  },
+
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`sip/extensions/${id}`)
   },
@@ -47,6 +56,17 @@ export const useCreateSipExtension = () => {
 
   return useMutation({
     mutationFn: sipExtensionsApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sipExtensionsKeys.lists() })
+    },
+  })
+}
+
+export const useBulkCreateSipExtension = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: sipExtensionsApi.bulkCreate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sipExtensionsKeys.lists() })
     },

@@ -65,6 +65,12 @@ export interface CreateSipExtensionRequest {
   clientId?: string | null
 }
 
+export interface BulkCreateSipExtensionRequest {
+  rangeStart: number
+  rangeEnd: number
+  type: 'user' | 'goip'
+}
+
 export interface DeleteSipExtensionRequest {
   id: string
 }
