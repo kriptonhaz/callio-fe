@@ -322,9 +322,39 @@ function SipExtensionsPage() {
       accessorKey: 'assignedTo',
       header: t('sipExtensions.table.assignedTo', 'Assigned To'),
       cell: ({ row }) => {
-        // Check if it's a GoIP extension
+        // First priority: Client name if assigned to a client
+        if (row.original.client?.name) {
+          return (
+            <div className="flex flex-col">
+              <span className="font-medium text-primary">
+                {row.original.client.name}
+              </span>
+              {row.original.isGoipExtension && (
+                <div className="mt-1">
+                  {!isLoadingGoipConfigs && (
+                    <>
+                      {(() => {
+                        const assignmentInfo = isExtensionAssignedToGoip(
+                          row.original.id,
+                          goipConfigs || [],
+                        )
+                        return assignmentInfo.isAssigned ? (
+                          <span className="text-xs text-muted-foreground italic">
+                            Line {assignmentInfo.lineNumber} -{' '}
+                            {assignmentInfo.deviceName}
+                          </span>
+                        ) : null
+                      })()}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        // Second priority: Hardware assignment for GoIP extensions
         if (row.original.isGoipExtension) {
-          // Show loading while fetching GoIP configs
           if (isLoadingGoipConfigs) {
             return (
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -334,7 +364,6 @@ function SipExtensionsPage() {
             )
           }
 
-          // Check assignment status
           const assignmentInfo = isExtensionAssignedToGoip(
             row.original.id,
             goipConfigs || [],
@@ -347,16 +376,14 @@ function SipExtensionsPage() {
               </span>
             )
           }
-
-          return <Badge variant="outline">Unassigned</Badge>
         }
 
-        // For user extensions, use the assignedTo field
-        return row.original.assignedTo ? (
-          <span>{row.original.assignedTo}</span>
-        ) : (
-          <Badge variant="outline">Unassigned</Badge>
-        )
+        // Third priority: user assignment field
+        if (row.original.assignedTo) {
+          return <span>{row.original.assignedTo}</span>
+        }
+
+        return <Badge variant="outline">Unassigned</Badge>
       },
     },
     {

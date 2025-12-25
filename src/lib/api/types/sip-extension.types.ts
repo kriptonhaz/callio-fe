@@ -49,6 +49,10 @@ export interface SipExtension {
   extensionType: string | null
   clientId: string | null
   assignedTo: string | null
+  client?: {
+    id: string
+    name: string
+  } | null
   isGoipExtension: boolean
 }
 
