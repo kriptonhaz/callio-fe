@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { useClient, useDeleteClient } from '@/hooks/api/useClients'
 import { useUsers } from '@/hooks/api/useUsers'
 import { usePaymentHistory } from '@/hooks/api/useRemainingModules'
-import { useGsmDevices } from '@/hooks/api/useGsmDevices'
 import { useClientPricing } from '@/hooks/api/usePricing'
 import { useClientServices } from '@/hooks/api/useServices'
 import { Button } from '@/components/ui/button'
@@ -23,7 +22,6 @@ import { ClientStatus } from '@/lib/api/types/clients.types'
 import { SubscriptionCard } from '@/components/clients/SubscriptionCard'
 import { PaymentHistoryTable } from '@/components/clients/PaymentHistoryTable'
 import { ClientUsersTable } from '@/components/clients/ClientUsersTable'
-import { GsmDevicesCard } from '@/components/clients/GsmDevicesCard'
 import { ClientPricingTable } from '@/components/clients/ClientPricingTable'
 import { ClientServicesCard } from '@/components/clients/ClientServicesCard'
 import { SipExtensionRangeCard } from '@/components/clients/SipExtensionRangeCard'
@@ -49,9 +47,6 @@ function ClientDetailsPage() {
     clientId,
     page: paymentPage,
     limit: 10,
-  })
-  const { data: gsmDevicesData, isLoading: gsmLoading } = useGsmDevices({
-    clientId,
   })
   const { data: pricingData, isLoading: pricingLoading } =
     useClientPricing(clientId)
@@ -164,7 +159,7 @@ function ClientDetailsPage() {
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">
             {t('clients.tabs.overview', 'Overview')}
           </TabsTrigger>
@@ -176,9 +171,6 @@ function ClientDetailsPage() {
           </TabsTrigger>
           <TabsTrigger value="payments">
             {t('clients.tabs.payments', 'Payment History')}
-          </TabsTrigger>
-          <TabsTrigger value="gsm">
-            {t('clients.tabs.gsm', 'GSM Devices')}
           </TabsTrigger>
         </TabsList>
 
@@ -288,14 +280,6 @@ function ClientDetailsPage() {
             totalPages={paymentsData?.meta?.totalPages || 1}
             onPageChange={setPaymentPage}
             isLoading={paymentsLoading}
-          />
-        </TabsContent>
-
-        {/* GSM Devices Tab */}
-        <TabsContent value="gsm">
-          <GsmDevicesCard
-            devices={gsmDevicesData?.data || []}
-            isLoading={gsmLoading}
           />
         </TabsContent>
       </Tabs>
