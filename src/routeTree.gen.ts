@@ -21,6 +21,7 @@ import { Route as DashboardRecordingsRouteImport } from './routes/dashboard/reco
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
 import { Route as DashboardLeadsRouteImport } from './routes/dashboard/leads'
 import { Route as DashboardCampaignsRouteImport } from './routes/dashboard/campaigns'
+import { Route as DashboardSipExtensionsIndexRouteImport } from './routes/dashboard/sip-extensions/index'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
 import { Route as DashboardInternalUserIndexRouteImport } from './routes/dashboard/internal-user/index'
 import { Route as DashboardGsmDevicesIndexRouteImport } from './routes/dashboard/gsm-devices/index'
@@ -91,6 +92,12 @@ const DashboardCampaignsRoute = DashboardCampaignsRouteImport.update({
   path: '/campaigns',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSipExtensionsIndexRoute =
+  DashboardSipExtensionsIndexRouteImport.update({
+    id: '/sip-extensions/',
+    path: '/sip-extensions/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -162,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/gsm-devices': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user': typeof DashboardInternalUserIndexRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/dashboard/sip-extensions': typeof DashboardSipExtensionsIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
@@ -183,6 +191,7 @@ export interface FileRoutesByTo {
   '/dashboard/gsm-devices': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user': typeof DashboardInternalUserIndexRoute
   '/dashboard/settings': typeof DashboardSettingsIndexRoute
+  '/dashboard/sip-extensions': typeof DashboardSipExtensionsIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
@@ -207,6 +216,7 @@ export interface FileRoutesById {
   '/dashboard/gsm-devices/': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user/': typeof DashboardInternalUserIndexRoute
   '/dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/dashboard/sip-extensions/': typeof DashboardSipExtensionsIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/clients/$clientId/': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/default-pricing/': typeof DashboardSettingsDefaultPricingIndexRoute
@@ -232,6 +242,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices'
     | '/dashboard/internal-user'
     | '/dashboard/settings/'
+    | '/dashboard/sip-extensions'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId'
     | '/dashboard/settings/default-pricing'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices'
     | '/dashboard/internal-user'
     | '/dashboard/settings'
+    | '/dashboard/sip-extensions'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId'
     | '/dashboard/settings/default-pricing'
@@ -276,6 +288,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices/'
     | '/dashboard/internal-user/'
     | '/dashboard/settings/'
+    | '/dashboard/sip-extensions/'
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/clients/$clientId/'
     | '/dashboard/settings/default-pricing/'
@@ -374,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCampaignsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/sip-extensions/': {
+      id: '/dashboard/sip-extensions/'
+      path: '/sip-extensions'
+      fullPath: '/dashboard/sip-extensions'
+      preLoaderRoute: typeof DashboardSipExtensionsIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/settings/': {
       id: '/dashboard/settings/'
       path: '/'
@@ -468,6 +488,7 @@ interface DashboardRouteChildren {
   DashboardClientsIndexRoute: typeof DashboardClientsIndexRoute
   DashboardGsmDevicesIndexRoute: typeof DashboardGsmDevicesIndexRoute
   DashboardInternalUserIndexRoute: typeof DashboardInternalUserIndexRoute
+  DashboardSipExtensionsIndexRoute: typeof DashboardSipExtensionsIndexRoute
   DashboardClientsClientIdEditRoute: typeof DashboardClientsClientIdEditRoute
   DashboardClientsClientIdIndexRoute: typeof DashboardClientsClientIdIndexRoute
 }
@@ -486,6 +507,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardClientsIndexRoute: DashboardClientsIndexRoute,
   DashboardGsmDevicesIndexRoute: DashboardGsmDevicesIndexRoute,
   DashboardInternalUserIndexRoute: DashboardInternalUserIndexRoute,
+  DashboardSipExtensionsIndexRoute: DashboardSipExtensionsIndexRoute,
   DashboardClientsClientIdEditRoute: DashboardClientsClientIdEditRoute,
   DashboardClientsClientIdIndexRoute: DashboardClientsClientIdIndexRoute,
 }

@@ -9,6 +9,7 @@ import { AnimateIcon } from '@/components/animate-ui/icons/icon'
 import { LayoutDashboard } from '@/components/animate-ui/icons/layout-dashboard'
 import { Users } from '@/components/animate-ui/icons/users'
 import { Phone } from '@/components/animate-ui/icons/phone'
+import { PhoneCall } from '@/components/animate-ui/icons/phone-call'
 import { Calendar } from '@/components/animate-ui/icons/calendar'
 import { PieChart } from '@/components/animate-ui/icons/pie-chart'
 import { FileText } from '@/components/animate-ui/icons/file-text'
@@ -52,6 +53,11 @@ export function Sidebar() {
     if (role === 'superadmin') {
       return [
         ...commonItems,
+        {
+          icon: PhoneCall,
+          label: t('dashboard.menu.sipExtensions', 'SIP Extensions'),
+          href: '/dashboard/sip-extensions',
+        },
         {
           icon: Router,
           label: t('dashboard.menu.gsmDevices', 'GSM Devices'),
