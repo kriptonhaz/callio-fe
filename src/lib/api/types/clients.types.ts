@@ -16,6 +16,8 @@ export interface Client {
   status: ClientStatus
   subscriptionPlan?: string // Plan name (e.g., Basic, Pro, Enterprise)
   subscriptionExpiry?: string // ISO date string
+  sipRangeStart?: number | null
+  sipRangeEnd?: number | null
   createdAt: string
   updatedAt: string
 }

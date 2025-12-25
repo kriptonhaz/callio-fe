@@ -26,6 +26,7 @@ import { ClientUsersTable } from '@/components/clients/ClientUsersTable'
 import { GsmDevicesCard } from '@/components/clients/GsmDevicesCard'
 import { ClientPricingTable } from '@/components/clients/ClientPricingTable'
 import { ClientServicesCard } from '@/components/clients/ClientServicesCard'
+import { SipExtensionRangeCard } from '@/components/clients/SipExtensionRangeCard'
 
 export const Route = createFileRoute('/dashboard/clients/$clientId/')({
   component: ClientDetailsPage,
@@ -216,6 +217,12 @@ function ClientDetailsPage() {
             />
 
             <ClientServicesCard
+              services={servicesData || []}
+              isLoading={servicesLoading}
+            />
+
+            <SipExtensionRangeCard
+              clientId={clientId}
               services={servicesData || []}
               isLoading={servicesLoading}
             />
