@@ -39,7 +39,6 @@ import {
   Search,
   Phone,
   MoreHorizontal,
-  Pencil,
   Trash2,
   Users,
   Router,
@@ -401,15 +400,6 @@ function SipExtensionsPage() {
             <DropdownMenuLabel>
               {t('common.actions', 'Actions')}
             </DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => {
-                // TODO: Implement edit functionality
-                console.log('Edit extension:', row.original.id)
-              }}
-            >
-              <Pencil className="mr-2 h-4 w-4" />
-              {t('common.edit', 'Edit')}
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
                 setDeletingExtension(row.original)
