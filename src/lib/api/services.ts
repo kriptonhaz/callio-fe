@@ -2,9 +2,16 @@ import { apiClient } from './client'
 import type { ClientService } from './types/services.types'
 
 export const servicesApi = {
-  // Get active services for a client
+  // Get all services for a client
   getClientServices: async (clientId: string): Promise<ClientService[]> => {
     return apiClient.get(`clients/${clientId}/services`).json<ClientService[]>()
+  },
+
+  // Get only enabled services for a client
+  getEnabledServices: async (clientId: string): Promise<ClientService[]> => {
+    return apiClient
+      .get(`clients/${clientId}/services/enabled`)
+      .json<ClientService[]>()
   },
 
   // Create or enable a service

@@ -23,6 +23,16 @@ export function useClientServices(
   })
 }
 
+export function useEnabledServices(
+  clientId: string | undefined,
+): UseQueryResult<ClientService[], Error> {
+  return useQuery({
+    queryKey: [...serviceKeys.client(clientId || ''), 'enabled'] as const,
+    queryFn: () => servicesApi.getEnabledServices(clientId!),
+    enabled: !!clientId,
+  })
+}
+
 export function useCreateService() {
   const queryClient = useQueryClient()
 
