@@ -39,6 +39,15 @@ const sipExtensionsApi = {
       .json<{ created: number }>()
   },
 
+  assign: async (
+    extensionId: string,
+    userId: string,
+  ): Promise<SipExtension> => {
+    return await apiClient
+      .post(`sip/extensions/${extensionId}/assign`, { json: { userId } })
+      .json<SipExtension>()
+  },
+
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`sip/extensions/${id}`)
   },
@@ -69,6 +78,25 @@ export const useBulkCreateSipExtension = () => {
     mutationFn: sipExtensionsApi.bulkCreate,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sipExtensionsKeys.lists() })
+    },
+  })
+}
+
+export const useAssignSipExtension = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      extensionId,
+      userId,
+    }: {
+      extensionId: string
+      userId: string
+    }) => sipExtensionsApi.assign(extensionId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: sipExtensionsKeys.lists() })
+      // Also invalidate users list to refresh the table
+      queryClient.invalidateQueries({ queryKey: ['users'] })
     },
   })
 }

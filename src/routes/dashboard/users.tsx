@@ -9,7 +9,11 @@ import {
   useDeleteUser,
 } from '@/hooks/api/useUsers'
 import { useMe } from '@/hooks/api/useAuth'
+import { useEnabledServices } from '@/hooks/api/useServices'
+import { useClientExtensionRange } from '@/hooks/api/useSipRange'
+import { useAssignSipExtension } from '@/hooks/api/useSipExtensions'
 import { UserRole, UserStatus } from '@/lib/api/types'
+import { ServiceType } from '@/lib/api/types/services.types'
 import type { User, CreateUserRequest } from '@/lib/api/types/users.types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -63,6 +67,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Phone,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -119,6 +124,11 @@ function UsersPage() {
   >(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [assignExtensionDialogOpen, setAssignExtensionDialogOpen] =
+    useState(false)
+  const [selectedUserForExtension, setSelectedUserForExtension] =
+    useState<User | null>(null)
+  const [selectedExtension, setSelectedExtension] = useState<string>('')
 
   // API hooks
   const { data: usersData, isLoading: usersLoading } = useUsers(
@@ -140,9 +150,17 @@ function UsersPage() {
     !!clientId,
   )
 
+  const { data: enabledServices } = useEnabledServices(clientId)
+  const { data: extensionRange } = useClientExtensionRange(
+    clientId || '',
+    !!clientId,
+  )
+
   const { mutate: createUser, isPending: isCreating } = useCreateUser()
   const { mutate: updateUser, isPending: isUpdating } = useUpdateUser()
   const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser()
+  const { mutate: assignExtension, isPending: isAssigningExtension } =
+    useAssignSipExtension()
 
   const form = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
@@ -303,6 +321,57 @@ function UsersPage() {
     }
   }
 
+  // Check if VoIP service is enabled for the client
+  const hasVoipService =
+    enabledServices?.some((s) => s.serviceType === ServiceType.VOICE) ?? false
+
+  const closeAssignExtensionDialog = () => {
+    setAssignExtensionDialogOpen(false)
+    setSelectedUserForExtension(null)
+    setSelectedExtension('')
+  }
+
+  const openAssignExtensionDialog = (user: User) => {
+    setSelectedUserForExtension(user)
+    setSelectedExtension(user.sipExtension || '')
+    setAssignExtensionDialogOpen(true)
+  }
+
+  const handleAssignExtension = () => {
+    if (!selectedUserForExtension || !selectedExtension) return
+
+    assignExtension(
+      {
+        extensionId: selectedExtension,
+        userId: selectedUserForExtension.id,
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            t('users.extensionAssigned', 'Extension assigned successfully'),
+          )
+          closeAssignExtensionDialog()
+        },
+        onError: () => {
+          toast.error(
+            t('users.extensionAssignFailed', 'Failed to assign extension'),
+          )
+        },
+      },
+    )
+  }
+
+  // Generate extension list from range
+  const availableExtensions =
+    extensionRange?.hasExtensions &&
+    extensionRange.rangeStart &&
+    extensionRange.rangeEnd
+      ? Array.from(
+          { length: extensionRange.rangeEnd - extensionRange.rangeStart + 1 },
+          (_, i) => (extensionRange.rangeStart! + i).toString(),
+        )
+      : []
+
   // UI Helpers
   const getRoleBadge = (role: UserRole) => {
     const roleClasses = {
@@ -390,6 +459,11 @@ function UsersPage() {
                     <TableHead className="font-semibold text-primary">
                       {t('users.role', 'Role')}
                     </TableHead>
+                    {hasVoipService && (
+                      <TableHead className="font-semibold text-primary">
+                        {t('users.sipExtension', 'SIP Extension')}
+                      </TableHead>
+                    )}
                     <TableHead className="font-semibold text-primary">
                       {t('common.status', 'Status')}
                     </TableHead>
@@ -401,7 +475,10 @@ function UsersPage() {
                 <TableBody>
                   {usersLoading ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
+                      <TableCell
+                        colSpan={hasVoipService ? 6 : 5}
+                        className="h-24 text-center"
+                      >
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           {t('common.loading', 'Loading...')}
@@ -410,7 +487,10 @@ function UsersPage() {
                     </TableRow>
                   ) : usersData?.data.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
+                      <TableCell
+                        colSpan={hasVoipService ? 6 : 5}
+                        className="h-24 text-center"
+                      >
                         {t('users.noUsersFound', 'No users found')}
                       </TableCell>
                     </TableRow>
@@ -422,6 +502,20 @@ function UsersPage() {
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{getRoleBadge(user.role)}</TableCell>
+                        {hasVoipService && (
+                          <TableCell>
+                            {user.sipExtension ? (
+                              <div className="flex items-center gap-1.5">
+                                <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="font-mono text-sm">
+                                  {user.sipExtension}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell>{getStatusBadge(user.status)}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
@@ -446,6 +540,19 @@ function UsersPage() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 {t('common.edit', 'Edit')}
                               </DropdownMenuItem>
+                              {hasVoipService && (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    openAssignExtensionDialog(user)
+                                  }
+                                >
+                                  <Phone className="mr-2 h-4 w-4" />
+                                  {t(
+                                    'users.assignExtension',
+                                    'Assign Extension',
+                                  )}
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => openDeleteDialog(user)}
                                 className="text-red-600"
@@ -808,6 +915,82 @@ function UsersPage() {
                 variant="outline"
                 onClick={closeDialog}
                 disabled={isDeleting}
+              >
+                {t('common.cancel', 'Cancel')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Assign Extension Dialog */}
+        <Dialog
+          open={assignExtensionDialogOpen}
+          onOpenChange={(open) => !open && closeAssignExtensionDialog()}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {t('users.assignExtension', 'Assign Extension')}
+              </DialogTitle>
+              <DialogDescription>
+                {t(
+                  'users.assignExtensionDescription',
+                  'Select an extension number to assign to this user.',
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  {t('users.selectExtension', 'Select extension number')}
+                </label>
+                <Select
+                  value={selectedExtension}
+                  onValueChange={setSelectedExtension}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={t(
+                        'users.selectExtensionPlaceholder',
+                        'Choose an extension',
+                      )}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableExtensions.length > 0 ? (
+                      availableExtensions.map((ext) => (
+                        <SelectItem key={ext} value={ext}>
+                          {ext}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-sm text-muted-foreground">
+                        {t(
+                          'users.noExtensionsAvailable',
+                          'No extensions available',
+                        )}
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                onClick={handleAssignExtension}
+                disabled={!selectedExtension || isAssigningExtension}
+              >
+                {isAssigningExtension && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {t('users.assign', 'Assign')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={closeAssignExtensionDialog}
+                disabled={isAssigningExtension}
               >
                 {t('common.cancel', 'Cancel')}
               </Button>

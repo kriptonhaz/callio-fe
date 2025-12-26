@@ -10,6 +10,7 @@ export interface User {
   clientId?: string
   supervisorId?: string
   phone?: string
+  sipExtension?: string | null
   createdAt: string
   updatedAt?: string
 }
