@@ -1,0 +1,1093 @@
+import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { toast } from 'sonner'
+import { useUpdateLead } from '@/hooks/api/useLeads'
+import { useUpdateLeadAssignment } from '@/hooks/api/useLeadAssignments'
+import { useUsers } from '@/hooks/api/useUsers'
+import { LeadStatus, UserRole } from '@/lib/api/types'
+import { LastCallStatus } from '@/lib/api/types/lead-assignments.types'
+import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
+import type { UpdateLeadRequest } from '@/lib/api/types/leads.types'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Loader2, ChevronDown } from 'lucide-react'
+import { format } from 'date-fns'
+
+const leadFormSchema = z.object({
+  // Lead fields
+  leadName: z.string().min(2, 'leads.validation.nameMin'),
+  phone: z.string().min(8, 'leads.validation.phoneMin'),
+  email: z
+    .string()
+    .email('leads.validation.emailInvalid')
+    .optional()
+    .or(z.literal('')),
+  gender: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
+  postalCode: z.string().optional(),
+  occupation: z.string().optional(),
+  jobTitle: z.string().optional(),
+  companyName: z.string().optional(),
+  officeAddress: z.string().optional(),
+  salaryMin: z.string().optional(),
+  salaryMax: z.string().optional(),
+  tags: z.string().optional(),
+  notes: z.string().optional(),
+  // Assignment fields
+  status: z.nativeEnum(LeadStatus),
+  assignedSupervisorId: z.string().optional(),
+  assignedAgentId: z.string().optional(),
+  lastCallStatus: z.nativeEnum(LastCallStatus).optional(),
+  leadProgressNotes: z.string().optional(),
+  followupCount: z.string().optional(),
+})
+
+type LeadFormValues = z.infer<typeof leadFormSchema>
+
+interface EditLeadSheetProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  assignment: LeadAssignment | null
+  clientId: string
+  campaignId: string
+  onSuccess?: () => void
+}
+
+export function EditLeadSheet({
+  open,
+  onOpenChange,
+  assignment,
+  clientId,
+  campaignId,
+  onSuccess,
+}: EditLeadSheetProps) {
+  const { t } = useTranslation()
+  const { mutate: updateLead, isPending: isUpdatingLead } = useUpdateLead()
+  const { mutate: updateAssignment, isPending: isUpdatingAssignment } =
+    useUpdateLeadAssignment()
+
+  const [addressOpen, setAddressOpen] = useState(false)
+  const [workOpen, setWorkOpen] = useState(false)
+  const [additionalOpen, setAdditionalOpen] = useState(false)
+  const [assignmentOpen, setAssignmentOpen] = useState(true)
+
+  const isPending = isUpdatingLead || isUpdatingAssignment
+
+  // Fetch supervisors and agents
+  const { data: supervisorsData } = useUsers(
+    { role: UserRole.SUPERVISOR, clientId, limit: 100 },
+    !!clientId,
+  )
+  const { data: agentsData } = useUsers(
+    { role: UserRole.AGENT, clientId, limit: 100 },
+    !!clientId,
+  )
+
+  const supervisors = supervisorsData?.data || []
+  const agents = agentsData?.data || []
+
+  const form = useForm<LeadFormValues>({
+    resolver: zodResolver(leadFormSchema),
+    defaultValues: {
+      leadName: '',
+      phone: '',
+      email: '',
+      gender: '',
+      dateOfBirth: '',
+      address: '',
+      city: '',
+      province: '',
+      postalCode: '',
+      occupation: '',
+      jobTitle: '',
+      companyName: '',
+      officeAddress: '',
+      salaryMin: '',
+      salaryMax: '',
+      tags: '',
+      notes: '',
+      status: LeadStatus.NEW,
+      assignedSupervisorId: '',
+      assignedAgentId: '',
+      lastCallStatus: undefined,
+      leadProgressNotes: '',
+      followupCount: '',
+    },
+  })
+
+  // Populate form when assignment changes
+  useEffect(() => {
+    if (assignment?.lead) {
+      const lead = assignment.lead
+      form.reset({
+        leadName: lead.leadName || '',
+        phone: lead.phone || '',
+        email: lead.email || '',
+        gender: lead.gender || '',
+        dateOfBirth: lead.dateOfBirth || '',
+        address: lead.address || '',
+        city: lead.city || '',
+        province: lead.province || '',
+        postalCode: lead.postalCode || '',
+        occupation: lead.occupation || '',
+        jobTitle: lead.jobTitle || '',
+        companyName: lead.companyName || '',
+        officeAddress: lead.officeAddress || '',
+        salaryMin: lead.salaryMin?.toString() || '',
+        salaryMax: lead.salaryMax?.toString() || '',
+        tags: lead.tags || '',
+        notes: lead.notes || '',
+        status: assignment.status || LeadStatus.NEW,
+        assignedSupervisorId: assignment.assignedSupervisorId || '',
+        assignedAgentId: assignment.assignedAgentId || '',
+        lastCallStatus: assignment.lastCallStatus || undefined,
+        leadProgressNotes: assignment.leadProgressNotes || '',
+        followupCount: assignment.followupCount?.toString() || '',
+      })
+    }
+  }, [assignment, form])
+
+  const handleClose = () => {
+    form.reset()
+    setAddressOpen(false)
+    setWorkOpen(false)
+    setAdditionalOpen(false)
+    setAssignmentOpen(true)
+    onOpenChange(false)
+  }
+
+  const onSubmit = (data: LeadFormValues) => {
+    if (!assignment?.lead?.id || !assignment?.id) return
+
+    // Update lead
+    const leadPayload: UpdateLeadRequest = {
+      leadName: data.leadName,
+      phone: data.phone,
+      email: data.email || null,
+      gender: data.gender || null,
+      dateOfBirth: data.dateOfBirth || null,
+      address: data.address || null,
+      city: data.city || null,
+      province: data.province || null,
+      postalCode: data.postalCode || null,
+      occupation: data.occupation || null,
+      jobTitle: data.jobTitle || null,
+      companyName: data.companyName || null,
+      officeAddress: data.officeAddress || null,
+      salaryMin: data.salaryMin ? parseInt(data.salaryMin, 10) : null,
+      salaryMax: data.salaryMax ? parseInt(data.salaryMax, 10) : null,
+      tags: data.tags || null,
+      notes: data.notes || null,
+    }
+
+    // Update assignment
+    const assignmentPayload = {
+      leadId: assignment.lead.id,
+      clientId,
+      campaignId,
+      assignedSupervisorId: data.assignedSupervisorId || null,
+      assignedAgentId: data.assignedAgentId || null,
+      status: data.status,
+      lastCallStatus: data.lastCallStatus || null,
+      leadProgressNotes: data.leadProgressNotes || null,
+      followupCount: data.followupCount
+        ? parseInt(data.followupCount, 10)
+        : null,
+    }
+
+    // Call both APIs
+    updateLead(
+      { id: assignment.lead.id, data: leadPayload },
+      {
+        onSuccess: () => {
+          updateAssignment(
+            { id: assignment.id, data: assignmentPayload },
+            {
+              onSuccess: () => {
+                toast.success(t('leads.updated', 'Lead updated successfully'))
+                handleClose()
+                onSuccess?.()
+              },
+              onError: () => {
+                toast.error(
+                  t('leads.updateFailed', 'Failed to update lead assignment'),
+                )
+              },
+            },
+          )
+        },
+        onError: () => {
+          toast.error(t('leads.updateFailed', 'Failed to update lead'))
+        },
+      },
+    )
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+      <SheetContent
+        side="right"
+        className="w-full sm:max-w-lg flex flex-col p-0"
+      >
+        <SheetHeader className="px-6 pt-6 pb-4 border-b">
+          <SheetTitle className="text-xl font-bold">
+            {t('leads.editLead', 'Edit Lead')}
+          </SheetTitle>
+          <SheetDescription>
+            {t('leads.editDescription', 'Update lead and assignment details.')}
+          </SheetDescription>
+        </SheetHeader>
+
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="flex flex-col flex-1 overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+              {/* Assignment Section - Open by default */}
+              <Collapsible
+                open={assignmentOpen}
+                onOpenChange={setAssignmentOpen}
+              >
+                <div className="border rounded-lg overflow-hidden border-primary/20 bg-primary/5">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between px-4 py-3 hover:bg-primary/10 transition-colors"
+                    >
+                      <span className="text-sm font-semibold uppercase tracking-wide text-primary">
+                        {t('leads.assignmentInfo', 'Assignment Information')}
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-primary transition-transform duration-200 ${
+                          assignmentOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 space-y-4 border-t border-primary/20">
+                      <div className="grid grid-cols-2 gap-4 pt-4">
+                        <FormField
+                          control={form.control}
+                          name="status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('common.status', 'Status')}{' '}
+                                <span className="text-red-500">*</span>
+                              </FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="h-11">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value={LeadStatus.NEW}>
+                                    {t('leads.status.new', 'New')}
+                                  </SelectItem>
+                                  <SelectItem value={LeadStatus.ATTEMPTED}>
+                                    {t('leads.status.attempted', 'Attempted')}
+                                  </SelectItem>
+                                  <SelectItem value={LeadStatus.HOT}>
+                                    {t('leads.status.hot', 'Hot')}
+                                  </SelectItem>
+                                  <SelectItem value={LeadStatus.WARM}>
+                                    {t('leads.status.warm', 'Warm')}
+                                  </SelectItem>
+                                  <SelectItem value={LeadStatus.COLD}>
+                                    {t('leads.status.cold', 'Cold')}
+                                  </SelectItem>
+                                  <SelectItem value={LeadStatus.CLOSED}>
+                                    {t('leads.status.closed', 'Closed')}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="lastCallStatus"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.lastCallStatus', 'Last Call Status')}
+                              </FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ''}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="h-11">
+                                    <SelectValue
+                                      placeholder={t('common.select', 'Select')}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value={LastCallStatus.ANSWERED}>
+                                    {t('leads.callStatus.answered', 'Answered')}
+                                  </SelectItem>
+                                  <SelectItem value={LastCallStatus.NO_ANSWER}>
+                                    {t(
+                                      'leads.callStatus.noAnswer',
+                                      'No Answer',
+                                    )}
+                                  </SelectItem>
+                                  <SelectItem value={LastCallStatus.BUSY}>
+                                    {t('leads.callStatus.busy', 'Busy')}
+                                  </SelectItem>
+                                  <SelectItem value={LastCallStatus.VOICEMAIL}>
+                                    {t(
+                                      'leads.callStatus.voicemail',
+                                      'Voicemail',
+                                    )}
+                                  </SelectItem>
+                                  <SelectItem
+                                    value={LastCallStatus.WRONG_NUMBER}
+                                  >
+                                    {t(
+                                      'leads.callStatus.wrongNumber',
+                                      'Wrong Number',
+                                    )}
+                                  </SelectItem>
+                                  <SelectItem
+                                    value={LastCallStatus.CALLBACK_REQUESTED}
+                                  >
+                                    {t(
+                                      'leads.callStatus.callbackRequested',
+                                      'Callback Requested',
+                                    )}
+                                  </SelectItem>
+                                  <SelectItem
+                                    value={LastCallStatus.NOT_INTERESTED}
+                                  >
+                                    {t(
+                                      'leads.callStatus.notInterested',
+                                      'Not Interested',
+                                    )}
+                                  </SelectItem>
+                                  <SelectItem value={LastCallStatus.INTERESTED}>
+                                    {t(
+                                      'leads.callStatus.interested',
+                                      'Interested',
+                                    )}
+                                  </SelectItem>
+                                  <SelectItem
+                                    value={LastCallStatus.DISCONNECTED}
+                                  >
+                                    {t(
+                                      'leads.callStatus.disconnected',
+                                      'Disconnected',
+                                    )}
+                                  </SelectItem>
+                                  <SelectItem
+                                    value={LastCallStatus.INVALID_NUMBER}
+                                  >
+                                    {t(
+                                      'leads.callStatus.invalidNumber',
+                                      'Invalid Number',
+                                    )}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="assignedSupervisorId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.assignedSupervisor', 'Supervisor')}
+                              </FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ''}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="h-11">
+                                    <SelectValue
+                                      placeholder={t('common.select', 'Select')}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {supervisors.map((supervisor) => (
+                                    <SelectItem
+                                      key={supervisor.id}
+                                      value={supervisor.id}
+                                    >
+                                      {supervisor.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="assignedAgentId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.assignedAgent', 'Agent')}
+                              </FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || ''}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="h-11">
+                                    <SelectValue
+                                      placeholder={t('common.select', 'Select')}
+                                    />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {agents.map((agent) => (
+                                    <SelectItem key={agent.id} value={agent.id}>
+                                      {agent.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="followupCount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t('leads.followupCount', 'Followup Count')}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min={0}
+                                className="h-11 bg-white"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="leadProgressNotes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t('leads.progressNotes', 'Progress Notes')}
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder={t(
+                                  'leads.progressNotesPlaceholder',
+                                  'Follow up notes...',
+                                )}
+                                className="min-h-[80px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Basic Info Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-primary uppercase tracking-wide">
+                  {t('leads.basicInfo', 'Basic Information')}
+                </h3>
+
+                <FormField
+                  control={form.control}
+                  name="leadName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {t('leads.name', 'Name')}{' '}
+                        <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t('leads.namePlaceholder', 'John Doe')}
+                          className="h-11"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {t('leads.phone', 'Phone')}{' '}
+                        <span className="text-red-500">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="+62812345678"
+                          className="h-11"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('leads.email', 'Email')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="john@example.com"
+                          className="h-11"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('leads.gender', 'Gender')}</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-11">
+                              <SelectValue
+                                placeholder={t(
+                                  'leads.selectGender',
+                                  'Select gender',
+                                )}
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="male">
+                              {t('leads.male', 'Male')}
+                            </SelectItem>
+                            <SelectItem value="female">
+                              {t('leads.female', 'Female')}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="dateOfBirth"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {t('leads.dateOfBirth', 'Date of Birth')}
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" className="h-11" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Address Section - Collapsible Card */}
+              <Collapsible open={addressOpen} onOpenChange={setAddressOpen}>
+                <div className="border rounded-lg overflow-hidden">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="text-sm font-semibold uppercase tracking-wide">
+                        {t('leads.addressInfo', 'Address Information')}
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                          addressOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 space-y-4 border-t">
+                      <div className="pt-4">
+                        <FormField
+                          control={form.control}
+                          name="address"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.address', 'Address')}
+                              </FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder={t(
+                                    'leads.addressPlaceholder',
+                                    'Street address',
+                                  )}
+                                  className="min-h-[80px]"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('leads.city', 'City')}</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder={t(
+                                    'leads.cityPlaceholder',
+                                    'Jakarta',
+                                  )}
+                                  className="h-11"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="province"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.province', 'Province')}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder={t(
+                                    'leads.provincePlaceholder',
+                                    'DKI Jakarta',
+                                  )}
+                                  className="h-11"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="postalCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t('leads.postalCode', 'Postal Code')}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder={t(
+                                  'leads.postalCodePlaceholder',
+                                  '12345',
+                                )}
+                                className="h-11"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Work Info Section - Collapsible Card */}
+              <Collapsible open={workOpen} onOpenChange={setWorkOpen}>
+                <div className="border rounded-lg overflow-hidden">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="text-sm font-semibold uppercase tracking-wide">
+                        {t('leads.workInfo', 'Work Information')}
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                          workOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 space-y-4 border-t">
+                      <div className="grid grid-cols-2 gap-4 pt-4">
+                        <FormField
+                          control={form.control}
+                          name="occupation"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.occupation', 'Occupation')}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder={t(
+                                    'leads.occupationPlaceholder',
+                                    'Software Engineer',
+                                  )}
+                                  className="h-11"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="jobTitle"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.jobTitle', 'Job Title')}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder={t(
+                                    'leads.jobTitlePlaceholder',
+                                    'Senior Developer',
+                                  )}
+                                  className="h-11"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="companyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t('leads.companyName', 'Company Name')}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder={t(
+                                  'leads.companyNamePlaceholder',
+                                  'PT. Tech Company',
+                                )}
+                                className="h-11"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="officeAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              {t('leads.officeAddress', 'Office Address')}
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder={t(
+                                  'leads.officeAddressPlaceholder',
+                                  'Office address',
+                                )}
+                                className="min-h-[80px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="salaryMin"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.salaryMin', 'Salary Min')}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  placeholder={t(
+                                    'leads.salaryMinPlaceholder',
+                                    '5000000',
+                                  )}
+                                  className="h-11"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="salaryMax"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.salaryMax', 'Salary Max')}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  placeholder={t(
+                                    'leads.salaryMaxPlaceholder',
+                                    '10000000',
+                                  )}
+                                  className="h-11"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Additional Section - Collapsible Card */}
+              <Collapsible
+                open={additionalOpen}
+                onOpenChange={setAdditionalOpen}
+              >
+                <div className="border rounded-lg overflow-hidden">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="text-sm font-semibold uppercase tracking-wide">
+                        {t('leads.additionalInfo', 'Additional Information')}
+                      </span>
+                      <ChevronDown
+                        className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                          additionalOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 space-y-4 border-t">
+                      <div className="pt-4">
+                        <FormField
+                          control={form.control}
+                          name="tags"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('leads.tags', 'Tags')}</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder={t(
+                                    'leads.tagsPlaceholder',
+                                    'vip, enterprise',
+                                  )}
+                                  className="h-11"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t('leads.notes', 'Notes')}</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder={t(
+                                  'leads.notesPlaceholder',
+                                  'Additional notes',
+                                )}
+                                className="min-h-[80px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+
+              {/* Internal Metadata - Read Only */}
+              <div className="pt-4 border-t space-y-2">
+                {assignment?.createdAt && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{t('common.createdAt', 'Created At')}:</span>
+                    <span>
+                      {(() => {
+                        try {
+                          return format(
+                            new Date(assignment.createdAt),
+                            'dd MMM yyyy HH:mm',
+                          )
+                        } catch {
+                          return assignment.createdAt
+                        }
+                      })()}
+                    </span>
+                  </div>
+                )}
+                {assignment?.updatedAt && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{t('common.updatedAt', 'Updated At')}:</span>
+                    <span>
+                      {(() => {
+                        try {
+                          return format(
+                            new Date(assignment.updatedAt),
+                            'dd MMM yyyy HH:mm',
+                          )
+                        } catch {
+                          return assignment.updatedAt
+                        }
+                      })()}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-background">
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t('common.save', 'Save')}
+              </Button>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                {t('common.cancel', 'Cancel')}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </SheetContent>
+    </Sheet>
+  )
+}

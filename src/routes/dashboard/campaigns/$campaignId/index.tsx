@@ -8,6 +8,8 @@ import { useEnabledServices } from '@/hooks/api/useServices'
 import { CampaignStatus } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
 import type { UpdateCampaignRequest } from '@/lib/api/types/campaigns.types'
+import { AddLeadSheet } from '@/components/campaigns/AddLeadSheet'
+import { CampaignLeadsTable } from '@/components/campaigns/CampaignLeadsTable'
 import {
   Card,
   CardContent,
@@ -92,6 +94,7 @@ function CampaignDetailPage() {
   const { mutate: updateCampaign, isPending: isUpdating } = useUpdateCampaign()
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignFormSchema),
@@ -128,20 +131,25 @@ function CampaignDetailPage() {
       active: {
         className:
           'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        label: t('campaigns.status.active', 'Active'),
       },
       paused: {
         className:
           'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+        label: t('campaigns.status.paused', 'Paused'),
       },
       completed: {
         className:
           'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+        label: t('campaigns.status.completed', 'Completed'),
       },
     }
 
-    const config = statusConfig[status] || statusConfig.completed
+    const config =
+      statusConfig[status as keyof typeof statusConfig] ||
+      statusConfig.completed
 
-    return <Badge className={config.className}>{status.toUpperCase()}</Badge>
+    return <Badge className={config.className}>{config.label}</Badge>
   }
 
   const getServiceBadge = (serviceType: string) => {
@@ -150,17 +158,17 @@ function CampaignDetailPage() {
         voice: {
           className:
             'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-          label: 'VoIP',
+          label: t('services.voice', 'VoIP'),
         },
         sms: {
           className:
             'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-          label: 'SMS',
+          label: t('services.sms', 'SMS'),
         },
         whatsapp: {
           className:
             'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-          label: 'WhatsApp',
+          label: t('services.whatsapp', 'WhatsApp'),
         },
       }
 
@@ -377,7 +385,7 @@ function CampaignDetailPage() {
                     <Upload className="h-4 w-4 mr-2" />
                     {t('campaigns.importLeads', 'Import')}
                   </Button>
-                  <Button size="sm" disabled>
+                  <Button size="sm" onClick={() => setIsAddLeadSheetOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     {t('campaigns.addLead', 'Add Lead')}
                   </Button>
@@ -386,21 +394,10 @@ function CampaignDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-lg">
-              <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground">
-                {t(
-                  'campaigns.noLeadsYet',
-                  'No leads assigned to this campaign yet.',
-                )}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {t(
-                  'campaigns.leadsComingSoon',
-                  'Lead management will be available soon.',
-                )}
-              </p>
-            </div>
+            <CampaignLeadsTable
+              campaignId={campaignId}
+              clientId={clientId || ''}
+            />
           </CardContent>
         </Card>
 
@@ -626,6 +623,16 @@ function CampaignDetailPage() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Add Lead Sheet */}
+        {clientId && (
+          <AddLeadSheet
+            open={isAddLeadSheetOpen}
+            onOpenChange={setIsAddLeadSheetOpen}
+            clientId={clientId}
+            campaignId={campaignId}
+          />
+        )}
       </div>
     </RoleGuard>
   )

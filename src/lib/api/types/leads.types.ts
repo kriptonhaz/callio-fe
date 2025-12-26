@@ -1,32 +1,59 @@
-import type { LeadStatus, PaginationParams } from '../types';
+import type { LeadStatus, PaginationParams } from '../types'
 
 export interface Lead {
-  id: string;
-  name: string;
-  email?: string;
-  phone: string;
-  status: LeadStatus;
-  clientId: string;
-  source?: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt?: string;
+  id: string
+  leadName: string
+  phone: string
+  email?: string | null
+  gender?: string | null
+  address?: string | null
+  city?: string | null
+  province?: string | null
+  postalCode?: string | null
+  dateOfBirth?: string | null
+  occupation?: string | null
+  jobTitle?: string | null
+  companyName?: string | null
+  officeAddress?: string | null
+  salaryMin?: number | null
+  salaryMax?: number | null
+  tags?: string | null
+  notes?: string | null
+  status: LeadStatus
+  clientId: string
+  campaignIds?: string[] | null
+  source?: string | null
+  createdAt: string
+  updatedAt?: string
 }
 
 export interface CreateLeadRequest {
-  name: string;
-  email?: string;
-  phone: string;
-  status?: LeadStatus;
-  clientId: string;
-  source?: string;
-  notes?: string;
+  clientId: string
+  leadName: string
+  phone: string
+  email?: string | null
+  gender?: string | null
+  address?: string | null
+  city?: string | null
+  province?: string | null
+  postalCode?: string | null
+  dateOfBirth?: string | null
+  occupation?: string | null
+  jobTitle?: string | null
+  companyName?: string | null
+  officeAddress?: string | null
+  salaryMin?: number | null
+  salaryMax?: number | null
+  tags?: string | null
+  notes?: string | null
+  campaignIds?: string[] | null
 }
 
 export interface UpdateLeadRequest extends Partial<CreateLeadRequest> {}
 
 export interface LeadsQueryParams extends PaginationParams {
-  search?: string;
-  status?: LeadStatus;
-  clientId?: string;
+  search?: string
+  status?: LeadStatus
+  clientId?: string
+  campaignId?: string
 }
