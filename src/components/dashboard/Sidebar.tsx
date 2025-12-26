@@ -95,13 +95,8 @@ export function Sidebar() {
     }
 
     if (role === 'admin' || role === 'supervisor') {
-      return [
+      const items = [
         ...commonItems,
-        {
-          icon: Users,
-          label: t('dashboard.menu.users', 'Users'),
-          href: '/dashboard/users',
-        },
         {
           icon: Calendar,
           label: t('dashboard.menu.campaign', 'Campaign'),
@@ -128,6 +123,17 @@ export function Sidebar() {
           href: '/dashboard/settings',
         },
       ]
+
+      // Only Admin can see Users menu
+      if (role === 'admin') {
+        items.splice(1, 0, {
+          icon: Users,
+          label: t('dashboard.menu.users', 'Users'),
+          href: '/dashboard/users',
+        })
+      }
+
+      return items
     }
 
     if (role === 'agent') {
