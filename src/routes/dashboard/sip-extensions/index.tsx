@@ -327,6 +327,8 @@ function SipExtensionsPage() {
             <div className="flex flex-col">
               <span className="font-medium text-primary">
                 {row.original.client.name}
+                {row.original.assignedTo &&
+                  ` - (${row.original.assignedTo.name})`}
               </span>
               {row.original.isGoipExtension && (
                 <div className="mt-1">
@@ -379,7 +381,7 @@ function SipExtensionsPage() {
 
         // Third priority: user assignment field
         if (row.original.assignedTo) {
-          return <span>{row.original.assignedTo}</span>
+          return <span>{row.original.assignedTo.name}</span>
         }
 
         return <Badge variant="outline">Unassigned</Badge>

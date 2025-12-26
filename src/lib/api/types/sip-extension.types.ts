@@ -48,7 +48,12 @@ export interface SipExtension {
   dtlsAutoGenerateCert: string | null
   extensionType: string | null
   clientId: string | null
-  assignedTo: string | null
+  assignedTo: {
+    type: string
+    id: string
+    name: string
+    email: string
+  } | null
   client?: {
     id: string
     name: string
