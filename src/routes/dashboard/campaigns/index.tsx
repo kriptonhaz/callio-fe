@@ -100,7 +100,7 @@ interface CampaignsSearch {
   status?: CampaignStatus
 }
 
-export const Route = createFileRoute('/dashboard/campaigns')({
+export const Route = createFileRoute('/dashboard/campaigns/')({
   component: CampaignsPage,
   validateSearch: (search: Record<string, unknown>): CampaignsSearch => {
     return {
@@ -207,31 +207,6 @@ function CampaignsPage() {
   const openEditDialog = (campaign: Campaign) => {
     setSelectedCampaign(campaign)
     setCurrentAction('edit')
-    // Extract service types from campaignServices array
-    const serviceTypes =
-      campaign.campaignServices?.map((s) => s.serviceType) || []
-    // Format dates for HTML date input (YYYY-MM-DD)
-    const formatDateForInput = (dateStr?: string) => {
-      if (!dateStr) return ''
-      try {
-        return new Date(dateStr).toISOString().split('T')[0]
-      } catch {
-        return ''
-      }
-    }
-    form.reset({
-      name: campaign.name,
-      description: campaign.description || '',
-      status: campaign.status,
-      startDate: formatDateForInput(campaign.startDate),
-      endDate: formatDateForInput(campaign.endDate),
-      serviceTypes,
-    })
-  }
-
-  const openViewDialog = (campaign: Campaign) => {
-    setSelectedCampaign(campaign)
-    setCurrentAction('view')
     // Extract service types from campaignServices array
     const serviceTypes =
       campaign.campaignServices?.map((s) => s.serviceType) || []
@@ -518,7 +493,11 @@ function CampaignsPage() {
                                 {t('common.actions', 'Actions')}
                               </DropdownMenuLabel>
                               <DropdownMenuItem
-                                onClick={() => openViewDialog(campaign)}
+                                onClick={() =>
+                                  navigate({
+                                    to: `/dashboard/campaigns/${campaign.id}` as any,
+                                  })
+                                }
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 {t('common.view', 'View')}
