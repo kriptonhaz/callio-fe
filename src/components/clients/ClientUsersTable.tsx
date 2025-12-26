@@ -31,6 +31,7 @@ import {
   MoreHorizontal,
   UserPlus,
   Eye,
+  EyeOff,
   Edit,
   Trash,
 } from 'lucide-react'
@@ -96,6 +97,7 @@ export function ClientUsersTable({
     'create' | 'edit' | 'view' | 'delete' | null
   >(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const { data: supervisors } = useUsers({
     role: UserRole.SUPERVISOR,
@@ -438,11 +440,32 @@ export function ClientUsersTable({
               <FormItem>
                 <FormLabel>{t('clients.users.password', 'Password')}</FormLabel>
                 <FormControl>
-                  <Input
-                    type="password"
-                    placeholder={t('clients.users.password', 'Enter password')}
-                    {...field}
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder={t(
+                        'clients.users.password',
+                        'Enter password',
+                      )}
+                      {...field}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span className="sr-only">
+                        {showPassword ? 'Hide password' : 'Show password'}
+                      </span>
+                    </Button>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
