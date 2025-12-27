@@ -40,6 +40,10 @@ const leadAssignmentsApi = {
       .patch(`lead-assignments/${id}`, { json: data })
       .json<LeadAssignment>()
   },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`lead-assignments/${id}`)
+  },
 }
 
 export const useLeadAssignments = (
@@ -61,6 +65,20 @@ export const useUpdateLeadAssignment = (): UseMutationResult<
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }) => leadAssignmentsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadAssignmentsKeys.lists() })
+    },
+  })
+}
+
+export const useDeleteLeadAssignment = (): UseMutationResult<
+  void,
+  Error,
+  string
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: leadAssignmentsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadAssignmentsKeys.lists() })
     },

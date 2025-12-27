@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useLeadAssignments } from '@/hooks/api/useLeadAssignments'
+import {
+  useLeadAssignments,
+  useDeleteLeadAssignment,
+} from '@/hooks/api/useLeadAssignments'
 import { useDebounce } from '@/hooks/useDebounce'
 import { LeadStatus } from '@/lib/api/types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
@@ -31,7 +34,25 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { Search, Users } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Search, Users, MoreHorizontal, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface CampaignLeadsTableProps {
   campaignId: string
@@ -65,6 +86,13 @@ export function CampaignLeadsTable({
     page,
     limit,
   })
+
+  const { mutate: deleteAssignment, isPending: isDeleting } =
+    useDeleteLeadAssignment()
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [assignmentToDelete, setAssignmentToDelete] =
+    useState<LeadAssignment | null>(null)
 
   const totalPages = leadsData?.meta?.totalPages || 1
   const totalItems = leadsData?.meta?.total || 0
@@ -113,6 +141,40 @@ export function CampaignLeadsTable({
   const handleRowClick = (assignment: LeadAssignment) => {
     setSelectedAssignment(assignment)
     setIsEditSheetOpen(true)
+  }
+
+  const openDeleteDialog = (
+    e: React.MouseEvent,
+    assignment: LeadAssignment,
+  ) => {
+    e.stopPropagation()
+    setAssignmentToDelete(assignment)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = () => {
+    if (!assignmentToDelete) return
+
+    deleteAssignment(assignmentToDelete.id, {
+      onSuccess: () => {
+        toast.success(
+          t(
+            'campaigns.leadRemovedFromCampaign',
+            'Lead removed from campaign successfully',
+          ),
+        )
+        setDeleteDialogOpen(false)
+        setAssignmentToDelete(null)
+      },
+      onError: () => {
+        toast.error(
+          t(
+            'campaigns.leadRemovalFailed',
+            'Failed to remove lead from campaign',
+          ),
+        )
+      },
+    })
   }
 
   const renderPaginationLinks = () => {
@@ -216,6 +278,9 @@ export function CampaignLeadsTable({
               <TableHead className="font-semibold text-primary">
                 {t('common.status', 'Status')}
               </TableHead>
+              <TableHead className="font-semibold text-primary text-right">
+                {t('common.actions', 'Actions')}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -253,11 +318,37 @@ export function CampaignLeadsTable({
                   <TableCell>{assignment.lead?.email || '-'}</TableCell>
                   <TableCell>{assignment.assignedAgent?.name || '-'}</TableCell>
                   <TableCell>{getStatusBadge(assignment.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={(e) => openDeleteDialog(e, assignment)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          {t(
+                            'campaigns.removeFromCampaign',
+                            'Remove from Campaign',
+                          )}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="h-32 text-center">
+                <TableCell colSpan={6} className="h-32 text-center">
                   <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                     <Users className="h-8 w-8" />
                     <p>{t('leads.noLeadsFound', 'No leads found')}</p>
@@ -319,6 +410,36 @@ export function CampaignLeadsTable({
         campaignId={campaignId}
         onSuccess={() => refetch()}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('campaigns.confirmRemoveTitle', 'Remove lead from campaign?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'campaigns.confirmRemoveDescription',
+                'This will remove {leadName} from this campaign. The lead data will still be available in your leads list.',
+                { leadName: assignmentToDelete?.lead?.leadName || 'this lead' },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {t('common.remove', 'Remove')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

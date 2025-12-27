@@ -1,0 +1,5 @@
+leadName,phone,email,gender,address,city,province,postalCode,dateOfBirth,occupation,jobTitle,companyName,officeAddress,salaryMin,salaryMax,tags,notes
+John Doe,+6281234567890,john.doe@example.com,male,"Jl. Sudirman No. 123",Jakarta,DKI Jakarta,12345,1990-05-15,Software Engineer,Senior Developer,PT Tech Indonesia,"Menara BCA Lt. 50",10000000,20000000,vip,Interested in premium package
+Jane Smith,+6281234567891,jane.smith@example.com,female,"Jl. Thamrin No. 456",Jakarta,DKI Jakarta,12346,1985-08-20,Manager,Finance Manager,PT Finance Corp,"Wisma 46 Lt. 30",15000000,25000000,enterprise,Follow up next week
+Ahmad Yusuf,+6281234567892,ahmad.y@example.com,male,"Jl. Gatot Subroto No. 789",Bandung,Jawa Barat,40123,1992-03-10,Entrepreneur,CEO,CV Maju Bersama,,20000000,50000000,,New lead from referral
+Siti Rahma,+6281234567893,,,female,"Jl. Asia Afrika No. 321",Surabaya,Jawa Timur,60123,,,,,,,cold,Needs callback

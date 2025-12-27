@@ -5,11 +5,13 @@ import { RoleGuard } from '@/lib/auth-guard'
 import { useCampaign, useUpdateCampaign } from '@/hooks/api/useCampaigns'
 import { useMe } from '@/hooks/api/useAuth'
 import { useEnabledServices } from '@/hooks/api/useServices'
+import { useBulkImportLeads } from '@/hooks/api/useLeads'
 import { CampaignStatus } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
 import type { UpdateCampaignRequest } from '@/lib/api/types/campaigns.types'
 import { AddLeadSheet } from '@/components/campaigns/AddLeadSheet'
 import { CampaignLeadsTable } from '@/components/campaigns/CampaignLeadsTable'
+import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
 import {
   Card,
   CardContent,
@@ -54,6 +56,7 @@ import {
   Upload,
   Edit,
   Loader2,
+  Download,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -92,9 +95,11 @@ function CampaignDetailPage() {
   const { data: enabledServices, isLoading: isLoadingServices } =
     useEnabledServices(clientId)
   const { mutate: updateCampaign, isPending: isUpdating } = useUpdateCampaign()
+  const { mutate: bulkImport, isPending: isImporting } = useBulkImportLeads()
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
+  const fileInputRef = useState<HTMLInputElement | null>(null)[1]
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignFormSchema),
@@ -222,6 +227,71 @@ function CampaignDetailPage() {
         },
       },
     )
+  }
+
+  const handleDownloadSample = () => {
+    // Use local CSV file instead of API endpoint
+    const link = document.createElement('a')
+    link.href = sampleCsvUrl
+    link.download = 'sample-leads-import.csv'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success(t('campaigns.sampleDownloaded', 'Sample CSV downloaded'))
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      toast.error(
+        t(
+          'campaigns.invalidFileType',
+          'Invalid file type. Only CSV files are allowed.',
+        ),
+      )
+      event.target.value = ''
+      return
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error(
+        t(
+          'campaigns.fileTooLarge',
+          'File size exceeds 5MB limit. Please choose a smaller file.',
+        ),
+      )
+      event.target.value = ''
+      return
+    }
+
+    // Create FormData and submit
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('clientId', clientId!)
+    formData.append('campaignIds', campaignId)
+
+    bulkImport(formData, {
+      onSuccess: (data) => {
+        toast.success(
+          t(
+            'campaigns.importSuccess',
+            `Successfully imported ${data.imported} leads. ${data.skipped > 0 ? `${data.skipped} duplicates skipped.` : ''}`,
+          ),
+        )
+        event.target.value = ''
+      },
+      onError: () => {
+        toast.error(
+          t('campaigns.importFailed', 'Failed to import leads from CSV.'),
+        )
+        event.target.value = ''
+      },
+    })
   }
 
   if (isLoading) {
@@ -381,8 +451,36 @@ function CampaignDetailPage() {
               </div>
               {isAdmin && (
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled>
-                    <Upload className="h-4 w-4 mr-2" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadSample}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {t('campaigns.downloadSample', 'Download Sample')}
+                  </Button>
+                  <input
+                    ref={(el) => (fileInputRef as any)(el)}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      document
+                        .querySelector<HTMLInputElement>('input[type="file"]')
+                        ?.click()
+                    }
+                    disabled={isImporting}
+                  >
+                    {isImporting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
                     {t('campaigns.importLeads', 'Import')}
                   </Button>
                   <Button size="sm" onClick={() => setIsAddLeadSheetOpen(true)}>

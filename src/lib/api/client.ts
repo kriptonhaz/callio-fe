@@ -53,8 +53,13 @@ export const apiClient: KyInstance = ky.create({
           request.headers.set('Authorization', `Bearer ${token}`)
         }
 
-        // Ensure JSON content type for non-GET requests
-        if (request.method !== 'GET' && !request.headers.has('Content-Type')) {
+        // Only set JSON content type if not already set and body is not FormData
+        // FormData needs the browser to set Content-Type with the boundary
+        if (
+          request.method !== 'GET' &&
+          !request.headers.has('Content-Type') &&
+          !(request.body instanceof FormData)
+        ) {
           request.headers.set('Content-Type', 'application/json')
         }
       },
