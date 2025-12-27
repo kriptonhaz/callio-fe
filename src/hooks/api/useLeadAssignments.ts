@@ -22,28 +22,47 @@ export const leadAssignmentsKeys = {
   detail: (id: string) => [...leadAssignmentsKeys.details(), id] as const,
 }
 
-const leadAssignmentsApi = {
-  getAll: async (
-    params: LeadAssignmentsQueryParams,
-  ): Promise<PaginatedResponse<LeadAssignment>> => {
-    const queryString = buildQueryString(params)
-    return await apiClient
-      .get(`lead-assignments${queryString}`)
-      .json<PaginatedResponse<LeadAssignment>>()
-  },
+const getAll = async (
+  params: LeadAssignmentsQueryParams,
+): Promise<PaginatedResponse<LeadAssignment>> => {
+  const queryString = buildQueryString(params)
+  return await apiClient
+    .get(`lead-assignments${queryString}`)
+    .json<PaginatedResponse<LeadAssignment>>()
+}
 
-  update: async (
-    id: string,
-    data: UpdateLeadAssignmentRequest,
-  ): Promise<LeadAssignment> => {
-    return await apiClient
-      .patch(`lead-assignments/${id}`, { json: data })
-      .json<LeadAssignment>()
-  },
+const update = async (
+  id: string,
+  data: UpdateLeadAssignmentRequest,
+): Promise<LeadAssignment> => {
+  return await apiClient
+    .patch(`lead-assignments/${id}`, { json: data })
+    .json<LeadAssignment>()
+}
 
-  delete: async (id: string): Promise<void> => {
-    await apiClient.delete(`lead-assignments/${id}`)
-  },
+const deleteLead = async (id: string): Promise<void> => {
+  await apiClient.delete(`lead-assignments/${id}`)
+}
+
+const bulkAssignLeads = async (data: {
+  campaignId: string
+  leadIds: string[]
+}): Promise<{ assigned: number }> => {
+  return apiClient
+    .post('lead-assignments/bulk-assign', {
+      json: {
+        campaignId: data.campaignId,
+        leadIds: data.leadIds,
+      },
+    })
+    .json()
+}
+
+export const leadAssignmentsApi = {
+  getAll,
+  update,
+  delete: deleteLead,
+  bulkAssign: bulkAssignLeads,
 }
 
 export const useLeadAssignments = (
@@ -81,6 +100,23 @@ export const useDeleteLeadAssignment = (): UseMutationResult<
     mutationFn: leadAssignmentsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadAssignmentsKeys.lists() })
+      // Invalidate leads queries to refresh unassigned leads list
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+    },
+  })
+}
+
+export const useBulkAssignLeads = (): UseMutationResult<
+  { assigned: number },
+  Error,
+  { campaignId: string; leadIds: string[] }
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: leadAssignmentsApi.bulkAssign,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadAssignmentsKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
     },
   })
 }

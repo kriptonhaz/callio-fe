@@ -11,6 +11,7 @@ import { ServiceType } from '@/lib/api/types/services.types'
 import type { UpdateCampaignRequest } from '@/lib/api/types/campaigns.types'
 import { AddLeadSheet } from '@/components/campaigns/AddLeadSheet'
 import { CampaignLeadsTable } from '@/components/campaigns/CampaignLeadsTable'
+import { AddExistingLeadsDialog } from '@/components/campaigns/AddExistingLeadsDialog'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
 import {
   Card,
@@ -57,6 +58,7 @@ import {
   Edit,
   Loader2,
   Download,
+  UserPlus,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -99,7 +101,7 @@ function CampaignDetailPage() {
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
-  const fileInputRef = useState<HTMLInputElement | null>(null)[1]
+  const [isAddExistingDialogOpen, setIsAddExistingDialogOpen] = useState(false)
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignFormSchema),
@@ -460,19 +462,17 @@ function CampaignDetailPage() {
                     {t('campaigns.downloadSample', 'Download Sample')}
                   </Button>
                   <input
-                    ref={(el) => (fileInputRef as any)(el)}
                     type="file"
                     accept=".csv"
                     onChange={handleFileSelect}
                     style={{ display: 'none' }}
+                    id="csv-upload"
                   />
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() =>
-                      document
-                        .querySelector<HTMLInputElement>('input[type="file"]')
-                        ?.click()
+                      document.getElementById('csv-upload')?.click()
                     }
                     disabled={isImporting}
                   >
@@ -481,7 +481,15 @@ function CampaignDetailPage() {
                     ) : (
                       <Upload className="h-4 w-4 mr-2" />
                     )}
-                    {t('campaigns.importLeads', 'Import')}
+                    {t('campaigns.import', 'Import')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAddExistingDialogOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {t('campaigns.addExisting', 'Add from Existing')}
                   </Button>
                   <Button size="sm" onClick={() => setIsAddLeadSheetOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -731,6 +739,12 @@ function CampaignDetailPage() {
             campaignId={campaignId}
           />
         )}
+        <AddExistingLeadsDialog
+          open={isAddExistingDialogOpen}
+          onOpenChange={setIsAddExistingDialogOpen}
+          campaignId={campaignId}
+          clientId={clientId!}
+        />
       </div>
     </RoleGuard>
   )

@@ -36,6 +36,16 @@ const leadsApi = {
     return await apiClient.get(`leads/${id}`).json<Lead>()
   },
 
+  getUnassignedForCampaign: async (
+    campaignId: string,
+    params: Omit<LeadsQueryParams, 'campaignId'>,
+  ): Promise<PaginatedResponse<Lead>> => {
+    const queryString = buildQueryString(params)
+    return apiClient
+      .get(`leads/unassigned/${campaignId}${queryString}`)
+      .json<PaginatedResponse<Lead>>()
+  },
+
   create: async (data: CreateLeadRequest): Promise<Lead> => {
     return await apiClient.post('leads', { json: data }).json<Lead>()
   },
@@ -76,6 +86,18 @@ export const useLead = (id: string): UseQueryResult<Lead, Error> => {
     queryKey: leadsKeys.detail(id),
     queryFn: () => leadsApi.getById(id),
     enabled: !!id,
+    staleTime: 30 * 1000,
+  })
+}
+
+export const useUnassignedLeads = (
+  campaignId: string,
+  params: Omit<LeadsQueryParams, 'campaignId'>,
+): UseQueryResult<PaginatedResponse<Lead>, Error> => {
+  return useQuery({
+    queryKey: [...leadsKeys.lists(), 'unassigned', campaignId, params],
+    queryFn: () => leadsApi.getUnassignedForCampaign(campaignId, params),
+    enabled: !!campaignId,
     staleTime: 30 * 1000,
   })
 }
