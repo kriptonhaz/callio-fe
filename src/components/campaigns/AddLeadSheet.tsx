@@ -120,7 +120,7 @@ export function AddLeadSheet({
   const onSubmit = (data: LeadFormValues) => {
     const payload: CreateLeadRequest = {
       clientId,
-      campaignIds: [campaignId],
+      campaignIds: campaignId ? [campaignId] : [], // Empty array if no campaignId
       leadName: data.leadName,
       phone: data.phone,
       email: data.email || null,

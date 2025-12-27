@@ -85,6 +85,7 @@ interface EditLeadSheetProps {
   clientId: string
   campaignId: string
   onSuccess?: () => void
+  showAssignment?: boolean // Optional prop to show/hide assignment section
 }
 
 export function EditLeadSheet({
@@ -94,6 +95,7 @@ export function EditLeadSheet({
   clientId,
   campaignId,
   onSuccess,
+  showAssignment = true, // Default to true for backward compatibility
 }: EditLeadSheetProps) {
   const { t } = useTranslation()
   const { mutate: updateLead, isPending: isUpdatingLead } = useUpdateLead()
@@ -278,197 +280,276 @@ export function EditLeadSheet({
             className="flex flex-col flex-1 overflow-hidden"
           >
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-              {/* Assignment Section - Open by default */}
-              <Collapsible
-                open={assignmentOpen}
-                onOpenChange={setAssignmentOpen}
-              >
-                <div className="border rounded-lg overflow-hidden border-primary/20 bg-primary/5">
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between px-4 py-3 hover:bg-primary/10 transition-colors"
-                    >
-                      <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-                        {t('leads.assignmentInfo', 'Assignment Information')}
-                      </span>
-                      <ChevronDown
-                        className={`h-5 w-5 text-primary transition-transform duration-200 ${
-                          assignmentOpen ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="px-4 pb-4 space-y-4 border-t border-primary/20">
-                      <div className="grid grid-cols-2 gap-4 pt-4">
-                        <FormField
-                          control={form.control}
-                          name="status"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t('common.status', 'Status')}{' '}
-                                <span className="text-red-500">*</span>
-                              </FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="h-11">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value={LeadStatus.NEW}>
-                                    {t('leads.status.new', 'New')}
-                                  </SelectItem>
-                                  <SelectItem value={LeadStatus.ATTEMPTED}>
-                                    {t('leads.status.attempted', 'Attempted')}
-                                  </SelectItem>
-                                  <SelectItem value={LeadStatus.HOT}>
-                                    {t('leads.status.hot', 'Hot')}
-                                  </SelectItem>
-                                  <SelectItem value={LeadStatus.WARM}>
-                                    {t('leads.status.warm', 'Warm')}
-                                  </SelectItem>
-                                  <SelectItem value={LeadStatus.COLD}>
-                                    {t('leads.status.cold', 'Cold')}
-                                  </SelectItem>
-                                  <SelectItem value={LeadStatus.CLOSED}>
-                                    {t('leads.status.closed', 'Closed')}
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+              {/* Assignment Section - Only show in campaign context */}
+              {showAssignment && (
+                <Collapsible
+                  open={assignmentOpen}
+                  onOpenChange={setAssignmentOpen}
+                >
+                  <div className="border rounded-lg overflow-hidden border-primary/20 bg-primary/5">
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between px-4 py-3 hover:bg-primary/10 transition-colors"
+                      >
+                        <span className="text-sm font-semibold uppercase tracking-wide text-primary">
+                          {t('leads.assignmentInfo', 'Assignment Information')}
+                        </span>
+                        <ChevronDown
+                          className={`h-5 w-5 text-primary transition-transform duration-200 ${
+                            assignmentOpen ? 'rotate-180' : ''
+                          }`}
                         />
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="px-4 pb-4 space-y-4 border-t border-primary/20">
+                        <div className="grid grid-cols-2 gap-4 pt-4">
+                          <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  {t('common.status', 'Status')}{' '}
+                                  <span className="text-red-500">*</span>
+                                </FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="h-11">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value={LeadStatus.NEW}>
+                                      {t('leads.status.new', 'New')}
+                                    </SelectItem>
+                                    <SelectItem value={LeadStatus.ATTEMPTED}>
+                                      {t('leads.status.attempted', 'Attempted')}
+                                    </SelectItem>
+                                    <SelectItem value={LeadStatus.HOT}>
+                                      {t('leads.status.hot', 'Hot')}
+                                    </SelectItem>
+                                    <SelectItem value={LeadStatus.WARM}>
+                                      {t('leads.status.warm', 'Warm')}
+                                    </SelectItem>
+                                    <SelectItem value={LeadStatus.COLD}>
+                                      {t('leads.status.cold', 'Cold')}
+                                    </SelectItem>
+                                    <SelectItem value={LeadStatus.CLOSED}>
+                                      {t('leads.status.closed', 'Closed')}
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
 
-                        <FormField
-                          control={form.control}
-                          name="lastCallStatus"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t('leads.lastCallStatus', 'Last Call Status')}
-                              </FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value || ''}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="h-11">
-                                    <SelectValue
-                                      placeholder={t('common.select', 'Select')}
-                                    />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value={LastCallStatus.ANSWERED}>
-                                    {t('leads.callStatus.answered', 'Answered')}
-                                  </SelectItem>
-                                  <SelectItem value={LastCallStatus.NO_ANSWER}>
-                                    {t(
-                                      'leads.callStatus.noAnswer',
-                                      'No Answer',
-                                    )}
-                                  </SelectItem>
-                                  <SelectItem value={LastCallStatus.BUSY}>
-                                    {t('leads.callStatus.busy', 'Busy')}
-                                  </SelectItem>
-                                  <SelectItem value={LastCallStatus.VOICEMAIL}>
-                                    {t(
-                                      'leads.callStatus.voicemail',
-                                      'Voicemail',
-                                    )}
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={LastCallStatus.WRONG_NUMBER}
-                                  >
-                                    {t(
-                                      'leads.callStatus.wrongNumber',
-                                      'Wrong Number',
-                                    )}
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={LastCallStatus.CALLBACK_REQUESTED}
-                                  >
-                                    {t(
-                                      'leads.callStatus.callbackRequested',
-                                      'Callback Requested',
-                                    )}
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={LastCallStatus.NOT_INTERESTED}
-                                  >
-                                    {t(
-                                      'leads.callStatus.notInterested',
-                                      'Not Interested',
-                                    )}
-                                  </SelectItem>
-                                  <SelectItem value={LastCallStatus.INTERESTED}>
-                                    {t(
-                                      'leads.callStatus.interested',
-                                      'Interested',
-                                    )}
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={LastCallStatus.DISCONNECTED}
-                                  >
-                                    {t(
-                                      'leads.callStatus.disconnected',
-                                      'Disconnected',
-                                    )}
-                                  </SelectItem>
-                                  <SelectItem
-                                    value={LastCallStatus.INVALID_NUMBER}
-                                  >
-                                    {t(
-                                      'leads.callStatus.invalidNumber',
-                                      'Invalid Number',
-                                    )}
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="assignedSupervisorId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>
-                                {t('leads.assignedSupervisor', 'Supervisor')}
-                              </FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value || ''}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="h-11">
-                                    <SelectValue
-                                      placeholder={t('common.select', 'Select')}
-                                    />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {supervisors.map((supervisor) => (
+                          <FormField
+                            control={form.control}
+                            name="lastCallStatus"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  {t(
+                                    'leads.lastCallStatus',
+                                    'Last Call Status',
+                                  )}
+                                </FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value || ''}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="h-11">
+                                      <SelectValue
+                                        placeholder={t(
+                                          'common.select',
+                                          'Select',
+                                        )}
+                                      />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value={LastCallStatus.ANSWERED}>
+                                      {t(
+                                        'leads.callStatus.answered',
+                                        'Answered',
+                                      )}
+                                    </SelectItem>
                                     <SelectItem
-                                      key={supervisor.id}
-                                      value={supervisor.id}
+                                      value={LastCallStatus.NO_ANSWER}
                                     >
-                                      {supervisor.name}
+                                      {t(
+                                        'leads.callStatus.noAnswer',
+                                        'No Answer',
+                                      )}
                                     </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                    <SelectItem value={LastCallStatus.BUSY}>
+                                      {t('leads.callStatus.busy', 'Busy')}
+                                    </SelectItem>
+                                    <SelectItem
+                                      value={LastCallStatus.VOICEMAIL}
+                                    >
+                                      {t(
+                                        'leads.callStatus.voicemail',
+                                        'Voicemail',
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      value={LastCallStatus.WRONG_NUMBER}
+                                    >
+                                      {t(
+                                        'leads.callStatus.wrongNumber',
+                                        'Wrong Number',
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      value={LastCallStatus.CALLBACK_REQUESTED}
+                                    >
+                                      {t(
+                                        'leads.callStatus.callbackRequested',
+                                        'Callback Requested',
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      value={LastCallStatus.NOT_INTERESTED}
+                                    >
+                                      {t(
+                                        'leads.callStatus.notInterested',
+                                        'Not Interested',
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      value={LastCallStatus.INTERESTED}
+                                    >
+                                      {t(
+                                        'leads.callStatus.interested',
+                                        'Interested',
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      value={LastCallStatus.DISCONNECTED}
+                                    >
+                                      {t(
+                                        'leads.callStatus.disconnected',
+                                        'Disconnected',
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      value={LastCallStatus.INVALID_NUMBER}
+                                    >
+                                      {t(
+                                        'leads.callStatus.invalidNumber',
+                                        'Invalid Number',
+                                      )}
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="assignedSupervisorId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  {t('leads.assignedSupervisor', 'Supervisor')}
+                                </FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value || ''}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="h-11">
+                                      <SelectValue
+                                        placeholder={t(
+                                          'common.select',
+                                          'Select',
+                                        )}
+                                      />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {supervisors.map((supervisor) => (
+                                      <SelectItem
+                                        key={supervisor.id}
+                                        value={supervisor.id}
+                                      >
+                                        {supervisor.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="assignedAgentId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>
+                                  {t('leads.assignedAgent', 'Agent')}
+                                </FormLabel>
+                                <Select
+                                  onValueChange={field.onChange}
+                                  value={field.value || ''}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="h-11">
+                                      <SelectValue
+                                        placeholder={t(
+                                          'common.select',
+                                          'Select',
+                                        )}
+                                      />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {agents.map((agent) => (
+                                      <SelectItem
+                                        key={agent.id}
+                                        value={agent.id}
+                                      >
+                                        {agent.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="followupCount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                {t('leads.followupCount', 'Followup Count')}
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  className="h-11 bg-white"
+                                  {...field}
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -476,84 +557,31 @@ export function EditLeadSheet({
 
                         <FormField
                           control={form.control}
-                          name="assignedAgentId"
+                          name="leadProgressNotes"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>
-                                {t('leads.assignedAgent', 'Agent')}
+                                {t('leads.progressNotes', 'Progress Notes')}
                               </FormLabel>
-                              <Select
-                                onValueChange={field.onChange}
-                                value={field.value || ''}
-                              >
-                                <FormControl>
-                                  <SelectTrigger className="h-11">
-                                    <SelectValue
-                                      placeholder={t('common.select', 'Select')}
-                                    />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {agents.map((agent) => (
-                                    <SelectItem key={agent.id} value={agent.id}>
-                                      {agent.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <FormControl>
+                                <Textarea
+                                  placeholder={t(
+                                    'leads.progressNotesPlaceholder',
+                                    'Follow up notes...',
+                                  )}
+                                  className="min-h-[80px]"
+                                  {...field}
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
-
-                      <FormField
-                        control={form.control}
-                        name="followupCount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t('leads.followupCount', 'Followup Count')}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min={0}
-                                className="h-11 bg-white"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="leadProgressNotes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>
-                              {t('leads.progressNotes', 'Progress Notes')}
-                            </FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder={t(
-                                  'leads.progressNotesPlaceholder',
-                                  'Follow up notes...',
-                                )}
-                                className="min-h-[80px]"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              )}
 
               {/* Basic Info Section */}
               <div className="space-y-4">

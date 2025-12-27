@@ -90,6 +90,8 @@ export const useCreateLead = (): UseMutationResult<
     mutationFn: leadsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
+      // Invalidate lead-assignments to refresh campaign leads table
+      queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
     },
   })
 }
@@ -116,6 +118,8 @@ export const useDeleteLead = (): UseMutationResult<void, Error, string> => {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
       queryClient.removeQueries({ queryKey: leadsKeys.detail(id) })
+      // Invalidate lead-assignments to refresh campaign leads table
+      queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
     },
   })
 }
