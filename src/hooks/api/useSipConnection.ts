@@ -7,6 +7,7 @@ export type SipConnectionStatus =
   | 'connecting'
   | 'connected'
   | 'registered'
+  | 'disconnecting'
   | 'error'
 
 interface UseSipConnectionReturn {
@@ -23,17 +24,30 @@ export function useSipConnection(): UseSipConnectionReturn {
   const [status, setStatus] = useState<SipConnectionStatus>('disconnected')
   const [error, setError] = useState<string | null>(null)
   const uaRef = useRef<JsSIP.UA | null>(null)
+  const disconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const disconnect = useCallback(() => {
     if (uaRef.current) {
       try {
+        setStatus('disconnecting')
+        setError(null)
+
+        // Clear any existing timeout
+        if (disconnectTimeoutRef.current) {
+          clearTimeout(disconnectTimeoutRef.current)
+        }
+
         uaRef.current.stop()
         uaRef.current = null
-        setStatus('disconnected')
-        setError(null)
+
+        // Add a small delay to ensure clean disconnect
+        disconnectTimeoutRef.current = setTimeout(() => {
+          setStatus('disconnected')
+        }, 500)
       } catch (err: any) {
         console.error('Failed to disconnect SIP:', err)
         setError(err?.message || 'Failed to disconnect')
+        setStatus('error')
       }
     }
   }, [])
@@ -122,6 +136,9 @@ export function useSipConnection(): UseSipConnectionReturn {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (disconnectTimeoutRef.current) {
+        clearTimeout(disconnectTimeoutRef.current)
+      }
       disconnect()
     }
   }, [disconnect])

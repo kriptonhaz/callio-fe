@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
 import { useSipConnection } from '@/hooks/api/useSipConnection'
 
@@ -102,6 +102,8 @@ function VoipConnectionButton() {
   const { t } = useTranslation()
   const { data: sipCredentials } = useSipCredentials()
   const { status, connect, disconnect, isConnected, error } = useSipConnection()
+  const [actionInProgress, setActionInProgress] = useState(false)
+  const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Don't show button if user doesn't have SIP credentials
   if (!sipCredentials) {
@@ -109,20 +111,54 @@ function VoipConnectionButton() {
   }
 
   const handleToggleConnection = () => {
+    // Prevent rapid clicks
+    if (actionInProgress) {
+      return
+    }
+
+    setActionInProgress(true)
+
+    // Clear any existing timeout
+    if (actionTimeoutRef.current) {
+      clearTimeout(actionTimeoutRef.current)
+    }
+
     if (isConnected) {
       disconnect()
+      // Allow clicks again after disconnect completes
+      actionTimeoutRef.current = setTimeout(() => {
+        setActionInProgress(false)
+      }, 1000)
     } else {
       connect()
+      // Allow clicks again after a short delay
+      actionTimeoutRef.current = setTimeout(() => {
+        setActionInProgress(false)
+      }, 2000)
     }
   }
 
-  // Show connecting status
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (actionTimeoutRef.current) {
+        clearTimeout(actionTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Show connecting or disconnecting status
   const isConnecting = status === 'connecting'
-  const statusText = isConnecting
-    ? t('voip.connecting', 'Connecting...')
-    : isConnected
-      ? t('voip.connected', 'Connected')
-      : t('voip.disconnected', 'Disconnected')
+  const isDisconnecting = status === 'disconnecting'
+  const isTransitioning = isConnecting || isDisconnecting || actionInProgress
+
+  const statusText = isDisconnecting
+    ? t('voip.disconnecting', 'Disconnecting...')
+    : isConnecting
+      ? t('voip.connecting', 'Connecting...')
+      : isConnected
+        ? t('voip.connected', 'Connected')
+        : t('voip.disconnected', 'Disconnected')
 
   return (
     <Button
@@ -130,13 +166,13 @@ function VoipConnectionButton() {
       size="sm"
       className="gap-2 h-9"
       onClick={handleToggleConnection}
-      disabled={isConnecting}
+      disabled={isTransitioning}
       title={error || undefined}
     >
       {/* Status indicator circle */}
       <div
         className={`w-2 h-2 rounded-full ${
-          isConnecting
+          isConnecting || isDisconnecting
             ? 'bg-yellow-500 animate-pulse'
             : isConnected
               ? 'bg-green-500'
