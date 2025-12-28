@@ -7,7 +7,10 @@ import { toast } from 'sonner'
 import { useUpdateLead } from '@/hooks/api/useLeads'
 import { useUpdateLeadAssignment } from '@/hooks/api/useLeadAssignments'
 import { useUsers } from '@/hooks/api/useUsers'
+import { useEnabledServices } from '@/hooks/api/useServices'
+import { useSipCredentials } from '@/hooks/api/useSipExtensions'
 import { LeadStatus, UserRole } from '@/lib/api/types'
+import { ServiceType } from '@/lib/api/types/services.types'
 import { LastCallStatus } from '@/lib/api/types/lead-assignments.types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import type { UpdateLeadRequest } from '@/lib/api/types/leads.types'
@@ -41,7 +44,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Loader2, ChevronDown } from 'lucide-react'
+import { Loader2, ChevronDown, Phone } from 'lucide-react'
 import { format } from 'date-fns'
 
 const leadFormSchema = z.object({
@@ -121,6 +124,15 @@ export function EditLeadSheet({
 
   const supervisors = supervisorsData?.data || []
   const agents = agentsData?.data || []
+
+  // Check VoIP service and user SIP credentials
+  const { data: enabledServices } = useEnabledServices(clientId)
+  const { data: sipCredentials } = useSipCredentials()
+  const isVoipEnabled = enabledServices?.some(
+    (service) => service.serviceType === ServiceType.VOICE,
+  )
+  const userHasSipExtension = !!sipCredentials
+  const canMakeCall = isVoipEnabled && userHasSipExtension
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -1099,19 +1111,47 @@ export function EditLeadSheet({
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-background">
-              <Button
-                type="submit"
-                disabled={isPending}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-              >
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {t('common.save', 'Save')}
-              </Button>
-              <Button type="button" variant="outline" onClick={handleClose}>
-                {t('common.cancel', 'Cancel')}
-              </Button>
+            {/* Footer with call button on left, save/cancel on right */}
+            <div className="flex items-center justify-between gap-3 px-6 py-4 border-t bg-background">
+              {/* Call button on the left */}
+              <div>
+                {canMakeCall && assignment?.lead?.phone && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => {
+                      // TODO: Implement call functionality
+                      toast.info(
+                        t(
+                          'leads.callFeatureComingSoon',
+                          'Call feature coming soon',
+                        ),
+                      )
+                    }}
+                  >
+                    <Phone className="h-4 w-4" />
+                    {t('leads.call', 'Call')}
+                  </Button>
+                )}
+              </div>
+
+              {/* Save and Cancel buttons on the right */}
+              <div className="flex items-center gap-3">
+                <Button
+                  type="submit"
+                  disabled={isPending}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {t('common.save', 'Save')}
+                </Button>
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  {t('common.cancel', 'Cancel')}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>

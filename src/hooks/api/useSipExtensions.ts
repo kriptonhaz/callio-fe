@@ -13,6 +13,7 @@ export const sipExtensionsKeys = {
   lists: () => [...sipExtensionsKeys.all, 'list'] as const,
   list: (params: SipExtensionsQueryParams) =>
     [...sipExtensionsKeys.lists(), params] as const,
+  credentials: () => [...sipExtensionsKeys.all, 'credentials'] as const,
 }
 
 const sipExtensionsApi = {
@@ -50,6 +51,15 @@ const sipExtensionsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`sip/extensions/${id}`)
+  },
+
+  getSipCredentials: async (): Promise<{
+    extension: string
+    password: string
+    server: string
+    wsUrl: string
+  }> => {
+    return await apiClient.get('sip/credentials').json()
   },
 }
 
@@ -109,5 +119,24 @@ export const useDeleteSipExtension = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: sipExtensionsKeys.lists() })
     },
+  })
+}
+
+export const useSipCredentials = () => {
+  return useQuery({
+    queryKey: sipExtensionsKeys.credentials(),
+    queryFn: async () => {
+      try {
+        return await sipExtensionsApi.getSipCredentials()
+      } catch (error: any) {
+        // Return null if user doesn't have SIP extension (400 error)
+        if (error?.response?.status === 400) {
+          return null
+        }
+        throw error
+      }
+    },
+    retry: false, // Don't retry on 400 errors
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }

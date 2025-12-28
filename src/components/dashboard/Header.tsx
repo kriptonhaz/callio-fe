@@ -1,45 +1,47 @@
-import { useTranslation } from 'react-i18next';
-import { Bell } from '@/components/animate-ui/icons/bell';
-import { Search } from '@/components/animate-ui/icons/search';
-import { Moon } from '@/components/animate-ui/icons/moon';
-import { Sun } from '@/components/animate-ui/icons/sun';
-import { Globe } from '@/components/animate-ui/icons/globe';
-import { AnimateIcon } from '@/components/animate-ui/icons/icon';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
+import { useTranslation } from 'react-i18next'
+import { Bell } from '@/components/animate-ui/icons/bell'
+import { Search } from '@/components/animate-ui/icons/search'
+import { Moon } from '@/components/animate-ui/icons/moon'
+import { Sun } from '@/components/animate-ui/icons/sun'
+import { Globe } from '@/components/animate-ui/icons/globe'
+import { AnimateIcon } from '@/components/animate-ui/icons/icon'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react'
+import { useSipCredentials } from '@/hooks/api/useSipExtensions'
+import { useSipConnection } from '@/hooks/api/useSipConnection'
 
 export function Header() {
-  const { t, i18n } = useTranslation();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const { t, i18n } = useTranslation()
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
     // Check initial theme
     if (document.documentElement.classList.contains('dark')) {
-      setTheme('dark');
+      setTheme('dark')
     }
-  }, []);
+  }, [])
 
   const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
     if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add('dark')
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove('dark')
     }
-  };
+  }
 
   const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
-  };
+    i18n.changeLanguage(lng)
+  }
 
   return (
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between sticky top-0 z-10">
@@ -48,15 +50,16 @@ export function Header() {
           <div className="absolute left-2.5 top-2.5 text-muted-foreground">
             <Search className="h-4 w-4" animateOnHover />
           </div>
-          <Input 
-            type="search" 
-            placeholder={t('dashboard.search')} 
+          <Input
+            type="search"
+            placeholder={t('dashboard.search')}
             className="pl-9 bg-muted/50 border-none focus-visible:ring-1"
           />
         </div>
       </div>
 
       <div className="flex items-center space-x-4">
+        <VoipConnectionButton />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <AnimateIcon animateOnHover asChild>
@@ -92,5 +95,62 @@ export function Header() {
         </AnimateIcon>
       </div>
     </header>
-  );
+  )
+}
+
+function VoipConnectionButton() {
+  const { t } = useTranslation()
+  const { data: sipCredentials } = useSipCredentials()
+  const { status, connect, disconnect, isConnected, error } = useSipConnection()
+
+  // Don't show button if user doesn't have SIP credentials
+  if (!sipCredentials) {
+    return null
+  }
+
+  const handleToggleConnection = () => {
+    if (isConnected) {
+      disconnect()
+    } else {
+      connect()
+    }
+  }
+
+  // Show connecting status
+  const isConnecting = status === 'connecting'
+  const statusText = isConnecting
+    ? t('voip.connecting', 'Connecting...')
+    : isConnected
+      ? t('voip.connected', 'Connected')
+      : t('voip.disconnected', 'Disconnected')
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="gap-2 h-9"
+      onClick={handleToggleConnection}
+      disabled={isConnecting}
+      title={error || undefined}
+    >
+      {/* Status indicator circle */}
+      <div
+        className={`w-2 h-2 rounded-full ${
+          isConnecting
+            ? 'bg-yellow-500 animate-pulse'
+            : isConnected
+              ? 'bg-green-500'
+              : status === 'error'
+                ? 'bg-red-500'
+                : 'bg-gray-400'
+        }`}
+      />
+      {/* Extension number */}
+      <span className="text-sm font-medium">
+        {t('voip.ext', 'Ext')}: {sipCredentials.extension}
+      </span>
+      {/* Connection status text */}
+      <span className="text-xs text-muted-foreground">{statusText}</span>
+    </Button>
+  )
 }

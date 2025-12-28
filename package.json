@@ -55,6 +55,7 @@
     "framer-motion": "^12.23.24",
     "highlight.js": "^11.11.1",
     "i18next": "^25.6.3",
+    "jssip": "^3.10.9",
     "ky": "^1.14.0",
     "lucide-react": "^0.554.0",
     "motion": "^12.23.26",
