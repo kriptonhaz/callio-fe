@@ -9,6 +9,7 @@ import { useUpdateLeadAssignment } from '@/hooks/api/useLeadAssignments'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
+import { useSipStore } from '@/store/useSipStore'
 import { LeadStatus, UserRole } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
 import { LastCallStatus } from '@/lib/api/types/lead-assignments.types'
@@ -128,11 +129,17 @@ export function EditLeadSheet({
   // Check VoIP service and user SIP credentials
   const { data: enabledServices } = useEnabledServices(clientId)
   const { data: sipCredentials } = useSipCredentials()
+  const isRegistered = useSipStore((state) => state.status === 'registered')
   const isVoipEnabled = enabledServices?.some(
     (service) => service.serviceType === ServiceType.VOICE,
   )
   const userHasSipExtension = !!sipCredentials
-  const canMakeCall = isVoipEnabled && userHasSipExtension
+
+  useEffect(() => {
+    if (open) {
+      console.log('isRegistered', isRegistered)
+    }
+  }, [isRegistered, open])
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -1115,25 +1122,36 @@ export function EditLeadSheet({
             <div className="flex items-center justify-between gap-3 px-6 py-4 border-t bg-background">
               {/* Call button on the left */}
               <div>
-                {canMakeCall && assignment?.lead?.phone && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => {
-                      // TODO: Implement call functionality
-                      toast.info(
-                        t(
-                          'leads.callFeatureComingSoon',
-                          'Call feature coming soon',
-                        ),
-                      )
-                    }}
-                  >
-                    <Phone className="h-4 w-4" />
-                    {t('leads.call', 'Call')}
-                  </Button>
-                )}
+                {isVoipEnabled &&
+                  userHasSipExtension &&
+                  assignment?.lead?.phone && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="gap-2"
+                      disabled={!isRegistered}
+                      title={
+                        !isRegistered
+                          ? t(
+                              'leads.connectToSipFirst',
+                              'Please connect to SIP first',
+                            )
+                          : undefined
+                      }
+                      onClick={() => {
+                        // TODO: Implement call functionality
+                        toast.info(
+                          t(
+                            'leads.callFeatureComingSoon',
+                            'Call feature coming soon',
+                          ),
+                        )
+                      }}
+                    >
+                      <Phone className="h-4 w-4" />
+                      {t('leads.call', 'Call')}
+                    </Button>
+                  )}
               </div>
 
               {/* Save and Cancel buttons on the right */}

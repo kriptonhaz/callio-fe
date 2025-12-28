@@ -16,7 +16,7 @@ import {
 
 import { useEffect, useState, useRef } from 'react'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
-import { useSipConnection } from '@/hooks/api/useSipConnection'
+import { useSipStore } from '@/store/useSipStore'
 
 export function Header() {
   const { t, i18n } = useTranslation()
@@ -101,9 +101,21 @@ export function Header() {
 function VoipConnectionButton() {
   const { t } = useTranslation()
   const { data: sipCredentials } = useSipCredentials()
-  const { status, connect, disconnect, isConnected, error } = useSipConnection()
+  const { status, connect, disconnect, error } = useSipStore()
+  const isConnected = useSipStore(
+    (state) => state.status === 'connected' || state.status === 'registered',
+  )
   const [actionInProgress, setActionInProgress] = useState(false)
   const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (actionTimeoutRef.current) {
+        clearTimeout(actionTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Don't show button if user doesn't have SIP credentials
   if (!sipCredentials) {
@@ -130,22 +142,15 @@ function VoipConnectionButton() {
         setActionInProgress(false)
       }, 1000)
     } else {
-      connect()
+      if (sipCredentials) {
+        connect(sipCredentials)
+      }
       // Allow clicks again after a short delay
       actionTimeoutRef.current = setTimeout(() => {
         setActionInProgress(false)
       }, 2000)
     }
   }
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (actionTimeoutRef.current) {
-        clearTimeout(actionTimeoutRef.current)
-      }
-    }
-  }, [])
 
   // Show connecting or disconnecting status
   const isConnecting = status === 'connecting'
