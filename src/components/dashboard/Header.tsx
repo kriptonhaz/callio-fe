@@ -101,12 +101,22 @@ export function Header() {
 function VoipConnectionButton() {
   const { t } = useTranslation()
   const { data: sipCredentials } = useSipCredentials()
-  const { status, connect, disconnect, error } = useSipStore()
+  const status = useSipStore((state) => state.status)
+  const connect = useSipStore((state) => state.connect)
+  const disconnect = useSipStore((state) => state.disconnect)
+  const error = useSipStore((state) => state.error)
+  const initSipml = useSipStore((state) => state.initSipml)
+  const sipmlReady = useSipStore((state) => state.sipmlReady)
   const isConnected = useSipStore(
     (state) => state.status === 'connected' || state.status === 'registered',
   )
   const [actionInProgress, setActionInProgress] = useState(false)
   const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Initialize SIPml when component mounts
+  useEffect(() => {
+    initSipml()
+  }, [initSipml])
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -155,7 +165,8 @@ function VoipConnectionButton() {
   // Show connecting or disconnecting status
   const isConnecting = status === 'connecting'
   const isDisconnecting = status === 'disconnecting'
-  const isTransitioning = isConnecting || isDisconnecting || actionInProgress
+  const isTransitioning =
+    isConnecting || isDisconnecting || actionInProgress || !sipmlReady
 
   const statusText = isDisconnecting
     ? t('voip.disconnecting', 'Disconnecting...')

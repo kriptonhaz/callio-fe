@@ -45,7 +45,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Loader2, ChevronDown, Phone } from 'lucide-react'
+import { Loader2, ChevronDown, Phone, PhoneOff } from 'lucide-react'
 import { format } from 'date-fns'
 
 const leadFormSchema = z.object({
@@ -105,6 +105,16 @@ export function EditLeadSheet({
   const { mutate: updateLead, isPending: isUpdatingLead } = useUpdateLead()
   const { mutate: updateAssignment, isPending: isUpdatingAssignment } =
     useUpdateLeadAssignment()
+  const makeCall = useSipStore((state) => state.makeCall)
+  const hangup = useSipStore((state) => state.hangup)
+  const callStatus = useSipStore((state) => state.callStatus)
+  const sipmlReady = useSipStore((state) => state.sipmlReady)
+  const isDialing = callStatus === 'calling' || callStatus === 'connecting'
+  const isCallActive =
+    callStatus === 'active' ||
+    callStatus === 'ringing' ||
+    callStatus === 'connecting' ||
+    callStatus === 'calling'
 
   const [addressOpen, setAddressOpen] = useState(false)
   const [workOpen, setWorkOpen] = useState(false)
@@ -1125,32 +1135,49 @@ export function EditLeadSheet({
                 {isVoipEnabled &&
                   userHasSipExtension &&
                   assignment?.lead?.phone && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="gap-2"
-                      disabled={!isRegistered}
-                      title={
-                        !isRegistered
-                          ? t(
-                              'leads.connectToSipFirst',
-                              'Please connect to SIP first',
-                            )
-                          : undefined
-                      }
-                      onClick={() => {
-                        // TODO: Implement call functionality
-                        toast.info(
-                          t(
-                            'leads.callFeatureComingSoon',
-                            'Call feature coming soon',
-                          ),
-                        )
-                      }}
-                    >
-                      <Phone className="h-4 w-4" />
-                      {t('leads.call', 'Call')}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {isCallActive ? (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="gap-2"
+                          onClick={() => hangup()}
+                        >
+                          <PhoneOff className="h-4 w-4" />
+                          {t('leads.hangup', 'Hang Up')}
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="default"
+                          className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                          disabled={!isRegistered || !sipmlReady}
+                          title={
+                            !isRegistered
+                              ? t(
+                                  'leads.connectToSipFirst',
+                                  'Please connect to SIP first',
+                                )
+                              : undefined
+                          }
+                          onClick={() => {
+                            if (assignment?.lead?.phone && sipCredentials) {
+                              makeCall(
+                                assignment.lead.phone,
+                                sipCredentials.server,
+                              )
+                            }
+                          }}
+                        >
+                          {isDialing ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Phone className="h-4 w-4" />
+                          )}
+                          {t('leads.call', 'Call')}
+                        </Button>
+                      )}
+                    </div>
                   )}
               </div>
 

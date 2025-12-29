@@ -43,6 +43,7 @@ function RootComponent() {
     <html lang="en">
       <head>
         <HeadContent />
+        <script src="/SIPml-api.js" defer></script>
       </head>
       <body>
         <Outlet />
