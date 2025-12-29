@@ -17,6 +17,7 @@ import { Settings } from '@/components/animate-ui/icons/settings'
 import { Router } from '@/components/animate-ui/icons/router'
 import { Activity } from '@/components/animate-ui/icons/activity'
 import { ChartLine } from '@/components/animate-ui/icons/chart-line'
+import { Monitor } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { decodeJwt } from '@/lib/jwt'
 import { getAccessToken } from '@/lib/api/client'
@@ -116,6 +117,11 @@ export function Sidebar() {
           icon: FileText,
           label: t('dashboard.menu.recordings'),
           href: '/dashboard/recordings',
+        },
+        {
+          icon: Monitor,
+          label: t('dashboard.menu.monitoring', 'Monitoring'),
+          href: '/dashboard/monitoring',
         },
         {
           icon: Settings,

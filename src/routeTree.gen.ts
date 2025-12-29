@@ -18,6 +18,7 @@ import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardReportsRouteImport } from './routes/dashboard/reports'
 import { Route as DashboardRecordingsRouteImport } from './routes/dashboard/recordings'
+import { Route as DashboardMonitoringRouteImport } from './routes/dashboard/monitoring'
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
 import { Route as DashboardSipExtensionsIndexRouteImport } from './routes/dashboard/sip-extensions/index'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
@@ -76,6 +77,11 @@ const DashboardReportsRoute = DashboardReportsRouteImport.update({
 const DashboardRecordingsRoute = DashboardRecordingsRouteImport.update({
   id: '/recordings',
   path: '/recordings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardMonitoringRoute = DashboardMonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardLogsRoute = DashboardLogsRouteImport.update({
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
   '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/monitoring': typeof DashboardMonitoringRoute
   '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRouteWithChildren
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
   '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/monitoring': typeof DashboardMonitoringRoute
   '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/users': typeof DashboardUsersRoute
@@ -212,6 +220,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/verify': typeof VerifyRoute
   '/dashboard/logs': typeof DashboardLogsRoute
+  '/dashboard/monitoring': typeof DashboardMonitoringRoute
   '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRouteWithChildren
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify'
     | '/dashboard/logs'
+    | '/dashboard/monitoring'
     | '/dashboard/recordings'
     | '/dashboard/reports'
     | '/dashboard/settings'
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify'
     | '/dashboard/logs'
+    | '/dashboard/monitoring'
     | '/dashboard/recordings'
     | '/dashboard/reports'
     | '/dashboard/users'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verify'
     | '/dashboard/logs'
+    | '/dashboard/monitoring'
     | '/dashboard/recordings'
     | '/dashboard/reports'
     | '/dashboard/settings'
@@ -377,6 +389,13 @@ declare module '@tanstack/react-router' {
       path: '/recordings'
       fullPath: '/dashboard/recordings'
       preLoaderRoute: typeof DashboardRecordingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/monitoring': {
+      id: '/dashboard/monitoring'
+      path: '/monitoring'
+      fullPath: '/dashboard/monitoring'
+      preLoaderRoute: typeof DashboardMonitoringRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/logs': {
@@ -496,6 +515,7 @@ const DashboardSettingsRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardLogsRoute: typeof DashboardLogsRoute
+  DashboardMonitoringRoute: typeof DashboardMonitoringRoute
   DashboardRecordingsRoute: typeof DashboardRecordingsRoute
   DashboardReportsRoute: typeof DashboardReportsRoute
   DashboardSettingsRoute: typeof DashboardSettingsRouteWithChildren
@@ -516,6 +536,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardLogsRoute: DashboardLogsRoute,
+  DashboardMonitoringRoute: DashboardMonitoringRoute,
   DashboardRecordingsRoute: DashboardRecordingsRoute,
   DashboardReportsRoute: DashboardReportsRoute,
   DashboardSettingsRoute: DashboardSettingsRouteWithChildren,
