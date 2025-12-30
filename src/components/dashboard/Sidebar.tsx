@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next'
 import { decodeJwt } from '@/lib/jwt'
 import { getAccessToken } from '@/lib/api/client'
 import { useUser } from '@/hooks/api/useUsers'
+import { useClient } from '@/hooks/api/useClients'
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -38,6 +39,9 @@ export function Sidebar() {
 
   // Periodically fetch user to verify role (double security)
   const { data: user } = useUser(userId || '', { refetchInterval: 60000 })
+
+  // Fetch client data if user has clientId
+  const { data: client } = useClient(user?.clientId || '')
 
   // Effective role: prefer API data, fallback to JWT
   const role = user?.role || jwtRole
@@ -384,9 +388,12 @@ export function Sidebar() {
                   <p className="text-sm font-medium truncate">
                     {user?.name || decodedToken?.email || 'User'}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate capitalize">
-                    {role || 'Guest'}
-                  </p>
+
+                  {client && (
+                    <p className="text-xs text-primary font-medium truncate mt-0.5">
+                      {client.name}
+                    </p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
