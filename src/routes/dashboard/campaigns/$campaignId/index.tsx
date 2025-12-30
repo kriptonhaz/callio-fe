@@ -12,6 +12,7 @@ import type { UpdateCampaignRequest } from '@/lib/api/types/campaigns.types'
 import { AddLeadSheet } from '@/components/campaigns/AddLeadSheet'
 import { CampaignLeadsTable } from '@/components/campaigns/CampaignLeadsTable'
 import { AddExistingLeadsDialog } from '@/components/campaigns/AddExistingLeadsDialog'
+import { ComposeSmsSheet } from '@/components/campaigns/ComposeSmsSheet'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
 import {
   Card,
@@ -59,6 +60,7 @@ import {
   Loader2,
   Download,
   UserPlus,
+  MessageSquare,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -102,6 +104,7 @@ function CampaignDetailPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
   const [isAddExistingDialogOpen, setIsAddExistingDialogOpen] = useState(false)
+  const [isComposeSmsSheetOpen, setIsComposeSmsSheetOpen] = useState(false)
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignFormSchema),
@@ -453,6 +456,19 @@ function CampaignDetailPage() {
               </div>
               {isAdmin && (
                 <div className="flex items-center gap-2">
+                  {/* Compose SMS Button - Only show if campaign has SMS service */}
+                  {campaign.campaignServices?.some(
+                    (s) => s.serviceType === ServiceType.SMS,
+                  ) && (
+                    <Button
+                      size="sm"
+                      onClick={() => setIsComposeSmsSheetOpen(true)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      {t('campaigns.composeSms', 'Compose SMS')}
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -744,6 +760,13 @@ function CampaignDetailPage() {
           onOpenChange={setIsAddExistingDialogOpen}
           campaignId={campaignId}
           clientId={clientId!}
+        />
+
+        {/* Compose SMS Sheet */}
+        <ComposeSmsSheet
+          open={isComposeSmsSheetOpen}
+          onOpenChange={setIsComposeSmsSheetOpen}
+          maskingOptions={['CALLIO', 'INFO']}
         />
       </div>
     </RoleGuard>
