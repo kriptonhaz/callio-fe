@@ -7,6 +7,7 @@ import { Globe } from '@/components/animate-ui/icons/globe'
 import { AnimateIcon } from '@/components/animate-ui/icons/icon'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useSipConnectionStatus } from '@/hooks/api/useSipConnectionStatus'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,9 +108,14 @@ function VoipConnectionButton() {
   const error = useSipStore((state) => state.error)
   const initSipml = useSipStore((state) => state.initSipml)
   const sipmlReady = useSipStore((state) => state.sipmlReady)
-  const isConnected = useSipStore(
-    (state) => state.status === 'connected' || state.status === 'registered',
-  )
+  const { data: backendStatus, isLoading: isCheckingBackend } =
+    useSipConnectionStatus(status === 'connected' || status === 'registered')
+
+  const isLocalConnected = status === 'connected' || status === 'registered'
+
+  // Connected only if BOTH local and backend agree (or while checking backend if local is just connected)
+  const isConnected = isLocalConnected && (backendStatus?.connected ?? false)
+
   const [actionInProgress, setActionInProgress] = useState(false)
   const actionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -118,7 +124,7 @@ function VoipConnectionButton() {
     initSipml()
   }, [initSipml])
 
-  // Cleanup timeout on unmount
+  // Clear timeout on unmount
   useEffect(() => {
     return () => {
       if (actionTimeoutRef.current) {
@@ -127,54 +133,77 @@ function VoipConnectionButton() {
     }
   }, [])
 
+  // Reset actionInProgress when status changes significantly
+  useEffect(() => {
+    if (status === 'registered' || status === 'disconnected') {
+      setActionInProgress(false)
+      if (actionTimeoutRef.current) {
+        clearTimeout(actionTimeoutRef.current)
+        actionTimeoutRef.current = null
+      }
+    }
+  }, [status])
+
   // Don't show button if user doesn't have SIP credentials
   if (!sipCredentials) {
     return null
   }
 
-  const handleToggleConnection = () => {
-    // Prevent rapid clicks
-    if (actionInProgress) {
-      return
-    }
+  const handleToggleConnection = async () => {
+    if (isTransitioning) return
 
     setActionInProgress(true)
+    // Safety timeout to reset spinner if something gets stuck
+    actionTimeoutRef.current = setTimeout(() => {
+      setActionInProgress(false)
+    }, 10000)
 
-    // Clear any existing timeout
-    if (actionTimeoutRef.current) {
-      clearTimeout(actionTimeoutRef.current)
-    }
-
-    if (isConnected) {
-      disconnect()
-      // Allow clicks again after disconnect completes
-      actionTimeoutRef.current = setTimeout(() => {
-        setActionInProgress(false)
-      }, 1000)
-    } else {
-      if (sipCredentials) {
+    try {
+      if (isConnected || isLocalConnected) {
+        disconnect()
+      } else {
+        if (!sipCredentials) {
+          console.error('No SIP credentials found')
+          setActionInProgress(false)
+          return
+        }
         connect(sipCredentials)
       }
-      // Allow clicks again after a short delay
-      actionTimeoutRef.current = setTimeout(() => {
-        setActionInProgress(false)
-      }, 2000)
+    } catch (error) {
+      console.error('Connection toggle error:', error)
+      setActionInProgress(false)
     }
   }
 
-  // Show connecting or disconnecting status
   const isConnecting = status === 'connecting'
   const isDisconnecting = status === 'disconnecting'
-  const isTransitioning =
-    isConnecting || isDisconnecting || actionInProgress || !sipmlReady
 
-  const statusText = isDisconnecting
-    ? t('voip.disconnecting', 'Disconnecting...')
-    : isConnecting
-      ? t('voip.connecting', 'Connecting...')
-      : isConnected
-        ? t('voip.connected', 'Connected')
-        : t('voip.disconnected', 'Disconnected')
+  const isTransitioning =
+    isConnecting ||
+    isDisconnecting ||
+    actionInProgress ||
+    !sipmlReady ||
+    isCheckingBackend
+
+  let statusText = t('voip.disconnected', 'Disconnected')
+  let statusColor = 'bg-red-500'
+
+  if (isDisconnecting) {
+    statusText = t('voip.disconnecting', 'Disconnecting...')
+    statusColor = 'bg-yellow-500'
+  } else if (isConnecting) {
+    statusText = t('voip.connecting', 'Connecting...')
+    statusColor = 'bg-yellow-500'
+  } else if (isLocalConnected) {
+    if (backendStatus?.connected) {
+      statusText = t('voip.connected', 'Connected')
+      statusColor = 'bg-green-500'
+    } else {
+      // Local connected but backend not yet (or failed)
+      statusText = t('voip.syncing', 'Syncing...')
+      statusColor = 'bg-yellow-500'
+    }
+  }
 
   return (
     <Button
@@ -187,14 +216,8 @@ function VoipConnectionButton() {
     >
       {/* Status indicator circle */}
       <div
-        className={`w-2 h-2 rounded-full ${
-          isConnecting || isDisconnecting
-            ? 'bg-yellow-500 animate-pulse'
-            : isConnected
-              ? 'bg-green-500'
-              : status === 'error'
-                ? 'bg-red-500'
-                : 'bg-gray-400'
+        className={`w-2 h-2 rounded-full ${statusColor} ${
+          isTransitioning ? 'animate-pulse' : ''
         }`}
       />
       {/* Extension number */}
