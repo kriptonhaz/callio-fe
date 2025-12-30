@@ -17,7 +17,6 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardReportsRouteImport } from './routes/dashboard/reports'
-import { Route as DashboardRecordingsRouteImport } from './routes/dashboard/recordings'
 import { Route as DashboardMonitoringRouteImport } from './routes/dashboard/monitoring'
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
 import { Route as DashboardSipExtensionsIndexRouteImport } from './routes/dashboard/sip-extensions/index'
@@ -72,11 +71,6 @@ const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
 const DashboardReportsRoute = DashboardReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardRecordingsRoute = DashboardRecordingsRouteImport.update({
-  id: '/recordings',
-  path: '/recordings',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardMonitoringRoute = DashboardMonitoringRouteImport.update({
@@ -170,7 +164,6 @@ export interface FileRoutesByFullPath {
   '/verify': typeof VerifyRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
-  '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
@@ -195,7 +188,6 @@ export interface FileRoutesByTo {
   '/verify': typeof VerifyRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
-  '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -221,7 +213,6 @@ export interface FileRoutesById {
   '/verify': typeof VerifyRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
-  '/dashboard/recordings': typeof DashboardRecordingsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
@@ -249,7 +240,6 @@ export interface FileRouteTypes {
     | '/verify'
     | '/dashboard/logs'
     | '/dashboard/monitoring'
-    | '/dashboard/recordings'
     | '/dashboard/reports'
     | '/dashboard/settings'
     | '/dashboard/users'
@@ -274,7 +264,6 @@ export interface FileRouteTypes {
     | '/verify'
     | '/dashboard/logs'
     | '/dashboard/monitoring'
-    | '/dashboard/recordings'
     | '/dashboard/reports'
     | '/dashboard/users'
     | '/dashboard'
@@ -299,7 +288,6 @@ export interface FileRouteTypes {
     | '/verify'
     | '/dashboard/logs'
     | '/dashboard/monitoring'
-    | '/dashboard/recordings'
     | '/dashboard/reports'
     | '/dashboard/settings'
     | '/dashboard/users'
@@ -382,13 +370,6 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/dashboard/reports'
       preLoaderRoute: typeof DashboardReportsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/dashboard/recordings': {
-      id: '/dashboard/recordings'
-      path: '/recordings'
-      fullPath: '/dashboard/recordings'
-      preLoaderRoute: typeof DashboardRecordingsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/monitoring': {
@@ -516,7 +497,6 @@ const DashboardSettingsRouteWithChildren =
 interface DashboardRouteChildren {
   DashboardLogsRoute: typeof DashboardLogsRoute
   DashboardMonitoringRoute: typeof DashboardMonitoringRoute
-  DashboardRecordingsRoute: typeof DashboardRecordingsRoute
   DashboardReportsRoute: typeof DashboardReportsRoute
   DashboardSettingsRoute: typeof DashboardSettingsRouteWithChildren
   DashboardUsersRoute: typeof DashboardUsersRoute
@@ -537,7 +517,6 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardLogsRoute: DashboardLogsRoute,
   DashboardMonitoringRoute: DashboardMonitoringRoute,
-  DashboardRecordingsRoute: DashboardRecordingsRoute,
   DashboardReportsRoute: DashboardReportsRoute,
   DashboardSettingsRoute: DashboardSettingsRouteWithChildren,
   DashboardUsersRoute: DashboardUsersRoute,

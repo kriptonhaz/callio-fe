@@ -12,7 +12,6 @@ import { ClipboardList } from '@/components/animate-ui/icons/clipboard-list'
 import { PhoneCall } from '@/components/animate-ui/icons/phone-call'
 import { Calendar } from '@/components/animate-ui/icons/calendar'
 import { PieChart } from '@/components/animate-ui/icons/pie-chart'
-import { FileText } from '@/components/animate-ui/icons/file-text'
 import { Settings } from '@/components/animate-ui/icons/settings'
 import { Router } from '@/components/animate-ui/icons/router'
 import { Activity } from '@/components/animate-ui/icons/activity'
@@ -116,11 +115,6 @@ export function Sidebar() {
           icon: PieChart,
           label: t('dashboard.menu.reports'),
           href: '/dashboard/reports',
-        },
-        {
-          icon: FileText,
-          label: t('dashboard.menu.recordings'),
-          href: '/dashboard/recordings',
         },
         {
           icon: GalleryThumbnails,
