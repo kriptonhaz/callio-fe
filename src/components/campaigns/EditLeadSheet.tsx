@@ -9,6 +9,8 @@ import { useUpdateLeadAssignment } from '@/hooks/api/useLeadAssignments'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
+import { useInitiateCallSession } from '@/hooks/api/useCalls'
+import { useMe } from '@/hooks/api/useAuth'
 import { useSipStore } from '@/store/useSipStore'
 import { LeadStatus, UserRole } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
@@ -105,11 +107,17 @@ export function EditLeadSheet({
   const { mutate: updateLead, isPending: isUpdatingLead } = useUpdateLead()
   const { mutate: updateAssignment, isPending: isUpdatingAssignment } =
     useUpdateLeadAssignment()
+  const { data: currentUser } = useMe()
+  const { mutate: initiateSession, isPending: isInitiatingSession } =
+    useInitiateCallSession()
   const makeCall = useSipStore((state) => state.makeCall)
   const hangup = useSipStore((state) => state.hangup)
   const callStatus = useSipStore((state) => state.callStatus)
   const sipmlReady = useSipStore((state) => state.sipmlReady)
-  const isDialing = callStatus === 'calling' || callStatus === 'connecting'
+  const isDialing =
+    callStatus === 'calling' ||
+    callStatus === 'connecting' ||
+    isInitiatingSession
   const isCallActive =
     callStatus === 'active' ||
     callStatus === 'ringing' ||
@@ -1151,20 +1159,64 @@ export function EditLeadSheet({
                           type="button"
                           variant="default"
                           className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                          disabled={!isRegistered || !sipmlReady}
+                          disabled={
+                            !isRegistered ||
+                            !sipmlReady ||
+                            isInitiatingSession ||
+                            !currentUser
+                          }
                           title={
                             !isRegistered
                               ? t(
                                   'leads.connectToSipFirst',
                                   'Please connect to SIP first',
                                 )
-                              : undefined
+                              : !currentUser
+                                ? t(
+                                    'leads.loadingUserInfo',
+                                    'Loading user information...',
+                                  )
+                                : undefined
                           }
                           onClick={() => {
-                            if (assignment?.lead?.phone && sipCredentials) {
-                              makeCall(
-                                assignment.lead.phone,
-                                sipCredentials.server,
+                            if (
+                              assignment?.lead?.phone &&
+                              assignment?.lead?.id &&
+                              sipCredentials &&
+                              currentUser?.id
+                            ) {
+                              // Step 1: Initiate session to get token
+                              initiateSession(
+                                {
+                                  campaignId,
+                                  leadId: assignment.lead.id,
+                                  phoneNumber: assignment.lead.phone,
+                                  agentId: currentUser.id,
+                                },
+                                {
+                                  onSuccess: (data) => {
+                                    // Step 2: Make call with phone number + session token
+                                    if (assignment?.lead?.phone) {
+                                      const dialExtension = `${assignment.lead.phone}*${data.sessionToken}`
+                                      makeCall(
+                                        dialExtension,
+                                        sipCredentials.server,
+                                      )
+                                    }
+                                  },
+                                  onError: (error) => {
+                                    toast.error(
+                                      t(
+                                        'leads.sessionInitFailed',
+                                        'Failed to initiate call session',
+                                      ),
+                                    )
+                                    console.error(
+                                      'Failed to initiate call session:',
+                                      error,
+                                    )
+                                  },
+                                },
                               )
                             }
                           }}
