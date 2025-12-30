@@ -6,6 +6,7 @@ import { useUsers } from '@/hooks/api/useUsers'
 import { usePaymentHistory } from '@/hooks/api/useRemainingModules'
 import { useClientPricing } from '@/hooks/api/usePricing'
 import { useClientServices } from '@/hooks/api/useServices'
+import { useClientBalanceSummary } from '@/hooks/api/useBalance'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -52,6 +53,8 @@ function ClientDetailsPage() {
     useClientPricing(clientId)
   const { data: servicesData, isLoading: servicesLoading } =
     useClientServices(clientId)
+  const { data: balanceData, isLoading: balanceLoading } =
+    useClientBalanceSummary(clientId)
 
   const handleDelete = () => {
     if (
@@ -209,8 +212,10 @@ function ClientDetailsPage() {
             />
 
             <ClientServicesCard
+              clientId={clientId}
               services={servicesData || []}
-              isLoading={servicesLoading}
+              balances={balanceData?.balances || []}
+              isLoading={servicesLoading || balanceLoading}
             />
 
             <SipExtensionRangeCard

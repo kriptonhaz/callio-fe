@@ -1,20 +1,40 @@
 import { useTranslation } from 'react-i18next'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Phone, MessageSquare, MessageCircle, AlertCircle } from 'lucide-react'
+import {
+  Phone,
+  MessageSquare,
+  MessageCircle,
+  AlertCircle,
+  Edit,
+  Plus,
+} from 'lucide-react'
 import type { ClientService } from '@/lib/api/types/services.types'
+import type { ClientServiceBalance } from '@/lib/api/types/balance.types'
 import { ServiceType } from '@/lib/api/types/services.types'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { useState } from 'react'
+import { EditClientServicesModal } from './EditClientServicesModal'
+import { TopUpServiceModal } from './TopUpServiceModal'
 
 interface ClientServicesCardProps {
+  clientId: string
   services: ClientService[]
+  balances?: ClientServiceBalance[]
   isLoading?: boolean
 }
 
 export function ClientServicesCard({
+  clientId,
   services,
+  balances = [],
   isLoading = false,
 }: ClientServicesCardProps) {
   const { t } = useTranslation()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [topUpModalOpen, setTopUpModalOpen] = useState(false)
+  const [selectedServiceForTopUp, setSelectedServiceForTopUp] =
+    useState<ServiceType | null>(null)
 
   const getServiceIcon = (type: ServiceType) => {
     switch (type) {
@@ -50,6 +70,27 @@ export function ClientServicesCard({
     return diffDays
   }
 
+  const handleTopUpClick = (type: ServiceType) => {
+    setSelectedServiceForTopUp(type)
+    setTopUpModalOpen(true)
+  }
+
+  // Find balance for the currently selected service for top up
+  const selectedServiceBalance = selectedServiceForTopUp
+    ? balances.find((b) => b.serviceType === selectedServiceForTopUp)
+    : undefined
+
+  const formatBalance = (balance: ClientServiceBalance['balance']) => {
+    if (!balance) return '0'
+
+    if (balance.unit === 'TOKENS') {
+      return `${(balance.balanceTokens ?? 0).toLocaleString()} Tokens`
+    }
+
+    // Default to Currency (IDR)
+    return `${balance.currency} ${Number(balance.balanceAmount ?? 0).toLocaleString()}`
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -72,7 +113,12 @@ export function ClientServicesCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('clients.services.title', 'Active Services')}</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span>{t('clients.services.title', 'Active Services')}</span>
+          <Button variant="ghost" size="sm" onClick={() => setDialogOpen(true)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {services.length === 0 ? (
@@ -87,6 +133,11 @@ export function ClientServicesCard({
                 : null
               const isExpired = daysRemaining !== null && daysRemaining < 0
 
+              // Find balance for this service
+              const serviceBalance = balances.find(
+                (b) => b.serviceType === service.serviceType,
+              )
+
               return (
                 <div
                   key={service.id}
@@ -100,8 +151,22 @@ export function ClientServicesCard({
                       {getServiceIcon(service.serviceType)}
                     </div>
                     <div>
-                      <div className="font-medium">
-                        {getServiceLabel(service.serviceType)}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {getServiceLabel(service.serviceType)}
+                        </span>
+                        <span
+                          className={cn(
+                            'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                            service.subscriptionType === 'prepaid'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                              : 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+                          )}
+                        >
+                          {service.subscriptionType === 'prepaid'
+                            ? t('services.prepaid', 'Prepaid')
+                            : t('services.postpaid', 'Postpaid')}
+                        </span>
                       </div>
                       <div className="text-muted-foreground text-xs">
                         {service.isEnabled
@@ -112,7 +177,30 @@ export function ClientServicesCard({
                   </div>
 
                   <div className="text-right">
-                    {service.expiresAt ? (
+                    {/* Show balance for prepaid services */}
+                    {service.subscriptionType === 'prepaid' ? (
+                      <div className="flex items-center gap-3">
+                        {serviceBalance?.balance && (
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-muted-foreground">
+                              {t('services.balance', 'Balance')}
+                            </span>
+                            <span className="text-sm font-medium">
+                              {formatBalance(serviceBalance.balance)}
+                            </span>
+                          </div>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 rounded-full"
+                          title={t('services.topUp', 'Top Up')}
+                          onClick={() => handleTopUpClick(service.serviceType)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : service.expiresAt ? (
                       <div className="flex flex-col items-end">
                         <span className="text-xs text-muted-foreground">
                           {t('common.expires', 'Expires')}
@@ -138,6 +226,26 @@ export function ClientServicesCard({
           </div>
         )}
       </CardContent>
+      <EditClientServicesModal
+        clientId={clientId}
+        services={services}
+        balances={balances}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
+      <TopUpServiceModal
+        clientId={clientId}
+        serviceType={selectedServiceForTopUp}
+        currentBalance={
+          selectedServiceBalance?.balance?.balanceAmount ??
+          selectedServiceBalance?.balance?.balanceTokens ??
+          0
+        }
+        currency={selectedServiceBalance?.balance?.currency}
+        unit={selectedServiceBalance?.balance?.unit}
+        open={topUpModalOpen}
+        onOpenChange={setTopUpModalOpen}
+      />
     </Card>
   )
 }

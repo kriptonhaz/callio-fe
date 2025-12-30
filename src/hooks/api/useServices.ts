@@ -44,6 +44,7 @@ export function useCreateService() {
       clientId: string
       data: {
         serviceType: string
+        subscriptionType: 'prepaid' | 'postpaid'
         isEnabled: boolean
         expiresAt?: string | null
       }
@@ -69,6 +70,31 @@ export function useUpdateService() {
       id: string
       data: { isEnabled: boolean; expiresAt?: string | null }
     }) => servicesApi.updateService(clientId, id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: serviceKeys.client(variables.clientId),
+      })
+    },
+  })
+}
+
+export function useUpdateServiceByType() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      clientId,
+      serviceType,
+      data,
+    }: {
+      clientId: string
+      serviceType: string
+      data: {
+        subscriptionType: 'prepaid' | 'postpaid'
+        isEnabled: boolean
+        expiresAt?: string | null
+      }
+    }) => servicesApi.updateServiceByType(clientId, serviceType, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: serviceKeys.client(variables.clientId),

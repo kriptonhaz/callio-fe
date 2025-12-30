@@ -14,7 +14,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { Calendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -23,20 +22,13 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { useClient, useUpdateClient } from '@/hooks/api/useClients'
-import { useClientServices } from '@/hooks/api/useServices'
 import { ClientStatus } from '@/lib/api/types/clients.types'
-import { ServiceType } from '@/lib/api/types/services.types'
 import { ArrowLeft, CalendarIcon, Save } from 'lucide-react'
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/dashboard/clients/$clientId/edit')({
   component: EditClientPage,
-})
-
-const serviceSchema = z.object({
-  isEnabled: z.boolean(),
-  expiresAt: z.date().nullable().optional(),
 })
 
 const editClientSchema = z.object({
@@ -47,7 +39,6 @@ const editClientSchema = z.object({
   status: z.nativeEnum(ClientStatus),
   subscriptionPlan: z.string().optional(),
   subscriptionExpiry: z.date().nullable().optional(),
-  services: z.record(z.string(), serviceSchema),
 })
 
 type EditClientFormValues = z.infer<typeof editClientSchema>
@@ -57,8 +48,6 @@ function EditClientPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { data: client, isLoading: isLoadingClient } = useClient(clientId)
-  const { data: servicesData, isLoading: isLoadingServices } =
-    useClientServices(clientId)
   const updateClient = useUpdateClient()
 
   const form = useForm<EditClientFormValues>({
@@ -70,28 +59,12 @@ function EditClientPage() {
       address: '',
       status: ClientStatus.ACTIVE,
       subscriptionPlan: '',
-      services: {},
     },
   })
 
   // Reset form when client data is loaded
   useEffect(() => {
     if (client) {
-      const servicesMap: Record<
-        string,
-        { isEnabled: boolean; expiresAt?: Date | null }
-      > = {}
-
-      // Initialize all service types
-      Object.values(ServiceType).forEach((type) => {
-        const existing = servicesData?.find((s) => s.serviceType === type)
-        // If service exists, use its values. If not, defaults (false/null).
-        servicesMap[type] = {
-          isEnabled: existing?.isEnabled ?? false,
-          expiresAt: existing?.expiresAt ? new Date(existing.expiresAt) : null,
-        }
-      })
-
       form.reset({
         name: client.name,
         email: client.email,
@@ -102,28 +75,12 @@ function EditClientPage() {
         subscriptionExpiry: client.subscriptionExpiry
           ? new Date(client.subscriptionExpiry)
           : null,
-        services: servicesMap,
       })
     }
-  }, [client, servicesData, form])
+  }, [client, form])
 
   const onSubmit = async (data: EditClientFormValues) => {
     try {
-      // Prepare payload
-      // Transform services map to array of UpdateClientServiceRequest
-      const servicesPayload = (
-        Object.entries(data.services) as [
-          string,
-          { isEnabled: boolean; expiresAt?: Date | null },
-        ][]
-      ).map(([type, serviceData]) => ({
-        serviceType: type as ServiceType,
-        isEnabled: serviceData.isEnabled,
-        expiresAt: serviceData.expiresAt
-          ? format(serviceData.expiresAt, 'yyyy-MM-dd')
-          : null,
-      }))
-
       // Single Update Call
       await updateClient.mutateAsync({
         id: clientId,
@@ -137,7 +94,6 @@ function EditClientPage() {
           subscriptionExpiry: data.subscriptionExpiry
             ? format(data.subscriptionExpiry, 'yyyy-MM-dd')
             : undefined,
-          services: servicesPayload,
         },
       })
 
@@ -154,7 +110,7 @@ function EditClientPage() {
     }
   }
 
-  if (isLoadingClient || isLoadingServices) {
+  if (isLoadingClient) {
     return (
       <div className="p-8 text-center">{t('common.loading', 'Loading...')}</div>
     )
@@ -381,89 +337,6 @@ function EditClientPage() {
                     </FormItem>
                   )}
                 />
-              </div>
-            </div>
-
-            {/* Services Section */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">
-                {t('clients.form.sections.services', 'Active Services')}
-              </h2>
-              <div className="grid gap-6">
-                {Object.values(ServiceType).map((type) => (
-                  <div
-                    key={type}
-                    className="flex flex-col space-y-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <FormField
-                        control={form.control}
-                        name={`services.${type}.isEnabled`}
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <FormLabel className="font-medium capitalize">
-                              {t(`services.${type}`, type)}
-                            </FormLabel>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* Expiry Date Picker - Only show IF enabled */}
-                    {form.watch(`services.${type}.isEnabled`) && (
-                      <FormField
-                        control={form.control}
-                        name={`services.${type}.expiresAt`}
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={'outline'}
-                                    className={cn(
-                                      'w-[240px] pl-3 text-left font-normal',
-                                      !field.value && 'text-muted-foreground',
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, 'PPP')
-                                    ) : (
-                                      <span>
-                                        {t('services.pickDate', 'Pick a date')}{' '}
-                                        (Optional)
-                                      </span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-auto p-0"
-                                align="start"
-                              >
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value || undefined}
-                                  onSelect={field.onChange}
-                                  disabled={(date) => date < new Date()}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
-                  </div>
-                ))}
               </div>
             </div>
 

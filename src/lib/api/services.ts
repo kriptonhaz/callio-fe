@@ -19,6 +19,7 @@ export const servicesApi = {
     clientId: string,
     data: {
       serviceType: string
+      subscriptionType: 'prepaid' | 'postpaid'
       isEnabled: boolean
       expiresAt?: string | null
     },
@@ -36,6 +37,21 @@ export const servicesApi = {
   ): Promise<ClientService> => {
     return apiClient
       .patch(`clients/${clientId}/services/${id}`, { json: data })
+      .json<ClientService>()
+  },
+
+  // Update a service by service type (PATCH by serviceType instead of id)
+  updateServiceByType: async (
+    clientId: string,
+    serviceType: string,
+    data: {
+      subscriptionType: 'prepaid' | 'postpaid'
+      isEnabled: boolean
+      expiresAt?: string | null
+    },
+  ): Promise<ClientService> => {
+    return apiClient
+      .patch(`clients/${clientId}/services/${serviceType}`, { json: data })
       .json<ClientService>()
   },
 }

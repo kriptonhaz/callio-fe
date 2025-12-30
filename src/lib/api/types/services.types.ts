@@ -8,6 +8,7 @@ export interface ClientService {
   id: string
   clientId: string
   serviceType: ServiceType
+  subscriptionType: 'prepaid' | 'postpaid'
   isEnabled: boolean
   subscribedAt: string
   expiresAt: string | null
@@ -17,6 +18,13 @@ export interface ClientService {
 
 export interface UpdateClientServiceRequest {
   serviceType: ServiceType
+  isEnabled: boolean
+  expiresAt?: string | null
+}
+
+export interface CreateClientServiceRequest {
+  serviceType: ServiceType
+  subscriptionType: 'prepaid' | 'postpaid'
   isEnabled: boolean
   expiresAt?: string | null
 }
