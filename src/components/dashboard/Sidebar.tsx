@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { AnimateIcon } from '@/components/animate-ui/icons/icon'
 import { LayoutDashboard } from '@/components/animate-ui/icons/layout-dashboard'
 import { Users } from '@/components/animate-ui/icons/users'
-import { Phone } from '@/components/animate-ui/icons/phone'
+import { ClipboardList } from '@/components/animate-ui/icons/clipboard-list'
 import { PhoneCall } from '@/components/animate-ui/icons/phone-call'
 import { Calendar } from '@/components/animate-ui/icons/calendar'
 import { PieChart } from '@/components/animate-ui/icons/pie-chart'
@@ -17,7 +17,7 @@ import { Settings } from '@/components/animate-ui/icons/settings'
 import { Router } from '@/components/animate-ui/icons/router'
 import { Activity } from '@/components/animate-ui/icons/activity'
 import { ChartLine } from '@/components/animate-ui/icons/chart-line'
-import { Monitor } from 'lucide-react'
+import { GalleryThumbnails } from '@/components/animate-ui/icons/gallery-thumbnails'
 import { useTranslation } from 'react-i18next'
 import { decodeJwt } from '@/lib/jwt'
 import { getAccessToken } from '@/lib/api/client'
@@ -104,7 +104,7 @@ export function Sidebar() {
           href: '/dashboard/campaigns',
         },
         {
-          icon: Phone,
+          icon: ClipboardList,
           label: t('dashboard.menu.leads'),
           href: '/dashboard/leads',
         },
@@ -119,7 +119,7 @@ export function Sidebar() {
           href: '/dashboard/recordings',
         },
         {
-          icon: Monitor,
+          icon: GalleryThumbnails,
           label: t('dashboard.menu.monitoring', 'Monitoring'),
           href: '/dashboard/monitoring',
         },
