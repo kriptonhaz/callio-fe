@@ -45,14 +45,14 @@ import {
   Download,
   Phone,
   MessageSquare,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Calendar as CalendarIcon,
   MoreHorizontal,
   Check,
   ChevronsUpDown,
 } from 'lucide-react'
+import { ChevronLeftIcon } from '@/components/ui/chevron-left'
+import { ChevronRightIcon } from '@/components/ui/chevron-right'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { CallLogsQueryParams } from '@/lib/api/types/remaining-modules.types'
@@ -723,19 +723,6 @@ function ReportsPage(): React.ReactElement {
                         </SelectContent>
                       </Select>
                     </div>
-
-                    {/* Results count */}
-                    <div className="text-sm text-muted-foreground">
-                      {t(
-                        'reports.showingOf',
-                        'Showing {{start}}-{{end}} of {{total}} logs',
-                        {
-                          start: startItem,
-                          end: endItem,
-                          total: totalItems,
-                        },
-                      )}
-                    </div>
                   </div>
                 </div>
 
@@ -898,8 +885,12 @@ function ReportsPage(): React.ReactElement {
                         className="h-8 w-8"
                         disabled={currentPage <= 1}
                         onClick={() => handlePageChange(currentPage - 1)}
+                        asChild
                       >
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeftIcon
+                          size={16}
+                          animate={currentPage > 1 ? undefined : false}
+                        />
                       </Button>
                       {getPageNumbers().map((page, index) => (
                         <Button
@@ -921,8 +912,12 @@ function ReportsPage(): React.ReactElement {
                         className="h-8 w-8"
                         disabled={currentPage >= totalPages}
                         onClick={() => handlePageChange(currentPage + 1)}
+                        asChild
                       >
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRightIcon
+                          size={16}
+                          animate={currentPage < totalPages ? undefined : false}
+                        />
                       </Button>
                     </div>
                   </div>
