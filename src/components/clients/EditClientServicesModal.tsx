@@ -142,11 +142,11 @@ export function EditClientServicesModal({
     try {
       // Process each service
       for (const [serviceType, serviceData] of Object.entries(data.services)) {
-        if (serviceData.isEnabled) {
-          const existingService = services.find(
-            (s) => s.serviceType === serviceType,
-          )
+        const existingService = services.find(
+          (s) => s.serviceType === serviceType,
+        )
 
+        if (serviceData.isEnabled) {
           // Step 1: Create or Update service
           if (existingService) {
             // Service exists → PATCH
@@ -229,6 +229,19 @@ export function EditClientServicesModal({
                 })
               }
             }
+          }
+        } else {
+          // Service is disabled - check if it was previously enabled and needs to be disabled
+          if (existingService && existingService.isEnabled) {
+            // Previously enabled service is now disabled → PATCH with isEnabled: false
+            await updateServiceMutation.mutateAsync({
+              clientId,
+              serviceType,
+              data: {
+                isEnabled: false,
+                subscriptionType: existingService.subscriptionType,
+              },
+            })
           }
         }
       }

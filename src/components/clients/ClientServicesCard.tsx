@@ -196,6 +196,7 @@ export function ClientServicesCard({
                           className="h-8 w-8 rounded-full"
                           title={t('services.topUp', 'Top Up')}
                           onClick={() => handleTopUpClick(service.serviceType)}
+                          disabled={!service.isEnabled}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
