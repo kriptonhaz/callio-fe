@@ -51,11 +51,11 @@ import {
   Check,
   ChevronsUpDown,
 } from 'lucide-react'
-import { ChevronLeftIcon } from '@/components/ui/chevron-left'
-import { ChevronRightIcon } from '@/components/ui/chevron-right'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { CallLogsQueryParams } from '@/lib/api/types/remaining-modules.types'
+
+import { StandardPagination } from '@/components/common/StandardPagination'
 
 interface ReportsSearch {
   page: number
@@ -351,35 +351,6 @@ function ReportsPage(): React.ReactElement {
   const currentPage = searchParams.page
   const totalItems = callLogsData?.meta.total || 0
   const itemsPerPage = searchParams.limit
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1
-  const endItem = Math.min(currentPage * itemsPerPage, totalItems)
-
-  // Generate page numbers for pagination
-  const getPageNumbers = (): (number | string)[] => {
-    const pages: (number | string)[] = []
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
-      }
-    } else {
-      if (currentPage <= 3) {
-        pages.push(1, 2, 3, '...', totalPages - 1, totalPages)
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1, 2, '...', totalPages - 2, totalPages - 1, totalPages)
-      } else {
-        pages.push(
-          1,
-          '...',
-          currentPage - 1,
-          currentPage,
-          currentPage + 1,
-          '...',
-          totalPages,
-        )
-      }
-    }
-    return pages
-  }
 
   // No services available
   const noServicesAvailable =
@@ -865,62 +836,13 @@ function ReportsPage(): React.ReactElement {
                     </TableBody>
                   </Table>
 
-                  {/* Pagination Footer - inside the table card */}
-                  <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30">
-                    <div className="text-sm text-muted-foreground">
-                      {t(
-                        'reports.showingResults',
-                        'Showing {{start}} to {{end}} of {{total}} results',
-                        {
-                          start: startItem,
-                          end: endItem,
-                          total: totalItems,
-                        },
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        disabled={currentPage <= 1}
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        asChild
-                      >
-                        <ChevronLeftIcon
-                          size={16}
-                          animate={currentPage > 1 ? undefined : false}
-                        />
-                      </Button>
-                      {getPageNumbers().map((page, index) => (
-                        <Button
-                          key={index}
-                          variant={page === currentPage ? 'default' : 'outline'}
-                          size="icon"
-                          className={`h-8 w-8 ${page === currentPage ? 'bg-primary text-primary-foreground border-primary' : ''}`}
-                          disabled={page === '...'}
-                          onClick={() =>
-                            typeof page === 'number' && handlePageChange(page)
-                          }
-                        >
-                          {page}
-                        </Button>
-                      ))}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
-                        disabled={currentPage >= totalPages}
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        asChild
-                      >
-                        <ChevronRightIcon
-                          size={16}
-                          animate={currentPage < totalPages ? undefined : false}
-                        />
-                      </Button>
-                    </div>
-                  </div>
+                  <StandardPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    onPageChange={handlePageChange}
+                  />
                 </div>
               </TabsContent>
             )}

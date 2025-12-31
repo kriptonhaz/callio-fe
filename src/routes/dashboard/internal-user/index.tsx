@@ -24,14 +24,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
+import { StandardPagination } from '@/components/common/StandardPagination'
 import {
   Plus,
   Search,
@@ -331,44 +324,16 @@ function InternalUserPage() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {data && data.meta.totalPages > 1 && (
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() =>
-                      updateParams({ page: Math.max(1, searchParams.page - 1) })
-                    }
-                    className={
-                      searchParams.page <= 1
-                        ? 'pointer-events-none opacity-50'
-                        : 'cursor-pointer'
-                    }
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink isActive>{searchParams.page}</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      updateParams({ page: searchParams.page + 1 })
-                    }
-                    className={
-                      !data?.meta.totalPages ||
-                      searchParams.page >= data.meta.totalPages
-                        ? 'pointer-events-none opacity-50'
-                        : 'cursor-pointer'
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+            {/* Pagination */}
+            {data && (
+              <StandardPagination
+                currentPage={searchParams.page}
+                totalPages={data.meta.totalPages}
+                totalItems={data.meta.total}
+                itemsPerPage={searchParams.limit}
+                onPageChange={(page) => updateParams({ page })}
+              />
+            )}
           </div>
         )}
       </div>

@@ -27,19 +27,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { StandardPagination } from '@/components/common/StandardPagination'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -175,34 +168,6 @@ export function CampaignLeadsTable({
         )
       },
     })
-  }
-
-  const renderPaginationLinks = () => {
-    const pages: number[] = []
-    const maxVisiblePages = 5
-
-    let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2))
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1)
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i)
-    }
-
-    return pages.map((p) => (
-      <PaginationItem key={p}>
-        <PaginationLink
-          onClick={() => setPage(p)}
-          isActive={page === p}
-          className="cursor-pointer"
-        >
-          {p}
-        </PaginationLink>
-      </PaginationItem>
-    ))
   }
 
   return (
@@ -367,48 +332,15 @@ export function CampaignLeadsTable({
             )}
           </TableBody>
         </Table>
+        {/* Pagination */}
+        <StandardPagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={limit}
+          onPageChange={setPage}
+        />
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            {t('common.showingOf', 'Showing {{from}}-{{to}} of {{total}}', {
-              from: (page - 1) * limit + 1,
-              to: Math.min(page * limit, totalItems),
-              total: totalItems,
-            })}
-          </p>
-
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className={
-                    page <= 1
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
-                  }
-                />
-              </PaginationItem>
-
-              {renderPaginationLinks()}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className={
-                    page >= totalPages
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
 
       {/* Edit Lead Sheet */}
       <EditLeadSheet

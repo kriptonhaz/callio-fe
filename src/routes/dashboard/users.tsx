@@ -64,8 +64,6 @@ import {
   EyeOff,
   Edit,
   Trash,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Phone,
 } from 'lucide-react'
@@ -74,6 +72,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from 'sonner'
 import { useDebounce } from '@/hooks/useDebounce'
+import { StandardPagination } from '@/components/common/StandardPagination'
 
 const createUserSchema = z.object({
   role: z.nativeEnum(UserRole, {
@@ -568,37 +567,17 @@ function UsersPage() {
                   )}
                 </TableBody>
               </Table>
+              {/* Pagination */}
+              {usersData && (
+                <StandardPagination
+                  currentPage={searchParams.page}
+                  totalPages={usersData.meta.totalPages}
+                  totalItems={usersData.meta.total}
+                  itemsPerPage={searchParams.limit}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </div>
-
-            {/* Pagination */}
-            {usersData && usersData.meta.totalPages > 1 && (
-              <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(searchParams.page - 1)}
-                  disabled={searchParams.page <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {t('common.previous', 'Previous')}
-                </Button>
-                <div className="text-sm font-medium">
-                  {t('common.pageOf', 'Page {{current}} of {{total}}', {
-                    current: searchParams.page,
-                    total: usersData.meta.totalPages,
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(searchParams.page + 1)}
-                  disabled={searchParams.page >= usersData.meta.totalPages}
-                >
-                  {t('common.next', 'Next')}
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
 

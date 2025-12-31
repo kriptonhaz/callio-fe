@@ -66,14 +66,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
+
+import { StandardPagination } from '@/components/common/StandardPagination'
 import {
   Dialog,
   DialogContent,
@@ -566,42 +560,18 @@ function SipExtensionsPage() {
                 ))}
               </TableBody>
             </Table>
+            {/* Pagination */}
+            {data && (
+              <StandardPagination
+                currentPage={searchParams.page}
+                totalPages={data.meta.totalPages}
+                totalItems={data.meta.total}
+                itemsPerPage={searchParams.limit}
+                onPageChange={(page) => updateParams({ page })}
+              />
+            )}
           </div>
         )}
-
-        {/* Pagination */}
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() =>
-                    updateParams({ page: Math.max(1, searchParams.page - 1) })
-                  }
-                  className={
-                    searchParams.page <= 1
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
-                  }
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationLink isActive>{searchParams.page}</PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => updateParams({ page: searchParams.page + 1 })}
-                  className={
-                    !data?.meta.totalPages ||
-                    searchParams.page >= data.meta.totalPages
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer'
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
       </div>
 
       {/* Create Extension Dialog */}

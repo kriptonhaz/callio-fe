@@ -48,8 +48,6 @@ import {
 import {
   Search,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Users as UsersIcon,
   Download,
@@ -63,6 +61,7 @@ import { EditLeadSheet } from '@/components/campaigns/EditLeadSheet'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { LeadStatus } from '@/lib/api/types'
 import { toast } from 'sonner'
+import { StandardPagination } from '@/components/common/StandardPagination'
 
 interface LeadsSearch {
   page: number
@@ -486,37 +485,17 @@ function LeadsPage() {
                   )}
                 </TableBody>
               </Table>
+              {/* Pagination */}
+              {leadsData && (
+                <StandardPagination
+                  currentPage={searchParams.page}
+                  totalPages={leadsData.meta.totalPages}
+                  totalItems={leadsData.meta.total}
+                  itemsPerPage={searchParams.limit}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </div>
-
-            {/* Pagination */}
-            {leadsData && leadsData.meta.totalPages > 1 && (
-              <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(searchParams.page - 1)}
-                  disabled={searchParams.page <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {t('common.previous', 'Previous')}
-                </Button>
-                <div className="text-sm font-medium">
-                  {t('common.pageOf', 'Page {{current}} of {{total}}', {
-                    current: searchParams.page,
-                    total: leadsData.meta.totalPages,
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(searchParams.page + 1)}
-                  disabled={searchParams.page >= leadsData.meta.totalPages}
-                >
-                  {t('common.next', 'Next')}
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
 

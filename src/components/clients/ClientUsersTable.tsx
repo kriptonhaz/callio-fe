@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { StandardPagination } from '@/components/common/StandardPagination'
 import { useTranslation } from 'react-i18next'
 import {
   Table,
@@ -98,6 +99,8 @@ export function ClientUsersTable({
   >(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 10
 
   const { data: supervisors } = useUsers({
     role: UserRole.SUPERVISOR,
@@ -277,6 +280,13 @@ export function ClientUsersTable({
     const matchesRole = roleFilter === 'all' || user.role === roleFilter
     return matchesSearch && matchesRole
   })
+
+  const totalItems = filteredUsers.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const paginatedUsers = filteredUsers.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage,
+  )
 
   const getRoleBadge = (role: UserRole) => {
     const roleClasses = {
@@ -657,7 +667,7 @@ export function ClientUsersTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map((user) => (
+                paginatedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
@@ -705,6 +715,16 @@ export function ClientUsersTable({
               )}
             </TableBody>
           </Table>
+          {/* Pagination */}
+          {filteredUsers.length > 0 && (
+            <StandardPagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setPage}
+            />
+          )}
         </div>
       </CardContent>
 

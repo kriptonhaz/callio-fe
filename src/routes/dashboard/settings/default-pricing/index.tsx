@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, MoreHorizontal, Edit, Trash } from 'lucide-react'
 import type { DefaultPricing } from '@/lib/api/types/pricing.types'
+import { StandardPagination } from '@/components/common/StandardPagination'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -56,6 +57,8 @@ function DefaultPricingPage() {
   )
   const debouncedSearch = useDebounce(searchValue, 500)
   const { mutate: deletePricing } = useDeletePricing()
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 10
 
   const { data, isLoading, error } = useActivePricings()
 
@@ -203,8 +206,16 @@ function DefaultPricingPage() {
     )
   })
 
+  // Client-side pagination
+  const totalItems = filteredData?.length || 0
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  const paginatedData = filteredData?.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage,
+  )
+
   const table = useReactTable({
-    data: filteredData || [],
+    data: paginatedData || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   })
@@ -302,6 +313,16 @@ function DefaultPricingPage() {
                 ))}
               </TableBody>
             </Table>
+            {/* Pagination */}
+            {filteredData && filteredData.length > 0 && (
+              <StandardPagination
+                currentPage={page}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setPage}
+              />
+            )}
           </div>
         )}
       </div>

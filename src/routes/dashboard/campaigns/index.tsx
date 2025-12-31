@@ -66,8 +66,6 @@ import {
   Eye,
   Edit,
   Trash,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Calendar,
 } from 'lucide-react'
@@ -79,6 +77,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { format } from 'date-fns'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
+import { StandardPagination } from '@/components/common/StandardPagination'
 
 const campaignFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -527,37 +526,17 @@ function CampaignsPage() {
                   )}
                 </TableBody>
               </Table>
+              {/* Pagination */}
+              {campaignsData && (
+                <StandardPagination
+                  currentPage={searchParams.page}
+                  totalPages={campaignsData.meta.totalPages}
+                  totalItems={campaignsData.meta.total}
+                  itemsPerPage={searchParams.limit}
+                  onPageChange={handlePageChange}
+                />
+              )}
             </div>
-
-            {/* Pagination */}
-            {campaignsData && campaignsData.meta.totalPages > 1 && (
-              <div className="flex items-center justify-end space-x-2 py-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(searchParams.page - 1)}
-                  disabled={searchParams.page <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {t('common.previous', 'Previous')}
-                </Button>
-                <div className="text-sm font-medium">
-                  {t('common.pageOf', 'Page {{current}} of {{total}}', {
-                    current: searchParams.page,
-                    total: campaignsData.meta.totalPages,
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(searchParams.page + 1)}
-                  disabled={searchParams.page >= campaignsData.meta.totalPages}
-                >
-                  {t('common.next', 'Next')}
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
 
