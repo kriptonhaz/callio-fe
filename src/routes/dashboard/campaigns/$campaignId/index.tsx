@@ -6,6 +6,7 @@ import { useCampaign, useUpdateCampaign } from '@/hooks/api/useCampaigns'
 import { useMe } from '@/hooks/api/useAuth'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useBulkImportLeads } from '@/hooks/api/useLeads'
+import { useLeadAssignments } from '@/hooks/api/useLeadAssignments'
 import { useSmsMasking } from '@/hooks/api/useIpWhitelist'
 import { CampaignStatus } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
@@ -109,19 +110,36 @@ function CampaignDetailPage() {
   )
   const activeMaskingList =
     smsMaskingData?.data?.filter((m) => m.isActive) || []
-  const maskingOptions = activeMaskingList.map((m) => m.name)
+  const maskingOptions = activeMaskingList.map((m) => ({
+    id: m.id,
+    name: m.name,
+  }))
 
-  // Determine default masking: if only 1 option, use it; otherwise find isPrimary
-  const getDefaultMasking = (): string => {
+  // Determine default masking ID: if only 1 option, use it; otherwise find isPrimary
+  const getDefaultMaskingId = (): string => {
     if (activeMaskingList.length === 1) {
-      return activeMaskingList[0].name
+      return activeMaskingList[0].id
     }
     const primaryMasking = activeMaskingList.find(
       (m) => m.clientMaskings?.[0]?.isPrimary,
     )
-    return primaryMasking?.name || ''
+    return primaryMasking?.id || ''
   }
-  const defaultMasking = getDefaultMasking()
+  const defaultMaskingId = getDefaultMaskingId()
+
+  // Fetch lead assignments for SMS compose
+  const { data: leadAssignmentsData } = useLeadAssignments({
+    campaignId,
+    page: 1,
+    limit: 100,
+  })
+
+  const allLeadAssignments =
+    leadAssignmentsData?.data?.map((la) => ({
+      id: la.id,
+      name: la.lead?.leadName || 'Unknown',
+      phone: la.lead?.phone || '',
+    })) || []
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
@@ -797,8 +815,10 @@ function CampaignDetailPage() {
         <ComposeSmsSheet
           open={isComposeSmsSheetOpen}
           onOpenChange={setIsComposeSmsSheetOpen}
+          campaignId={campaignId}
           maskingOptions={maskingOptions}
-          defaultMasking={defaultMasking}
+          defaultMaskingId={defaultMaskingId}
+          allLeadAssignments={allLeadAssignments}
         />
       </div>
     </RoleGuard>
