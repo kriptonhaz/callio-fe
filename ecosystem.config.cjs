@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'callio-app',
       port: 3000,
-      instances: 'max',
+      instances: 1,
       exec_mode: 'cluster',
       script: './dist/server/server.js',
       interpreter: 'bun',
