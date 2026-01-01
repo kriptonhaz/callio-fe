@@ -9,6 +9,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -52,6 +60,7 @@ import {
   ChevronDown,
   Check,
   X,
+  Sparkles,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useComposeSms } from '@/hooks/api/useSms'
@@ -128,6 +137,8 @@ export function ComposeSmsSheet({
   const [smsText, setSmsText] = useState('')
   const [leadSearchQuery, setLeadSearchQuery] = useState('')
   const [isLeadPopoverOpen, setIsLeadPopoverOpen] = useState(false)
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
   const composeMutation = useComposeSms()
 
   // Determine if masking should be readonly (only 1 option)
@@ -518,54 +529,67 @@ export function ComposeSmsSheet({
                       <FormLabel>
                         {t('campaigns.smsText', 'SMS Text')}
                       </FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 px-2 text-xs"
-                          >
-                            <Info className="h-3 w-3 mr-1" />
-                            {t('campaigns.templateVariables', 'Variables')}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80" align="end">
-                          <div className="space-y-2">
-                            <h4 className="font-medium text-sm">
-                              {t(
-                                'campaigns.templateVariablesTitle',
-                                'Personalization Variables',
-                              )}
-                            </h4>
-                            <p className="text-xs text-muted-foreground">
-                              {t(
-                                'campaigns.templateVariablesDescription',
-                                'Click a variable to insert it into your message. Values will be replaced with lead data.',
-                              )}
-                            </p>
-                            <div className="grid gap-1 pt-2">
-                              {templateVariables.map((variable) => (
-                                <button
-                                  key={variable.key}
-                                  type="button"
-                                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted text-left text-sm"
-                                  onClick={() =>
-                                    insertTemplateVariable(variable.key)
-                                  }
-                                >
-                                  <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
-                                    {variable.key}
-                                  </code>
-                                  <span className="text-muted-foreground text-xs">
-                                    {variable.description}
-                                  </span>
-                                </button>
-                              ))}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                          onClick={() => setIsAiModalOpen(true)}
+                        >
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          {t('campaigns.generateAi', 'Generate with AI')}
+                        </Button>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                            >
+                              <Info className="h-3 w-3 mr-1" />
+                              {t('campaigns.templateVariables', 'Variables')}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80" align="end">
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm">
+                                {t(
+                                  'campaigns.templateVariablesTitle',
+                                  'Personalization Variables',
+                                )}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {t(
+                                  'campaigns.templateVariablesDescription',
+                                  'Click a variable to insert it into your message. Values will be replaced with lead data.',
+                                )}
+                              </p>
+
+                              <div className="grid gap-1 pt-2 max-h-[300px] overflow-y-auto">
+                                {templateVariables.map((variable) => (
+                                  <button
+                                    key={variable.key}
+                                    type="button"
+                                    className="flex items-center justify-between p-2 rounded-md hover:bg-muted text-left text-sm"
+                                    onClick={() =>
+                                      insertTemplateVariable(variable.key)
+                                    }
+                                  >
+                                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                                      {variable.key}
+                                    </code>
+                                    <span className="text-muted-foreground text-xs">
+                                      {variable.description}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
                     <FormControl>
                       <Textarea
@@ -709,6 +733,54 @@ export function ComposeSmsSheet({
           </form>
         </Form>
       </SheetContent>
+
+      <Dialog open={isAiModalOpen} onOpenChange={setIsAiModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t('campaigns.generateStatSms', 'Generate SMS with AI')}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                'campaigns.aiPromptDescription',
+                'Describe what you want to say, and we will generate the SMS for you.',
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder={t(
+                'campaigns.aiPromptPlaceholder',
+                'e.g., specific promo for new leads...',
+              )}
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAiModalOpen(false)}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                // Placeholder for now
+                console.log('Generating with prompt:', aiPrompt)
+                setIsAiModalOpen(false)
+                setAiPrompt('')
+              }}
+              disabled={!aiPrompt}
+            >
+              {t('common.generate', 'Generate')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   )
 }
