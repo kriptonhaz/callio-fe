@@ -41,6 +41,7 @@ interface ComposeSmsSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   maskingOptions: string[]
+  defaultMasking?: string
 }
 
 const formSchema = z.object({
@@ -61,14 +62,20 @@ export function ComposeSmsSheet({
   open,
   onOpenChange,
   maskingOptions,
+  defaultMasking = '',
 }: ComposeSmsSheetProps) {
   const { t } = useTranslation()
   const [smsText, setSmsText] = useState('')
 
+  // Determine if masking should be readonly (only 1 option)
+  const isMaskingReadonly = maskingOptions.length === 1
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
-      masking: maskingOptions.length === 1 ? maskingOptions[0] : '',
+      masking:
+        defaultMasking ||
+        (maskingOptions.length === 1 ? maskingOptions[0] : ''),
       smsText: '',
       scheduleType: 'now',
       scheduledDate: undefined,
@@ -125,12 +132,12 @@ export function ComposeSmsSheet({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      disabled={maskingOptions.length === 1}
+                      disabled={isMaskingReadonly}
                     >
                       <FormControl>
                         <SelectTrigger
                           className={cn(
-                            maskingOptions.length === 1 &&
+                            isMaskingReadonly &&
                               'bg-muted cursor-not-allowed opacity-70',
                           )}
                         >

@@ -37,7 +37,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { MessageSquare, AlertCircle, Plus, Edit, Trash2 } from 'lucide-react'
 import {
-  useClientSmsMasking,
+  useSmsMasking,
   useCreateSmsMasking,
   useUpdateSmsMasking,
   useDeleteSmsMasking,
@@ -84,8 +84,10 @@ export function SmsMaskingCard({
   const isServiceActive = smsService?.isEnabled ?? false
 
   // Fetch SMS masking data only when SMS service is active
-  const { data: maskingData, isLoading: isLoadingMasking } =
-    useClientSmsMasking(clientId, isServiceActive)
+  const { data: maskingData, isLoading: isLoadingMasking } = useSmsMasking(
+    clientId,
+    isServiceActive,
+  )
 
   const maskingList = maskingData?.data || []
   const activeMaskingList = maskingList.filter((m) => m.isActive)

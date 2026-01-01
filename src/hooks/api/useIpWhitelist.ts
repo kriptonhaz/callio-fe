@@ -41,11 +41,10 @@ const ipWhitelistApi = {
 }
 
 const smsMaskingApi = {
-  getClientSmsMasking: async (
-    clientId: string,
-  ): Promise<SmsMaskingListResponse> => {
+  getSmsMasking: async (clientId?: string): Promise<SmsMaskingListResponse> => {
+    const searchParams = clientId ? { clientId } : undefined
     return await apiClient
-      .get(`sms-masking`, { searchParams: { clientId } })
+      .get(`sms-masking`, { searchParams })
       .json<SmsMaskingListResponse>()
   },
 
@@ -98,10 +97,12 @@ export const useUpdateIpWhitelist = () => {
   })
 }
 
-export const useClientSmsMasking = (clientId: string, enabled = true) =>
+export const useSmsMasking = (clientId?: string, enabled = true) =>
   useQuery({
-    queryKey: smsMaskingKeys.client(clientId),
-    queryFn: () => smsMaskingApi.getClientSmsMasking(clientId),
+    queryKey: clientId
+      ? smsMaskingKeys.client(clientId)
+      : [...smsMaskingKeys.all, 'self'],
+    queryFn: () => smsMaskingApi.getSmsMasking(clientId),
     enabled,
     staleTime: 30 * 1000,
   })

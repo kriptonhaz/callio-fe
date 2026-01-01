@@ -6,6 +6,7 @@ import { useCampaign, useUpdateCampaign } from '@/hooks/api/useCampaigns'
 import { useMe } from '@/hooks/api/useAuth'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useBulkImportLeads } from '@/hooks/api/useLeads'
+import { useSmsMasking } from '@/hooks/api/useIpWhitelist'
 import { CampaignStatus } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
 import type { UpdateCampaignRequest } from '@/lib/api/types/campaigns.types'
@@ -93,6 +94,7 @@ function CampaignDetailPage() {
   const { data: me } = useMe()
   const clientId = me?.clientId
   const userRole = me?.role
+  const isSuperadmin = userRole === 'superadmin'
   const isAdmin = userRole === 'admin'
 
   const { data: campaign, isLoading, error } = useCampaign(campaignId)
@@ -100,6 +102,26 @@ function CampaignDetailPage() {
     useEnabledServices(clientId)
   const { mutate: updateCampaign, isPending: isUpdating } = useUpdateCampaign()
   const { mutate: bulkImport, isPending: isImporting } = useBulkImportLeads()
+
+  // Fetch SMS masking - superadmin needs to pass clientId, others use JWT
+  const { data: smsMaskingData } = useSmsMasking(
+    isSuperadmin ? clientId : undefined,
+  )
+  const activeMaskingList =
+    smsMaskingData?.data?.filter((m) => m.isActive) || []
+  const maskingOptions = activeMaskingList.map((m) => m.name)
+
+  // Determine default masking: if only 1 option, use it; otherwise find isPrimary
+  const getDefaultMasking = (): string => {
+    if (activeMaskingList.length === 1) {
+      return activeMaskingList[0].name
+    }
+    const primaryMasking = activeMaskingList.find(
+      (m) => m.clientMaskings?.[0]?.isPrimary,
+    )
+    return primaryMasking?.name || ''
+  }
+  const defaultMasking = getDefaultMasking()
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
@@ -766,7 +788,8 @@ function CampaignDetailPage() {
         <ComposeSmsSheet
           open={isComposeSmsSheetOpen}
           onOpenChange={setIsComposeSmsSheetOpen}
-          maskingOptions={['CALLIO', 'INFO']}
+          maskingOptions={maskingOptions}
+          defaultMasking={defaultMasking}
         />
       </div>
     </RoleGuard>
