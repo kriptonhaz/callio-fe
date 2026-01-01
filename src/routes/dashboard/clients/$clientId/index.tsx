@@ -26,6 +26,7 @@ import { ClientUsersTable } from '@/components/clients/ClientUsersTable'
 import { ClientPricingTable } from '@/components/clients/ClientPricingTable'
 import { ClientServicesCard } from '@/components/clients/ClientServicesCard'
 import { SipExtensionRangeCard } from '@/components/clients/SipExtensionRangeCard'
+import { IpWhitelistCard } from '@/components/clients/IpWhitelistCard'
 
 export const Route = createFileRoute('/dashboard/clients/$clientId/')({
   component: ClientDetailsPage,
@@ -219,6 +220,12 @@ function ClientDetailsPage() {
             />
 
             <SipExtensionRangeCard
+              clientId={clientId}
+              services={servicesData || []}
+              isLoading={servicesLoading}
+            />
+
+            <IpWhitelistCard
               clientId={clientId}
               services={servicesData || []}
               isLoading={servicesLoading}
