@@ -6,6 +6,7 @@ import {
   type UseMutationResult,
 } from '@tanstack/react-query'
 import { apiClient, buildQueryString } from '@/lib/api/client'
+import { campaignsKeys } from './useCampaigns'
 import type { PaginatedResponse } from '@/lib/api/types'
 import type {
   Lead,
@@ -114,6 +115,8 @@ export const useCreateLead = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
       // Invalidate lead-assignments to refresh campaign leads table
       queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
+      // Invalidate campaigns to refresh lead counts
+      queryClient.invalidateQueries({ queryKey: campaignsKeys.all })
     },
   })
 }
@@ -142,6 +145,8 @@ export const useDeleteLead = (): UseMutationResult<void, Error, string> => {
       queryClient.removeQueries({ queryKey: leadsKeys.detail(id) })
       // Invalidate lead-assignments to refresh campaign leads table
       queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
+      // Invalidate campaigns to refresh lead counts
+      queryClient.invalidateQueries({ queryKey: campaignsKeys.all })
     },
   })
 }
@@ -158,6 +163,8 @@ export const useBulkImportLeads = (): UseMutationResult<
       queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
       // Also invalidate lead-assignments to refresh the campaign leads table
       queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
+      // Invalidate campaigns to refresh lead counts
+      queryClient.invalidateQueries({ queryKey: campaignsKeys.all })
     },
   })
 }

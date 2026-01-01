@@ -486,6 +486,15 @@ function CampaignDetailPage() {
                       size="sm"
                       onClick={() => setIsComposeSmsSheetOpen(true)}
                       className="bg-green-600 hover:bg-green-700"
+                      disabled={!campaign._count?.leadAssignments}
+                      title={
+                        !campaign._count?.leadAssignments
+                          ? t(
+                              'campaigns.noLeadsToSendSms',
+                              'No leads in this campaign',
+                            )
+                          : undefined
+                      }
                     >
                       <MessageSquare className="h-4 w-4 mr-2" />
                       {t('campaigns.composeSms', 'Compose SMS')}
