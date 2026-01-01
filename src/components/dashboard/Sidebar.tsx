@@ -1,7 +1,13 @@
 import { useState, useMemo } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, LogOut, ChevronDown } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  ChevronDown,
+  Sparkles,
+} from 'lucide-react'
 import { useLogout } from '@/hooks/api/useAuth'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -92,6 +98,11 @@ export function Sidebar() {
               icon: ChartLine,
               label: t('dashboard.menu.defaultPricing', 'Default Pricing'),
               href: '/dashboard/settings/default-pricing',
+            },
+            {
+              icon: Sparkles,
+              label: t('dashboard.menu.aiProvider', 'AI Provider'),
+              href: '/dashboard/settings/ai-provider',
             },
           ],
         },

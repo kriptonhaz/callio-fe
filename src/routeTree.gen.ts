@@ -29,6 +29,7 @@ import { Route as DashboardCampaignsIndexRouteImport } from './routes/dashboard/
 import { Route as DashboardGsmDevicesGsmDeviceIdRouteImport } from './routes/dashboard/gsm-devices/$gsmDeviceId'
 import { Route as DashboardClientsCreateRouteImport } from './routes/dashboard/clients/create'
 import { Route as DashboardSettingsDefaultPricingIndexRouteImport } from './routes/dashboard/settings/default-pricing/index'
+import { Route as DashboardSettingsAiProviderIndexRouteImport } from './routes/dashboard/settings/ai-provider/index'
 import { Route as DashboardClientsClientIdIndexRouteImport } from './routes/dashboard/clients/$clientId/index'
 import { Route as DashboardCampaignsCampaignIdIndexRouteImport } from './routes/dashboard/campaigns/$campaignId/index'
 import { Route as DashboardClientsClientIdEditRouteImport } from './routes/dashboard/clients/$clientId/edit'
@@ -138,6 +139,12 @@ const DashboardSettingsDefaultPricingIndexRoute =
     path: '/default-pricing/',
     getParentRoute: () => DashboardSettingsRoute,
   } as any)
+const DashboardSettingsAiProviderIndexRoute =
+  DashboardSettingsAiProviderIndexRouteImport.update({
+    id: '/ai-provider/',
+    path: '/ai-provider/',
+    getParentRoute: () => DashboardSettingsRoute,
+  } as any)
 const DashboardClientsClientIdIndexRoute =
   DashboardClientsClientIdIndexRouteImport.update({
     id: '/clients/$clientId/',
@@ -180,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/campaigns/$campaignId': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
 }
 export interface FileRoutesByTo {
@@ -203,6 +211,7 @@ export interface FileRoutesByTo {
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/campaigns/$campaignId': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
 }
 export interface FileRoutesById {
@@ -229,6 +238,7 @@ export interface FileRoutesById {
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
   '/dashboard/campaigns/$campaignId/': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId/': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/settings/ai-provider/': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/default-pricing/': typeof DashboardSettingsDefaultPricingIndexRoute
 }
 export interface FileRouteTypes {
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/campaigns/$campaignId'
     | '/dashboard/clients/$clientId'
+    | '/dashboard/settings/ai-provider'
     | '/dashboard/settings/default-pricing'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/campaigns/$campaignId'
     | '/dashboard/clients/$clientId'
+    | '/dashboard/settings/ai-provider'
     | '/dashboard/settings/default-pricing'
   id:
     | '__root__'
@@ -304,6 +316,7 @@ export interface FileRouteTypes {
     | '/dashboard/clients/$clientId/edit'
     | '/dashboard/campaigns/$campaignId/'
     | '/dashboard/clients/$clientId/'
+    | '/dashboard/settings/ai-provider/'
     | '/dashboard/settings/default-pricing/'
   fileRoutesById: FileRoutesById
 }
@@ -456,6 +469,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsDefaultPricingIndexRouteImport
       parentRoute: typeof DashboardSettingsRoute
     }
+    '/dashboard/settings/ai-provider/': {
+      id: '/dashboard/settings/ai-provider/'
+      path: '/ai-provider'
+      fullPath: '/dashboard/settings/ai-provider'
+      preLoaderRoute: typeof DashboardSettingsAiProviderIndexRouteImport
+      parentRoute: typeof DashboardSettingsRoute
+    }
     '/dashboard/clients/$clientId/': {
       id: '/dashboard/clients/$clientId/'
       path: '/clients/$clientId'
@@ -482,11 +502,13 @@ declare module '@tanstack/react-router' {
 
 interface DashboardSettingsRouteChildren {
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
+  DashboardSettingsAiProviderIndexRoute: typeof DashboardSettingsAiProviderIndexRoute
   DashboardSettingsDefaultPricingIndexRoute: typeof DashboardSettingsDefaultPricingIndexRoute
 }
 
 const DashboardSettingsRouteChildren: DashboardSettingsRouteChildren = {
   DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
+  DashboardSettingsAiProviderIndexRoute: DashboardSettingsAiProviderIndexRoute,
   DashboardSettingsDefaultPricingIndexRoute:
     DashboardSettingsDefaultPricingIndexRoute,
 }
