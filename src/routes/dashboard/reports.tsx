@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { RoleGuard } from '@/lib/auth-guard'
 import { useCallLogs } from '@/hooks/api/useRemainingModules'
+import { useSmsHistory } from '@/hooks/api/useSms'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useCampaigns } from '@/hooks/api/useCampaigns'
 import { useEnabledServices } from '@/hooks/api/useServices'
@@ -54,6 +55,10 @@ import {
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { CallLogsQueryParams } from '@/lib/api/types/remaining-modules.types'
+import {
+  SmsStatus,
+  type SmsHistoryQueryParams,
+} from '@/lib/api/types/sms.types'
 
 import { StandardPagination } from '@/components/common/StandardPagination'
 
@@ -61,6 +66,7 @@ interface ReportsSearch {
   page: number
   limit: number
   disposition?: string
+  status?: SmsStatus
   agentId?: string
   campaignId?: string
   startDate?: string
@@ -74,6 +80,7 @@ export const Route = createFileRoute('/dashboard/reports')({
       page: Number(search.page || 1),
       limit: Number(search.limit || 10),
       disposition: (search.disposition as string) || undefined,
+      status: (search.status as SmsStatus) || undefined,
       agentId: (search.agentId as string) || undefined,
       campaignId: (search.campaignId as string) || undefined,
       startDate: (search.startDate as string) || undefined,
@@ -163,8 +170,52 @@ function ReportsPage(): React.ReactElement {
     return params
   }, [searchParams])
 
+  // Build SMS query params
+  const smsQueryParams: SmsHistoryQueryParams = useMemo(() => {
+    const params: SmsHistoryQueryParams = {
+      page: searchParams.page,
+      limit: searchParams.limit,
+    }
+    if (searchParams.status && searchParams.status !== ('all' as SmsStatus)) {
+      params.status = searchParams.status
+    }
+    if (searchParams.agentId && searchParams.agentId !== 'all') {
+      // Assuming SmsHistoryQueryParams needs userId map to agentId?
+      // The API likely filters by userId for sender but params said agentId in searchParams.
+      // Let's check type definition. SmsHistoryQueryParams implies generic query params.
+      // But look at useSms.ts, it uses SmsHistoryQueryParams.
+      // I'll assume currently filtering by agent isn't explicitly supported in the UI request or use generic search?
+      // Wait, user request said "display the same filter".
+      // Let's assume the API might support 'userId' corresponding to agentId.
+      // But looking at types I defined:
+      // export interface SmsHistoryQueryParams extends PaginationParams { campaignId, status, startDate, endDate, search }
+      // It does NOT have agentId or userId.
+      // I should update SmsHistoryQueryParams to include userId if I want to filter by agent.
+      // User request did NOT explicitly say "filter by agent", but "display the same filter".
+      // Same filter implies Campaign and Agent.
+      // I'll stick to what I defined for now and add support if user asks or update types now.
+      // The user defined endpoint params: campaignId, status, startDate, endDate.
+      // It does NOT list agentId. So I will SKIP agentId filter for SMS for now.
+    }
+    if (searchParams.campaignId && searchParams.campaignId !== 'all') {
+      params.campaignId = searchParams.campaignId
+    }
+    if (searchParams.startDate) {
+      params.startDate = searchParams.startDate
+    }
+    if (searchParams.endDate) {
+      params.endDate = searchParams.endDate
+    }
+    return params
+  }, [searchParams])
+
   // Fetch call logs
-  const { data: callLogsData, isLoading } = useCallLogs(queryParams)
+  const { data: callLogsData, isLoading: isLoadingCallLogs } =
+    useCallLogs(queryParams)
+
+  // Fetch SMS history
+  const { data: smsHistoryData, isLoading: isLoadingSmsHistory } =
+    useSmsHistory(smsQueryParams)
 
   // Fetch agents for filter (only users with agent role)
   const { data: usersData } = useUsers({
@@ -186,6 +237,7 @@ function ReportsPage(): React.ReactElement {
         page: searchParams.page,
         limit: searchParams.limit,
         disposition: searchParams.disposition,
+        status: searchParams.status,
         agentId: searchParams.agentId,
         campaignId: searchParams.campaignId,
         startDate: searchParams.startDate,
@@ -202,6 +254,13 @@ function ReportsPage(): React.ReactElement {
   const handleDispositionFilter = (disposition: string): void => {
     updateParams({
       disposition: disposition === 'all' ? undefined : disposition,
+      page: 1,
+    })
+  }
+
+  const handleSmsStatusFilter = (status: string): void => {
+    updateParams({
+      status: status === 'all' ? undefined : (status as SmsStatus),
       page: 1,
     })
   }
@@ -346,10 +405,56 @@ function ReportsPage(): React.ReactElement {
     )
   }
 
+  const getSmsStatusBadge = (status: SmsStatus): React.ReactElement => {
+    switch (status) {
+      case SmsStatus.SENT:
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1.5 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+            {t('reports.sent', 'Sent')}
+          </Badge>
+        )
+      case SmsStatus.PENDING:
+      case SmsStatus.SCHEDULED:
+      case SmsStatus.SENDING:
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1.5 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+            {t('reports.pending', 'Pending')}
+          </Badge>
+        )
+      case SmsStatus.FAILED:
+      case SmsStatus.CANCELLED:
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1.5 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+            {t('reports.failed', 'Failed')}
+          </Badge>
+        )
+      default:
+        return <Badge variant="outline">{status}</Badge>
+    }
+  }
+
   // Pagination
-  const totalPages = callLogsData?.meta.totalPages || 1
+  const totalPages =
+    activeTab === 'voip'
+      ? callLogsData?.meta.totalPages || 1
+      : smsHistoryData?.meta.totalPages || 1
   const currentPage = searchParams.page
-  const totalItems = callLogsData?.meta.total || 0
+  const totalItems =
+    activeTab === 'voip'
+      ? callLogsData?.meta.total || 0
+      : smsHistoryData?.meta.total || 0
   const itemsPerPage = searchParams.limit
 
   // No services available
@@ -726,7 +831,7 @@ function ReportsPage(): React.ReactElement {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {isLoading ? (
+                      {isLoadingCallLogs ? (
                         <TableRow>
                           <TableCell colSpan={7} className="h-24 text-center">
                             <div className="flex items-center justify-center gap-2">
@@ -847,17 +952,323 @@ function ReportsPage(): React.ReactElement {
               </TabsContent>
             )}
 
-            {/* SMS Reports Tab - Placeholder */}
+            {/* SMS Reports Tab */}
             {hasSmsService && (
-              <TabsContent value="sms" className="mt-0">
-                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mb-4" />
-                  <h3 className="text-lg font-medium">
-                    {t('reports.smsReportsTitle', 'SMS Reports')}
-                  </h3>
-                  <p className="text-sm">
-                    {t('reports.comingSoon', 'Coming soon...')}
-                  </p>
+              <TabsContent value="sms" className="space-y-0 mt-0">
+                {/* Filters Card */}
+                <div className="rounded-t-lg border border-b-0 bg-card p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* Start Date Picker */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-[150px] justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? (
+                              format(startDate, 'MM/dd/yyyy')
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {t('reports.startDate', 'Start Date')}
+                              </span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={handleStartDateChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* End Date Picker */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-[150px] justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? (
+                              format(endDate, 'MM/dd/yyyy')
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {t('reports.endDate', 'End Date')}
+                              </span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={endDate}
+                            onSelect={handleEndDateChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Campaign Filter - Searchable Combobox */}
+                      <Popover
+                        open={campaignComboboxOpen}
+                        onOpenChange={setCampaignComboboxOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={campaignComboboxOpen}
+                            className="w-[180px] justify-between"
+                          >
+                            {searchParams.campaignId &&
+                            searchParams.campaignId !== 'all'
+                              ? campaigns.find(
+                                  (c) => c.id === searchParams.campaignId,
+                                )?.name
+                              : t('reports.allCampaigns', 'All Campaigns')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[220px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder={t(
+                                'reports.searchCampaign',
+                                'Search campaign...',
+                              )}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {t(
+                                  'reports.noCampaignFound',
+                                  'No campaign found.',
+                                )}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="all"
+                                  onSelect={() => {
+                                    handleCampaignFilter('all')
+                                    setCampaignComboboxOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      !searchParams.campaignId ||
+                                        searchParams.campaignId === 'all'
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                    )}
+                                  />
+                                  {t('reports.allCampaigns', 'All Campaigns')}
+                                </CommandItem>
+                                {campaigns.map((campaign) => (
+                                  <CommandItem
+                                    key={campaign.id}
+                                    value={campaign.name}
+                                    onSelect={() => {
+                                      handleCampaignFilter(campaign.id)
+                                      setCampaignComboboxOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        searchParams.campaignId === campaign.id
+                                          ? 'opacity-100'
+                                          : 'opacity-0',
+                                      )}
+                                    />
+                                    {campaign.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Status Filter */}
+                      <Select
+                        value={searchParams.status || 'all'}
+                        onValueChange={handleSmsStatusFilter}
+                      >
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue
+                            placeholder={t(
+                              'reports.allStatuses',
+                              'All Statuses',
+                            )}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">
+                            {t('reports.allStatuses', 'All Statuses')}
+                          </SelectItem>
+                          <SelectItem value={SmsStatus.PENDING}>
+                            {t('reports.pending', 'Pending')}
+                          </SelectItem>
+                          <SelectItem value={SmsStatus.SCHEDULED}>
+                            {t('reports.scheduled', 'Scheduled')}
+                          </SelectItem>
+                          <SelectItem value={SmsStatus.SENDING}>
+                            {t('reports.sending', 'Sending')}
+                          </SelectItem>
+                          <SelectItem value={SmsStatus.SENT}>
+                            {t('reports.sent', 'Sent')}
+                          </SelectItem>
+                          <SelectItem value={SmsStatus.FAILED}>
+                            {t('reports.failed', 'Failed')}
+                          </SelectItem>
+                          <SelectItem value={SmsStatus.CANCELLED}>
+                            {t('reports.cancelled', 'Cancelled')}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table with footer pagination */}
+                <div className="rounded-b-lg border bg-card overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.dateTime', 'DATE & TIME')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.campaignName', 'CAMPAIGN NAME')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.leadsName', 'LEADS NAME')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.phone', 'PHONE NUMBER')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.masking', 'MASKING')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.message', 'MESSAGE')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.status', 'STATUS')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.source', 'SOURCE')}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoadingSmsHistory ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="h-24 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              {t('common.loading', 'Loading...')}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : smsHistoryData?.data.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                              <MessageSquare className="h-8 w-8" />
+                              <p>
+                                {t(
+                                  'reports.noSmsHistory',
+                                  'No SMS history found',
+                                )}
+                              </p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        smsHistoryData?.data.map((sms) => {
+                          const { date, time } = formatDateTime(sms.createdAt)
+                          // Lookup campaign name properly
+                          const campaignName =
+                            campaigns.find((c) => c.id === sms.campaignId)
+                              ?.name || '-'
+
+                          return (
+                            <TableRow
+                              key={sms.id}
+                              className="hover:bg-muted/30"
+                            >
+                              {/* Date & Time */}
+                              <TableCell className="w-[140px]">
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{date}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {time}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              {/* Campaign Name */}
+                              <TableCell>
+                                <span className="font-medium">
+                                  {campaignName}
+                                </span>
+                              </TableCell>
+                              {/* Leads Name */}
+                              <TableCell>
+                                <span className="font-medium">
+                                  {sms.lead?.lead?.leadName || '-'}
+                                </span>
+                              </TableCell>
+                              {/* Phone Number */}
+                              <TableCell>
+                                <span className="text-muted-foreground whitespace-nowrap">
+                                  {formatPhoneNumber(sms.phoneNumber)}
+                                </span>
+                              </TableCell>
+                              {/* Masking */}
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="font-normal"
+                                >
+                                  {sms.masking?.name || '-'}
+                                </Badge>
+                              </TableCell>
+                              {/* Message (Multi-line) */}
+                              <TableCell className="min-w-[300px] max-w-[500px]">
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                                  {sms.message}
+                                </p>
+                              </TableCell>
+                              {/* Status */}
+                              <TableCell className="w-[100px]">
+                                {getSmsStatusBadge(sms.status)}
+                              </TableCell>
+                              {/* Source */}
+                              <TableCell className="w-[100px]">
+                                <span className="capitalize text-muted-foreground">
+                                  {sms.source}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                  {/* Pagination */}
+                  <div className="border-t bg-muted/50 p-4">
+                    <StandardPagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      itemsPerPage={itemsPerPage}
+                      totalItems={totalItems}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
                 </div>
               </TabsContent>
             )}
