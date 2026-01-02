@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Edit,
   Plus,
+  BrainCircuit,
 } from 'lucide-react'
 import type { ClientService } from '@/lib/api/types/services.types'
 import type { ClientServiceBalance } from '@/lib/api/types/balance.types'
@@ -36,7 +37,7 @@ export function ClientServicesCard({
   const [selectedServiceForTopUp, setSelectedServiceForTopUp] =
     useState<ServiceType | null>(null)
 
-  const getServiceIcon = (type: ServiceType) => {
+  const getServiceIcon = (type: ServiceType | string) => {
     switch (type) {
       case ServiceType.VOICE:
         return <Phone className="h-5 w-5 text-blue-500" />
@@ -44,12 +45,14 @@ export function ClientServicesCard({
         return <MessageSquare className="h-5 w-5 text-green-500" />
       case ServiceType.WHATSAPP:
         return <MessageCircle className="h-5 w-5 text-green-600" />
+      case ServiceType.AI:
+        return <BrainCircuit className="h-5 w-5 text-purple-500" />
       default:
         return <AlertCircle className="h-5 w-5 text-gray-500" />
     }
   }
 
-  const getServiceLabel = (type: ServiceType) => {
+  const getServiceLabel = (type: ServiceType | string) => {
     switch (type) {
       case ServiceType.VOICE:
         return t('services.voice', 'Voice')
@@ -57,6 +60,8 @@ export function ClientServicesCard({
         return t('services.sms', 'SMS')
       case ServiceType.WHATSAPP:
         return t('services.whatsapp', 'WhatsApp')
+      case ServiceType.AI:
+        return t('services.ai', 'AI')
       default:
         return type
     }
@@ -195,7 +200,9 @@ export function ClientServicesCard({
                           size="icon"
                           className="h-8 w-8 rounded-full"
                           title={t('services.topUp', 'Top Up')}
-                          onClick={() => handleTopUpClick(service.serviceType)}
+                          onClick={() =>
+                            handleTopUpClick(service.serviceType as ServiceType)
+                          }
                           disabled={!service.isEnabled}
                         >
                           <Plus className="h-4 w-4" />

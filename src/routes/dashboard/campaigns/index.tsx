@@ -340,6 +340,11 @@ function CampaignsPage() {
             'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
           label: 'WhatsApp',
         },
+        ai: {
+          className:
+            'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+          label: 'AI',
+        },
       }
 
     const config = serviceConfig[serviceType] || {
@@ -722,14 +727,14 @@ function CampaignsPage() {
                                   <FormControl>
                                     <Checkbox
                                       checked={field.value?.includes(
-                                        service.serviceType,
+                                        service.serviceType as ServiceType,
                                       )}
                                       onCheckedChange={(checked) => {
                                         const currentValue = field.value || []
                                         if (checked) {
                                           field.onChange([
                                             ...currentValue,
-                                            service.serviceType,
+                                            service.serviceType as ServiceType,
                                           ])
                                         } else {
                                           field.onChange(
@@ -749,6 +754,8 @@ function CampaignsPage() {
                                       t('services.sms', 'SMS')}
                                     {service.serviceType === 'whatsapp' &&
                                       t('services.whatsapp', 'WhatsApp')}
+                                    {service.serviceType === 'ai' &&
+                                      t('services.ai', 'AI')}
                                   </FormLabel>
                                 </FormItem>
                               )}

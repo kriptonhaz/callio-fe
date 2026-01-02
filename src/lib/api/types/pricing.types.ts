@@ -40,6 +40,8 @@ export enum ServiceType {
   VOICE = 'voice',
   SMS = 'sms',
   DATA = 'data',
+  WHATSAPP = 'whatsapp',
+  AI = 'ai',
 }
 
 export enum UnitType {

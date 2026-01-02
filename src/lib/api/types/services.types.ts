@@ -2,18 +2,20 @@ export enum ServiceType {
   VOICE = 'voice',
   SMS = 'sms',
   WHATSAPP = 'whatsapp',
+  AI = 'ai',
 }
 
 export interface ClientService {
-  id: string
-  clientId: string
-  serviceType: ServiceType
-  subscriptionType: 'prepaid' | 'postpaid'
+  id?: string
+  clientId?: string
+  serviceType: ServiceType | string
+  subscriptionType: 'prepaid' | 'postpaid' | null
   isEnabled: boolean
-  subscribedAt: string
-  expiresAt: string | null
-  createdAt: string
-  updatedAt: string
+  subscribedAt?: string | null
+  expiresAt?: string | null
+  createdAt?: string
+  updatedAt?: string
+  subscribed?: boolean
 }
 
 export interface UpdateClientServiceRequest {

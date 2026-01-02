@@ -41,6 +41,7 @@ import {
   MessageSquare,
   MessageCircle,
   AlertCircle,
+  BrainCircuit,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ServiceType, ClientService } from '@/lib/api/types/services.types'
@@ -148,7 +149,8 @@ export function EditClientServicesModal({
 
         if (serviceData.isEnabled) {
           // Step 1: Create or Update service
-          if (existingService) {
+          // Check if service has an id (subscribed services have id, unsubscribed don't)
+          if (existingService?.id) {
             // Service exists → PATCH
             await updateServiceMutation.mutateAsync({
               clientId,
@@ -162,7 +164,7 @@ export function EditClientServicesModal({
               },
             })
           } else {
-            // New service → POST
+            // New service (no id) → POST
             await createServiceMutation.mutateAsync({
               clientId,
               data: {
@@ -232,14 +234,15 @@ export function EditClientServicesModal({
           }
         } else {
           // Service is disabled - check if it was previously enabled and needs to be disabled
-          if (existingService && existingService.isEnabled) {
+          if (existingService?.id && existingService.isEnabled) {
             // Previously enabled service is now disabled → PATCH with isEnabled: false
             await updateServiceMutation.mutateAsync({
               clientId,
               serviceType,
               data: {
                 isEnabled: false,
-                subscriptionType: existingService.subscriptionType,
+                subscriptionType:
+                  existingService.subscriptionType ?? 'postpaid',
               },
             })
           }
@@ -275,6 +278,8 @@ export function EditClientServicesModal({
         return <MessageSquare className="h-5 w-5 text-green-500" />
       case ServiceType.WHATSAPP:
         return <MessageCircle className="h-5 w-5 text-green-600" />
+      case ServiceType.AI:
+        return <BrainCircuit className="h-5 w-5 text-purple-500" />
       default:
         return <AlertCircle className="h-5 w-5 text-gray-500" />
     }
@@ -288,6 +293,8 @@ export function EditClientServicesModal({
         return t('services.sms', 'SMS')
       case ServiceType.WHATSAPP:
         return t('services.whatsapp', 'WhatsApp')
+      case ServiceType.AI:
+        return t('services.ai', 'AI')
       default:
         return type
     }
