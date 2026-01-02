@@ -1,12 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { Bell } from '@/components/animate-ui/icons/bell'
-import { Search } from '@/components/animate-ui/icons/search'
 import { Moon } from '@/components/animate-ui/icons/moon'
 import { Sun } from '@/components/animate-ui/icons/sun'
 import { Globe } from '@/components/animate-ui/icons/globe'
 import { AnimateIcon } from '@/components/animate-ui/icons/icon'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useSipConnectionStatus } from '@/hooks/api/useSipConnectionStatus'
 import {
   DropdownMenu,
@@ -20,7 +18,7 @@ import { useSipCredentials } from '@/hooks/api/useSipExtensions'
 import { useSipStore } from '@/store/useSipStore'
 
 export function Header() {
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
@@ -57,20 +55,7 @@ export function Header() {
   }
 
   return (
-    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between sticky top-0 z-10">
-      <div className="flex items-center w-1/3">
-        <div className="relative w-full max-w-sm group">
-          <div className="absolute left-2.5 top-2.5 text-muted-foreground">
-            <Search className="h-4 w-4" animateOnHover />
-          </div>
-          <Input
-            type="search"
-            placeholder={t('dashboard.search')}
-            className="pl-9 bg-muted/50 border-none focus-visible:ring-1"
-          />
-        </div>
-      </div>
-
+    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-end sticky top-0 z-10">
       <div className="flex items-center space-x-4">
         <VoipConnectionButton />
         <DropdownMenu>
