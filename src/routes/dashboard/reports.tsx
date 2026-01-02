@@ -1260,15 +1260,13 @@ function ReportsPage(): React.ReactElement {
                     </TableBody>
                   </Table>
                   {/* Pagination */}
-                  <div className="border-t bg-muted/50 p-4">
-                    <StandardPagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      itemsPerPage={itemsPerPage}
-                      totalItems={totalItems}
-                      onPageChange={handlePageChange}
-                    />
-                  </div>
+                  <StandardPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={totalItems}
+                    onPageChange={handlePageChange}
+                  />
                 </div>
               </TabsContent>
             )}
