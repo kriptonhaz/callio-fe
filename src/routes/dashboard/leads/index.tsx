@@ -6,6 +6,7 @@ import {
   useLeads,
   useBulkImportLeads,
   useDeleteLead,
+  useBulkDeleteLeads,
 } from '@/hooks/api/useLeads'
 import { useMe } from '@/hooks/api/useAuth'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
@@ -97,6 +98,8 @@ function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null)
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const debouncedSearch = useDebounce(searchValue, 500)
 
   // Auth context
@@ -119,6 +122,8 @@ function LeadsPage() {
 
   const { mutate: bulkImport, isPending: isImporting } = useBulkImportLeads()
   const { mutate: deleteLead, isPending: isDeleting } = useDeleteLead()
+  const { mutate: bulkDeleteLeads, isPending: isBulkDeleting } =
+    useBulkDeleteLeads()
 
   // Navigation helpers
   const updateParams = (updates: Partial<LeadsSearch>) => {
@@ -197,6 +202,46 @@ function LeadsPage() {
       },
     })
   }
+
+  const handleBulkDelete = () => {
+    if (selectedLeadIds.length === 0) return
+
+    bulkDeleteLeads(selectedLeadIds, {
+      onSuccess: () => {
+        toast.success(
+          t(
+            'leads.bulkDeleted',
+            `Successfully deleted ${selectedLeadIds.length} lead(s)`,
+          ),
+        )
+        setSelectedLeadIds([])
+        setBulkDeleteDialogOpen(false)
+      },
+      onError: () => {
+        toast.error(t('leads.bulkDeleteFailed', 'Failed to delete leads'))
+      },
+    })
+  }
+
+  const toggleLeadSelection = (leadId: string) => {
+    setSelectedLeadIds((prev) =>
+      prev.includes(leadId)
+        ? prev.filter((id) => id !== leadId)
+        : [...prev, leadId],
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedLeadIds.length === leadsData?.data.length) {
+      setSelectedLeadIds([])
+    } else {
+      setSelectedLeadIds(leadsData?.data.map((lead) => lead.id) || [])
+    }
+  }
+
+  const isAllSelected =
+    (leadsData?.data?.length ?? 0) > 0 &&
+    selectedLeadIds.length === (leadsData?.data?.length ?? 0)
 
   const handleDownloadSample = () => {
     const link = document.createElement('a')
@@ -291,6 +336,17 @@ function LeadsPage() {
           </h1>
           {isAdmin && (
             <div className="flex items-center gap-2">
+              {selectedLeadIds.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBulkDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t('leads.deleteSelected', 'Delete')} (
+                  {selectedLeadIds.length})
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -382,6 +438,14 @@ function LeadsPage() {
               <Table>
                 <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                   <TableRow>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                      />
+                    </TableHead>
                     <TableHead className="font-semibold text-primary">
                       {t('leads.name', 'Name')}
                     </TableHead>
@@ -408,7 +472,7 @@ function LeadsPage() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={8} className="h-24 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           {t('common.loading', 'Loading...')}
@@ -417,7 +481,7 @@ function LeadsPage() {
                     </TableRow>
                   ) : leadsData?.data.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-32 text-center">
+                      <TableCell colSpan={8} className="h-32 text-center">
                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                           <UsersIcon className="h-8 w-8" />
                           <p>{t('leads.noLeadsFound', 'No leads found')}</p>
@@ -431,6 +495,14 @@ function LeadsPage() {
                         className="cursor-pointer hover:bg-muted/30"
                         onClick={() => handleRowClick(lead)}
                       >
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedLeadIds.includes(lead.id)}
+                            onChange={() => toggleLeadSelection(lead.id)}
+                            className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {lead.leadName}
                         </TableCell>
@@ -550,6 +622,42 @@ function LeadsPage() {
                 className="bg-red-600 hover:bg-red-700"
               >
                 {isDeleting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {t('common.delete', 'Delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <AlertDialog
+          open={bulkDeleteDialogOpen}
+          onOpenChange={setBulkDeleteDialogOpen}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t('leads.confirmBulkDeleteTitle', 'Delete selected leads?')}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t(
+                  'leads.confirmBulkDeleteDescription',
+                  'Are you sure you want to delete {{count}} lead(s)? This action cannot be undone.',
+                  { count: selectedLeadIds.length },
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isBulkDeleting}>
+                {t('common.cancel', 'Cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBulkDelete}
+                disabled={isBulkDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isBulkDeleting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 {t('common.delete', 'Delete')}

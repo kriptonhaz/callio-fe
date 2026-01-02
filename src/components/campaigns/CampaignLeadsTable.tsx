@@ -50,11 +50,17 @@ import { toast } from 'sonner'
 interface CampaignLeadsTableProps {
   campaignId: string
   clientId: string
+  selectedLeadIds?: string[]
+  onSelectedLeadsChange?: (leadIds: string[]) => void
+  onBulkUnassignClick?: () => void
 }
 
 export function CampaignLeadsTable({
   campaignId,
   clientId,
+  selectedLeadIds = [],
+  onSelectedLeadsChange,
+  onBulkUnassignClick,
 }: CampaignLeadsTableProps) {
   const { t } = useTranslation()
 
@@ -86,6 +92,29 @@ export function CampaignLeadsTable({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [assignmentToDelete, setAssignmentToDelete] =
     useState<LeadAssignment | null>(null)
+
+  const toggleLeadSelection = (leadId: string) => {
+    if (!onSelectedLeadsChange) return
+    const newSelection = selectedLeadIds.includes(leadId)
+      ? selectedLeadIds.filter((id) => id !== leadId)
+      : [...selectedLeadIds, leadId]
+    onSelectedLeadsChange(newSelection)
+  }
+
+  const toggleSelectAll = () => {
+    if (!onSelectedLeadsChange) return
+    if (selectedLeadIds.length === leadsData?.data.length) {
+      onSelectedLeadsChange([])
+    } else {
+      onSelectedLeadsChange(
+        leadsData?.data.map((assignment) => assignment.lead!.id) || [],
+      )
+    }
+  }
+
+  const isAllSelected =
+    (leadsData?.data?.length ?? 0) > 0 &&
+    selectedLeadIds.length === (leadsData?.data?.length ?? 0)
 
   const totalPages = leadsData?.meta?.totalPages || 1
   const totalItems = leadsData?.meta?.total || 0
@@ -174,6 +203,13 @@ export function CampaignLeadsTable({
     <div className="space-y-4">
       {/* Filters - Search full width, filter on right */}
       <div className="flex flex-col sm:flex-row gap-4">
+        {selectedLeadIds.length > 0 && onBulkUnassignClick && (
+          <Button variant="destructive" size="sm" onClick={onBulkUnassignClick}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t('campaigns.unassignSelected', 'Unassign')} (
+            {selectedLeadIds.length})
+          </Button>
+        )}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -228,6 +264,16 @@ export function CampaignLeadsTable({
         <Table>
           <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
             <TableRow>
+              {onSelectedLeadsChange && (
+                <TableHead className="w-12">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                  />
+                </TableHead>
+              )}
               <TableHead className="font-semibold text-primary">
                 {t('leads.name', 'Name')}
               </TableHead>
@@ -282,6 +328,18 @@ export function CampaignLeadsTable({
                   className="cursor-pointer hover:bg-muted/30"
                   onClick={() => handleRowClick(assignment)}
                 >
+                  {onSelectedLeadsChange && assignment.lead && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedLeadIds.includes(assignment.lead.id)}
+                        onChange={() =>
+                          toggleLeadSelection(assignment.lead!.id)
+                        }
+                        className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     {assignment.lead?.leadName || '-'}
                   </TableCell>
@@ -322,7 +380,10 @@ export function CampaignLeadsTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center">
+                <TableCell
+                  colSpan={onSelectedLeadsChange ? 8 : 7}
+                  className="h-32 text-center"
+                >
                   <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                     <Users className="h-8 w-8" />
                     <p>{t('leads.noLeadsFound', 'No leads found')}</p>

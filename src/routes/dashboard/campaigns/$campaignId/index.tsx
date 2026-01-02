@@ -6,7 +6,10 @@ import { useCampaign, useUpdateCampaign } from '@/hooks/api/useCampaigns'
 import { useMe } from '@/hooks/api/useAuth'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useBulkImportLeads } from '@/hooks/api/useLeads'
-import { useLeadAssignments } from '@/hooks/api/useLeadAssignments'
+import {
+  useLeadAssignments,
+  useBulkUnassignLeads,
+} from '@/hooks/api/useLeadAssignments'
 import { useSmsMasking } from '@/hooks/api/useIpWhitelist'
 import { CampaignStatus } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
@@ -37,6 +40,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import {
   Form,
   FormControl,
@@ -103,6 +116,8 @@ function CampaignDetailPage() {
     useEnabledServices(clientId)
   const { mutate: updateCampaign, isPending: isUpdating } = useUpdateCampaign()
   const { mutate: bulkImport, isPending: isImporting } = useBulkImportLeads()
+  const { mutate: bulkUnassignLeads, isPending: isBulkUnassigning } =
+    useBulkUnassignLeads()
 
   // Fetch SMS masking - superadmin needs to pass clientId, others use JWT
   const { data: smsMaskingData } = useSmsMasking(
@@ -145,6 +160,8 @@ function CampaignDetailPage() {
   const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
   const [isAddExistingDialogOpen, setIsAddExistingDialogOpen] = useState(false)
   const [isComposeSmsSheetOpen, setIsComposeSmsSheetOpen] = useState(false)
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
+  const [bulkUnassignDialogOpen, setBulkUnassignDialogOpen] = useState(false)
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignFormSchema),
@@ -342,6 +359,40 @@ function CampaignDetailPage() {
         event.target.value = ''
       },
     })
+  }
+
+  const handleBulkUnassign = () => {
+    if (selectedLeadIds.length === 0) return
+
+    bulkUnassignLeads(
+      { campaignId, leadIds: selectedLeadIds },
+      {
+        onSuccess: (result) => {
+          if (result.failed > 0) {
+            toast.warning(
+              t(
+                'campaigns.bulkUnassignPartial',
+                `Unassigned ${result.unassigned} lead(s). ${result.failed} failed.`,
+              ),
+            )
+          } else {
+            toast.success(
+              t(
+                'campaigns.bulkUnassignSuccess',
+                `Successfully unassigned ${result.unassigned} lead(s)`,
+              ),
+            )
+          }
+          setSelectedLeadIds([])
+          setBulkUnassignDialogOpen(false)
+        },
+        onError: () => {
+          toast.error(
+            t('campaigns.bulkUnassignFailed', 'Failed to unassign leads'),
+          )
+        },
+      },
+    )
   }
 
   if (isLoading) {
@@ -573,6 +624,9 @@ function CampaignDetailPage() {
             <CampaignLeadsTable
               campaignId={campaignId}
               clientId={clientId || ''}
+              selectedLeadIds={selectedLeadIds}
+              onSelectedLeadsChange={setSelectedLeadIds}
+              onBulkUnassignClick={() => setBulkUnassignDialogOpen(true)}
             />
           </CardContent>
         </Card>
@@ -828,6 +882,45 @@ function CampaignDetailPage() {
           allLeadAssignments={allLeadAssignments}
         />
       </div>
+
+      {/* Bulk Unassign Confirmation Dialog */}
+      <AlertDialog
+        open={bulkUnassignDialogOpen}
+        onOpenChange={setBulkUnassignDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t(
+                'campaigns.confirmBulkUnassignTitle',
+                'Unassign selected leads?',
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'campaigns.confirmBulkUnassignDescription',
+                'Are you sure you want to unassign {{count}} lead(s) from this campaign? The leads will remain in your leads list.',
+                { count: selectedLeadIds.length },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isBulkUnassigning}>
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkUnassign}
+              disabled={isBulkUnassigning}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isBulkUnassigning && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {t('campaigns.unassign', 'Unassign')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </RoleGuard>
   )
 }

@@ -59,6 +59,10 @@ const leadsApi = {
     await apiClient.delete(`leads/${id}`)
   },
 
+  bulkDelete: async (leadIds: string[]): Promise<void> => {
+    await apiClient.post('leads/bulk-delete', { json: { leadIds } })
+  },
+
   bulkImport: async (
     formData: FormData,
   ): Promise<{ imported: number; skipped: number }> => {
@@ -143,6 +147,24 @@ export const useDeleteLead = (): UseMutationResult<void, Error, string> => {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
       queryClient.removeQueries({ queryKey: leadsKeys.detail(id) })
+      // Invalidate lead-assignments to refresh campaign leads table
+      queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
+      // Invalidate campaigns to refresh lead counts
+      queryClient.invalidateQueries({ queryKey: campaignsKeys.all })
+    },
+  })
+}
+
+export const useBulkDeleteLeads = (): UseMutationResult<
+  void,
+  Error,
+  string[]
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: leadsApi.bulkDelete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
       // Invalidate lead-assignments to refresh campaign leads table
       queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
       // Invalidate campaigns to refresh lead counts

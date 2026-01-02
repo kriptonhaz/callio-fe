@@ -59,11 +59,30 @@ const bulkAssignLeads = async (data: {
     .json()
 }
 
+const bulkUnassignLeads = async (data: {
+  campaignId: string
+  leadIds: string[]
+}): Promise<{
+  unassigned: number
+  failed: number
+  errors: Array<{ leadId: string; error: string }>
+}> => {
+  return apiClient
+    .post('lead-assignments/bulk-unassign', {
+      json: {
+        campaignId: data.campaignId,
+        leadIds: data.leadIds,
+      },
+    })
+    .json()
+}
+
 export const leadAssignmentsApi = {
   getAll,
   update,
   delete: deleteLead,
   bulkAssign: bulkAssignLeads,
+  bulkUnassign: bulkUnassignLeads,
 }
 
 export const useLeadAssignments = (
@@ -117,6 +136,27 @@ export const useBulkAssignLeads = (): UseMutationResult<
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: leadAssignmentsApi.bulkAssign,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadAssignmentsKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['leads'] })
+      // Invalidate campaigns to refresh lead counts
+      queryClient.invalidateQueries({ queryKey: campaignsKeys.all })
+    },
+  })
+}
+
+export const useBulkUnassignLeads = (): UseMutationResult<
+  {
+    unassigned: number
+    failed: number
+    errors: Array<{ leadId: string; error: string }>
+  },
+  Error,
+  { campaignId: string; leadIds: string[] }
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: leadAssignmentsApi.bulkUnassign,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: leadAssignmentsKeys.lists() })
       queryClient.invalidateQueries({ queryKey: ['leads'] })
