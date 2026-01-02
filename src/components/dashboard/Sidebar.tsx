@@ -28,6 +28,8 @@ import { decodeJwt } from '@/lib/jwt'
 import { getAccessToken } from '@/lib/api/client'
 import { useUser } from '@/hooks/api/useUsers'
 import { useClient } from '@/hooks/api/useClients'
+import { useEnabledServices } from '@/hooks/api/useServices'
+import { ServiceType } from '@/lib/api/types/services.types'
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -47,6 +49,18 @@ export function Sidebar() {
 
   // Fetch client data if user has clientId
   const { data: client } = useClient(user?.clientId || '')
+
+  // Fetch enabled services for the client
+  const { data: enabledServices } = useEnabledServices(user?.clientId)
+
+  // Check if VoIP service is enabled
+  const hasVoipService = useMemo(() => {
+    if (!enabledServices) return false
+    return enabledServices.some(
+      (service) =>
+        service.serviceType === ServiceType.VOICE && service.isEnabled,
+    )
+  }, [enabledServices])
 
   // Effective role: prefer API data, fallback to JWT
   const role = user?.role || jwtRole
@@ -127,17 +141,22 @@ export function Sidebar() {
           label: t('dashboard.menu.reports'),
           href: '/dashboard/reports',
         },
-        {
+      ]
+
+      // Only show Monitoring if VoIP service is enabled
+      if (hasVoipService) {
+        items.push({
           icon: GalleryThumbnails,
           label: t('dashboard.menu.monitoring', 'Monitoring'),
           href: '/dashboard/monitoring',
-        },
-        {
-          icon: Settings,
-          label: t('dashboard.menu.settings'),
-          href: '/dashboard/settings',
-        },
-      ]
+        })
+      }
+
+      items.push({
+        icon: Settings,
+        label: t('dashboard.menu.settings'),
+        href: '/dashboard/settings',
+      })
 
       // Only Admin can see Users menu
       if (role === 'admin') {
@@ -169,7 +188,7 @@ export function Sidebar() {
 
     // Default fallback
     return commonItems
-  }, [role, t])
+  }, [role, t, hasVoipService])
 
   const toggleMenu = (menuId: string) => {
     setExpandedMenus((prev) =>

@@ -1,6 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useRegisteredAgents } from '@/hooks/api/useMonitoring'
+import { servicesApi } from '@/lib/api/services'
+import { ServiceType } from '@/lib/api/types/services.types'
+import { decodeJwt } from '@/lib/jwt'
+import { getAccessToken } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/client'
 import {
   Table,
   TableBody,
@@ -15,6 +20,65 @@ import { Loader2, Users, MonitorSmartphone } from 'lucide-react'
 
 export const Route = createFileRoute('/dashboard/monitoring')({
   component: MonitoringPage,
+  beforeLoad: async () => {
+    try {
+      // Get user info from token
+      const token = getAccessToken()
+      if (!token) {
+        throw redirect({
+          to: '/dashboard',
+          search: { error: 'unauthorized' },
+        })
+      }
+
+      const decodedToken = decodeJwt(token)
+      const userId = decodedToken?.sub
+
+      if (!userId) {
+        throw redirect({
+          to: '/dashboard',
+          search: { error: 'unauthorized' },
+        })
+      }
+
+      // Fetch user to get clientId
+      const user = await apiClient.get(`users/${userId}`).json<any>()
+
+      if (!user?.clientId) {
+        throw redirect({
+          to: '/dashboard',
+          search: { error: 'no_client' },
+        })
+      }
+
+      // Check if VoIP service is enabled
+      const enabledServices = await servicesApi.getEnabledServices(
+        user.clientId,
+      )
+      const hasVoipService = enabledServices.some(
+        (service) =>
+          service.serviceType === ServiceType.VOICE && service.isEnabled,
+      )
+
+      if (!hasVoipService) {
+        throw redirect({
+          to: '/dashboard',
+          search: { error: 'voip_not_enabled' },
+        })
+      }
+    } catch (error) {
+      // If it's already a redirect, re-throw it
+      if (error && typeof error === 'object' && 'isRedirect' in error) {
+        throw error
+      }
+
+      // Otherwise redirect to dashboard with error
+      throw redirect({
+        to: '/dashboard',
+        search: { error: 'access_denied' },
+      })
+    }
+  },
 })
 
 function MonitoringPage() {
