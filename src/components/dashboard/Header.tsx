@@ -24,15 +24,27 @@ export function Header() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
-    // Check initial theme
-    if (document.documentElement.classList.contains('dark')) {
+    // Check localStorage first, then fall back to checking the DOM
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+    if (savedTheme) {
+      setTheme(savedTheme)
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    } else if (document.documentElement.classList.contains('dark')) {
       setTheme('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      localStorage.setItem('theme', 'light')
     }
   }, [])
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark')
     } else {
