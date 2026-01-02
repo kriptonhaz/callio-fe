@@ -8,6 +8,7 @@ import { useUsers } from '@/hooks/api/useUsers'
 import { useCampaigns } from '@/hooks/api/useCampaigns'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useMe } from '@/hooks/api/useAuth'
+import { useAiUsage } from '@/hooks/api/useAiUsage'
 import { UserRole } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,8 @@ import {
   MoreHorizontal,
   Check,
   ChevronsUpDown,
+  BrainCircuit,
+  AlertCircle,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -71,6 +74,8 @@ interface ReportsSearch {
   campaignId?: string
   startDate?: string
   endDate?: string
+  aiServiceType?: string
+  aiStatus?: string
 }
 
 export const Route = createFileRoute('/dashboard/reports')({
@@ -85,6 +90,8 @@ export const Route = createFileRoute('/dashboard/reports')({
       campaignId: (search.campaignId as string) || undefined,
       startDate: (search.startDate as string) || undefined,
       endDate: (search.endDate as string) || undefined,
+      aiServiceType: (search.aiServiceType as string) || undefined,
+      aiStatus: (search.aiStatus as string) || undefined,
     }
   },
 })
@@ -135,6 +142,14 @@ function ReportsPage(): React.ReactElement {
     )
   }, [enabledServices])
 
+  const hasAiService = useMemo(() => {
+    return (
+      enabledServices?.some(
+        (s) => s.serviceType === ServiceType.AI && s.isEnabled,
+      ) ?? false
+    )
+  }, [enabledServices])
+
   // Set default tab based on available services
   React.useEffect(() => {
     if (hasVoipService) {
@@ -143,8 +158,10 @@ function ReportsPage(): React.ReactElement {
       setActiveTab('sms')
     } else if (hasWhatsappService) {
       setActiveTab('whatsapp')
+    } else if (hasAiService) {
+      setActiveTab('ai')
     }
-  }, [hasVoipService, hasSmsService, hasWhatsappService])
+  }, [hasVoipService, hasSmsService, hasWhatsappService, hasAiService])
 
   // Build query params
   const queryParams: CallLogsQueryParams = useMemo(() => {
@@ -169,7 +186,6 @@ function ReportsPage(): React.ReactElement {
     }
     return params
   }, [searchParams])
-
   // Build SMS query params
   const smsQueryParams: SmsHistoryQueryParams = useMemo(() => {
     const params: SmsHistoryQueryParams = {
@@ -179,26 +195,29 @@ function ReportsPage(): React.ReactElement {
     if (searchParams.status && searchParams.status !== ('all' as SmsStatus)) {
       params.status = searchParams.status
     }
-    if (searchParams.agentId && searchParams.agentId !== 'all') {
-      // Assuming SmsHistoryQueryParams needs userId map to agentId?
-      // The API likely filters by userId for sender but params said agentId in searchParams.
-      // Let's check type definition. SmsHistoryQueryParams implies generic query params.
-      // But look at useSms.ts, it uses SmsHistoryQueryParams.
-      // I'll assume currently filtering by agent isn't explicitly supported in the UI request or use generic search?
-      // Wait, user request said "display the same filter".
-      // Let's assume the API might support 'userId' corresponding to agentId.
-      // But looking at types I defined:
-      // export interface SmsHistoryQueryParams extends PaginationParams { campaignId, status, startDate, endDate, search }
-      // It does NOT have agentId or userId.
-      // I should update SmsHistoryQueryParams to include userId if I want to filter by agent.
-      // User request did NOT explicitly say "filter by agent", but "display the same filter".
-      // Same filter implies Campaign and Agent.
-      // I'll stick to what I defined for now and add support if user asks or update types now.
-      // The user defined endpoint params: campaignId, status, startDate, endDate.
-      // It does NOT list agentId. So I will SKIP agentId filter for SMS for now.
-    }
     if (searchParams.campaignId && searchParams.campaignId !== 'all') {
       params.campaignId = searchParams.campaignId
+    }
+    if (searchParams.startDate) {
+      params.startDate = searchParams.startDate
+    }
+    if (searchParams.endDate) {
+      params.endDate = searchParams.endDate
+    }
+    return params
+  }, [searchParams])
+
+  // Build AI query params
+  const aiQueryParams: any = useMemo(() => {
+    const params: any = {
+      page: searchParams.page,
+      limit: searchParams.limit,
+    }
+    if (searchParams.aiServiceType && searchParams.aiServiceType !== 'all') {
+      params.serviceType = searchParams.aiServiceType
+    }
+    if (searchParams.aiStatus && searchParams.aiStatus !== 'all') {
+      params.status = searchParams.aiStatus
     }
     if (searchParams.startDate) {
       params.startDate = searchParams.startDate
@@ -216,6 +235,10 @@ function ReportsPage(): React.ReactElement {
   // Fetch SMS history
   const { data: smsHistoryData, isLoading: isLoadingSmsHistory } =
     useSmsHistory(smsQueryParams)
+
+  // Fetch AI usage
+  const { data: aiUsageData, isLoading: isLoadingAiUsage } =
+    useAiUsage(aiQueryParams)
 
   // Fetch agents for filter (only users with agent role)
   const { data: usersData } = useUsers({
@@ -242,6 +265,8 @@ function ReportsPage(): React.ReactElement {
         campaignId: searchParams.campaignId,
         startDate: searchParams.startDate,
         endDate: searchParams.endDate,
+        aiServiceType: searchParams.aiServiceType,
+        aiStatus: searchParams.aiStatus,
         ...updates,
       },
     })
@@ -261,6 +286,20 @@ function ReportsPage(): React.ReactElement {
   const handleSmsStatusFilter = (status: string): void => {
     updateParams({
       status: status === 'all' ? undefined : (status as SmsStatus),
+      page: 1,
+    })
+  }
+
+  const handleAiServiceTypeFilter = (serviceType: string): void => {
+    updateParams({
+      aiServiceType: serviceType === 'all' ? undefined : serviceType,
+      page: 1,
+    })
+  }
+
+  const handleAiStatusFilter = (status: string): void => {
+    updateParams({
+      aiStatus: status === 'all' ? undefined : status,
       page: 1,
     })
   }
@@ -449,17 +488,21 @@ function ReportsPage(): React.ReactElement {
   const totalPages =
     activeTab === 'voip'
       ? callLogsData?.meta.totalPages || 1
-      : smsHistoryData?.meta.totalPages || 1
+      : activeTab === 'sms'
+        ? smsHistoryData?.meta.totalPages || 1
+        : aiUsageData?.meta.totalPages || 1
   const currentPage = searchParams.page
   const totalItems =
     activeTab === 'voip'
       ? callLogsData?.meta.total || 0
-      : smsHistoryData?.meta.total || 0
+      : activeTab === 'sms'
+        ? smsHistoryData?.meta.total || 0
+        : aiUsageData?.meta.total || 0
   const itemsPerPage = searchParams.limit
 
   // No services available
   const noServicesAvailable =
-    !hasVoipService && !hasSmsService && !hasWhatsappService
+    !hasVoipService && !hasSmsService && !hasWhatsappService && !hasAiService
 
   return (
     <RoleGuard allowedRoles={['admin', 'supervisor']}>
@@ -521,6 +564,15 @@ function ReportsPage(): React.ReactElement {
                 >
                   <MessageSquare className="h-4 w-4" />
                   {t('reports.whatsappReports', 'WhatsApp Reports')}
+                </TabsTrigger>
+              )}
+              {hasAiService && (
+                <TabsTrigger
+                  value="ai"
+                  className="border-0 border-b-2 border-b-transparent bg-transparent shadow-none rounded-none px-1 pb-3 pt-0 gap-2 text-muted-foreground data-[state=active]:border-0 data-[state=active]:border-b-2 data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary focus-visible:ring-0 focus-visible:border-0 focus-visible:border-b-2"
+                >
+                  <BrainCircuit className="h-4 w-4" />
+                  {t('reports.aiReports', 'AI Reports')}
                 </TabsTrigger>
               )}
             </TabsList>
@@ -1282,6 +1334,286 @@ function ReportsPage(): React.ReactElement {
                   <p className="text-sm">
                     {t('reports.comingSoon', 'Coming soon...')}
                   </p>
+                </div>
+              </TabsContent>
+            )}
+
+            {/* AI Reports Tab */}
+            {hasAiService && (
+              <TabsContent value="ai" className="space-y-0 mt-0">
+                {/* Filters Card */}
+                <div className="rounded-t-lg border border-b-0 bg-card p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {/* Start Date Picker */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-[150px] justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? (
+                              format(startDate, 'MM/dd/yyyy')
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {t('reports.startDate', 'Start Date')}
+                              </span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={handleStartDateChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* End Date Picker */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-[150px] justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? (
+                              format(endDate, 'MM/dd/yyyy')
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {t('reports.endDate', 'End Date')}
+                              </span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={endDate}
+                            onSelect={handleEndDateChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Service Type Filter */}
+                      <Select
+                        value={searchParams.aiServiceType || 'all'}
+                        onValueChange={handleAiServiceTypeFilter}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue
+                            placeholder={t('reports.service', 'Service')}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">
+                            {t('reports.allServices', 'All Services')}
+                          </SelectItem>
+                          <SelectItem value="voice">
+                            {t('services.voice', 'Voice')}
+                          </SelectItem>
+                          <SelectItem value="sms">
+                            {t('services.sms', 'SMS')}
+                          </SelectItem>
+                          <SelectItem value="whatsapp">
+                            {t('services.whatsapp', 'WhatsApp')}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Status Filter */}
+                      <Select
+                        value={searchParams.aiStatus || 'all'}
+                        onValueChange={handleAiStatusFilter}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue
+                            placeholder={t('reports.status', 'Status')}
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">
+                            {t('reports.allStatus', 'All Status')}
+                          </SelectItem>
+                          <SelectItem value="success">
+                            {t('reports.success', 'Success')}
+                          </SelectItem>
+                          <SelectItem value="failed">
+                            {t('reports.failed', 'Failed')}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Download className="h-4 w-4" />
+                      {t('common.export', 'Export')}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Table with footer pagination */}
+                <div className="rounded-b-lg border bg-card overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.dateTime', 'DATE & TIME')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.service', 'SERVICE')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.model', 'MODEL')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.promptInput', 'PROMPT / INPUT')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.tokens', 'TOKENS')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.cost', 'COST')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.status', 'STATUS')}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoadingAiUsage ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              {t('common.loading', 'Loading...')}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : aiUsageData?.records.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                              <BrainCircuit className="h-8 w-8" />
+                              <p>{t('reports.noAiLogs', 'No AI logs found')}</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        aiUsageData?.records.map((log) => {
+                          const { date, time } = formatDateTime(log.createdAt)
+                          return (
+                            <TableRow
+                              key={log.id}
+                              className="hover:bg-muted/30"
+                            >
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{date}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {time}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="capitalize">
+                                  {log.serviceType}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {log.model.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {log.model.provider.name}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="max-w-[300px]">
+                                <div
+                                  className="truncate text-sm"
+                                  title={log.prompt || log.referenceType}
+                                >
+                                  {log.prompt || (
+                                    <span className="text-muted-foreground italic">
+                                      {log.referenceType}
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col text-xs">
+                                  <span>
+                                    In: {log.inputTokens.toLocaleString()}
+                                  </span>
+                                  <span>
+                                    Out: {log.outputTokens.toLocaleString()}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium text-orange-600">
+                                ${log.costAmount}
+                              </TableCell>
+                              <TableCell>
+                                {log.status === 'success' ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="gap-1.5 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200"
+                                  >
+                                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                                    {t('reports.success', 'Success')}
+                                  </Badge>
+                                ) : (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Badge
+                                        variant="outline"
+                                        className="gap-1.5 bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200 cursor-help"
+                                      >
+                                        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                                        {t('reports.failed', 'Failed')}
+                                      </Badge>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80">
+                                      <div className="flex gap-2">
+                                        <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                                        <div className="space-y-1">
+                                          <p className="text-sm font-medium leading-none">
+                                            {t(
+                                              'reports.errorDetail',
+                                              'Error Details',
+                                            )}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {log.errorMessage ||
+                                              t(
+                                                'common.unknownError',
+                                                'Unknown error',
+                                              )}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                  {/* Pagination */}
+                  <StandardPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={totalItems}
+                    onPageChange={handlePageChange}
+                  />
                 </div>
               </TabsContent>
             )}
