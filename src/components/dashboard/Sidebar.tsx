@@ -7,6 +7,7 @@ import {
   LogOut,
   ChevronDown,
   Sparkles,
+  Smartphone,
 } from 'lucide-react'
 import { useLogout } from '@/hooks/api/useAuth'
 import { cn } from '@/lib/utils'
@@ -117,6 +118,11 @@ export function Sidebar() {
               icon: Sparkles,
               label: t('dashboard.menu.aiProvider', 'AI Provider'),
               href: '/dashboard/settings/ai-provider',
+            },
+            {
+              icon: Smartphone,
+              label: t('dashboard.menu.mobileOperator', 'Mobile Operator'),
+              href: '/dashboard/settings/mobile-operator',
             },
           ],
         },

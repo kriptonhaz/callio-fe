@@ -28,6 +28,7 @@ import { Route as DashboardClientsIndexRouteImport } from './routes/dashboard/cl
 import { Route as DashboardCampaignsIndexRouteImport } from './routes/dashboard/campaigns/index'
 import { Route as DashboardGsmDevicesGsmDeviceIdRouteImport } from './routes/dashboard/gsm-devices/$gsmDeviceId'
 import { Route as DashboardClientsCreateRouteImport } from './routes/dashboard/clients/create'
+import { Route as DashboardSettingsMobileOperatorIndexRouteImport } from './routes/dashboard/settings/mobile-operator/index'
 import { Route as DashboardSettingsDefaultPricingIndexRouteImport } from './routes/dashboard/settings/default-pricing/index'
 import { Route as DashboardSettingsAiProviderIndexRouteImport } from './routes/dashboard/settings/ai-provider/index'
 import { Route as DashboardClientsClientIdIndexRouteImport } from './routes/dashboard/clients/$clientId/index'
@@ -133,6 +134,12 @@ const DashboardClientsCreateRoute = DashboardClientsCreateRouteImport.update({
   path: '/clients/create',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardSettingsMobileOperatorIndexRoute =
+  DashboardSettingsMobileOperatorIndexRouteImport.update({
+    id: '/mobile-operator/',
+    path: '/mobile-operator/',
+    getParentRoute: () => DashboardSettingsRoute,
+  } as any)
 const DashboardSettingsDefaultPricingIndexRoute =
   DashboardSettingsDefaultPricingIndexRouteImport.update({
     id: '/default-pricing/',
@@ -189,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
+  '/dashboard/settings/mobile-operator': typeof DashboardSettingsMobileOperatorIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -213,6 +221,7 @@ export interface FileRoutesByTo {
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
+  '/dashboard/settings/mobile-operator': typeof DashboardSettingsMobileOperatorIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -240,6 +249,7 @@ export interface FileRoutesById {
   '/dashboard/clients/$clientId/': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider/': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/default-pricing/': typeof DashboardSettingsDefaultPricingIndexRoute
+  '/dashboard/settings/mobile-operator/': typeof DashboardSettingsMobileOperatorIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/dashboard/clients/$clientId'
     | '/dashboard/settings/ai-provider'
     | '/dashboard/settings/default-pricing'
+    | '/dashboard/settings/mobile-operator'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/dashboard/clients/$clientId'
     | '/dashboard/settings/ai-provider'
     | '/dashboard/settings/default-pricing'
+    | '/dashboard/settings/mobile-operator'
   id:
     | '__root__'
     | '/'
@@ -318,6 +330,7 @@ export interface FileRouteTypes {
     | '/dashboard/clients/$clientId/'
     | '/dashboard/settings/ai-provider/'
     | '/dashboard/settings/default-pricing/'
+    | '/dashboard/settings/mobile-operator/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -462,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardClientsCreateRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/settings/mobile-operator/': {
+      id: '/dashboard/settings/mobile-operator/'
+      path: '/mobile-operator'
+      fullPath: '/dashboard/settings/mobile-operator'
+      preLoaderRoute: typeof DashboardSettingsMobileOperatorIndexRouteImport
+      parentRoute: typeof DashboardSettingsRoute
+    }
     '/dashboard/settings/default-pricing/': {
       id: '/dashboard/settings/default-pricing/'
       path: '/default-pricing'
@@ -504,6 +524,7 @@ interface DashboardSettingsRouteChildren {
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
   DashboardSettingsAiProviderIndexRoute: typeof DashboardSettingsAiProviderIndexRoute
   DashboardSettingsDefaultPricingIndexRoute: typeof DashboardSettingsDefaultPricingIndexRoute
+  DashboardSettingsMobileOperatorIndexRoute: typeof DashboardSettingsMobileOperatorIndexRoute
 }
 
 const DashboardSettingsRouteChildren: DashboardSettingsRouteChildren = {
@@ -511,6 +532,8 @@ const DashboardSettingsRouteChildren: DashboardSettingsRouteChildren = {
   DashboardSettingsAiProviderIndexRoute: DashboardSettingsAiProviderIndexRoute,
   DashboardSettingsDefaultPricingIndexRoute:
     DashboardSettingsDefaultPricingIndexRoute,
+  DashboardSettingsMobileOperatorIndexRoute:
+    DashboardSettingsMobileOperatorIndexRoute,
 }
 
 const DashboardSettingsRouteWithChildren =
