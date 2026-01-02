@@ -206,6 +206,21 @@ export function ComposeSmsSheet({
     }
   }, [allLeadAssignments, form])
 
+  // Update masking ID when defaultMaskingId or maskingOptions change
+  useEffect(() => {
+    const currentMaskingId = form.getValues('maskingId')
+    const newDefaultMaskingId = getDefaultMaskingId()
+
+    // Only update if there's a new default and current is empty or invalid
+    if (
+      newDefaultMaskingId &&
+      (!currentMaskingId ||
+        !maskingOptions.find((m) => m.id === currentMaskingId))
+    ) {
+      form.setValue('maskingId', newDefaultMaskingId)
+    }
+  }, [defaultMaskingId, maskingOptions, form])
+
   // Calculate character count and SMS count
   const charCount = smsText.length
   const smsCount = Math.ceil(charCount / SMS_CHAR_LIMIT) || 1
