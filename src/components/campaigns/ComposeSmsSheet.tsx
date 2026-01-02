@@ -49,6 +49,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import {
@@ -64,8 +65,10 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useComposeSms } from '@/hooks/api/useSms'
+import { useCampaign } from '@/hooks/api/useCampaigns'
 import { useAiModels } from '@/hooks/api/useAiModels'
 import { useGenerateSms } from '@/hooks/api/useAiSms'
+import { ServiceType } from '@/lib/api/types/services.types'
 import { toast } from 'sonner'
 
 export interface MaskingOption {
@@ -144,6 +147,20 @@ export function ComposeSmsSheet({
   const [selectedAiModelId, setSelectedAiModelId] = useState('')
   const composeMutation = useComposeSms()
   const generateSmsMutation = useGenerateSms()
+
+  // Fetch campaign details to check for AI service
+  const { data: campaign } = useCampaign(campaignId)
+  const hasAiService = useMemo(() => {
+    if (!campaign) return false
+    // Check both serviceTypes array and campaignServices relation
+    const services = campaign.serviceTypes || []
+    const campaignServices =
+      campaign.campaignServices?.map((s) => s.serviceType) || []
+    return (
+      services.includes(ServiceType.AI) ||
+      campaignServices.includes(ServiceType.AI)
+    )
+  }, [campaign])
 
   // Fetch AI models with chat capability
   const { data: aiModelsData, isLoading: isLoadingAiModels } = useAiModels(
@@ -541,16 +558,18 @@ export function ComposeSmsSheet({
                         {t('campaigns.smsText', 'SMS Text')}
                       </FormLabel>
                       <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                          onClick={() => setIsAiModalOpen(true)}
-                        >
-                          <Sparkles className="h-3 w-3 mr-1" />
-                          {t('campaigns.generateAi', 'Generate with AI')}
-                        </Button>
+                        {hasAiService && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                            onClick={() => setIsAiModalOpen(true)}
+                          >
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            {t('campaigns.generateAi', 'Generate with AI')}
+                          </Button>
+                        )}
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
@@ -578,25 +597,27 @@ export function ComposeSmsSheet({
                                 )}
                               </p>
 
-                              <div className="grid gap-1 pt-2 max-h-[300px] overflow-y-auto">
-                                {templateVariables.map((variable) => (
-                                  <button
-                                    key={variable.key}
-                                    type="button"
-                                    className="flex items-center justify-between p-2 rounded-md hover:bg-muted text-left text-sm"
-                                    onClick={() =>
-                                      insertTemplateVariable(variable.key)
-                                    }
-                                  >
-                                    <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
-                                      {variable.key}
-                                    </code>
-                                    <span className="text-muted-foreground text-xs">
-                                      {variable.description}
-                                    </span>
-                                  </button>
-                                ))}
-                              </div>
+                              <ScrollArea className="h-[280px] w-full pr-3">
+                                <div className="flex flex-col gap-1">
+                                  {templateVariables.map((variable) => (
+                                    <button
+                                      key={variable.key}
+                                      type="button"
+                                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted text-left text-sm w-full"
+                                      onClick={() =>
+                                        insertTemplateVariable(variable.key)
+                                      }
+                                    >
+                                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                                        {variable.key}
+                                      </code>
+                                      <span className="text-muted-foreground text-xs">
+                                        {variable.description}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </ScrollArea>
                             </div>
                           </PopoverContent>
                         </Popover>
