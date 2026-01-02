@@ -64,6 +64,8 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useComposeSms } from '@/hooks/api/useSms'
+import { useAiModels } from '@/hooks/api/useAiModels'
+import { useGenerateSms } from '@/hooks/api/useAiSms'
 import { toast } from 'sonner'
 
 export interface MaskingOption {
@@ -139,7 +141,16 @@ export function ComposeSmsSheet({
   const [isLeadPopoverOpen, setIsLeadPopoverOpen] = useState(false)
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
+  const [selectedAiModelId, setSelectedAiModelId] = useState('')
   const composeMutation = useComposeSms()
+  const generateSmsMutation = useGenerateSms()
+
+  // Fetch AI models with chat capability
+  const { data: aiModelsData, isLoading: isLoadingAiModels } = useAiModels(
+    { capability: 'chat', limit: 50 },
+    isAiModalOpen,
+  )
+  const aiModels = aiModelsData?.data ?? []
 
   // Determine if masking should be readonly (only 1 option)
   const isMaskingReadonly = maskingOptions.length === 1
@@ -747,36 +758,109 @@ export function ComposeSmsSheet({
               )}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Textarea
-              placeholder={t(
-                'campaigns.aiPromptPlaceholder',
-                'e.g., specific promo for new leads...',
-              )}
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              className="min-h-[100px]"
-            />
+          <div className="py-4 space-y-4">
+            {/* AI Model Selector */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {t('campaigns.aiModel', 'AI Model')}
+              </label>
+              <Select
+                value={selectedAiModelId}
+                onValueChange={setSelectedAiModelId}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      isLoadingAiModels
+                        ? t('common.loading', 'Loading...')
+                        : t('campaigns.selectAiModel', 'Select AI model')
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiModels.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Prompt Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {t('campaigns.prompt', 'Prompt')}
+              </label>
+              <Textarea
+                placeholder={t(
+                  'campaigns.aiPromptPlaceholder',
+                  'e.g., specific promo for new leads...',
+                )}
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsAiModalOpen(false)}
+              disabled={generateSmsMutation.isPending}
             >
               {t('common.cancel', 'Cancel')}
             </Button>
             <Button
               type="button"
               onClick={() => {
-                // Placeholder for now
-                console.log('Generating with prompt:', aiPrompt)
-                setIsAiModalOpen(false)
-                setAiPrompt('')
+                generateSmsMutation.mutate(
+                  {
+                    prompt: aiPrompt,
+                    modelId: selectedAiModelId,
+                    maxLength: 160,
+                  },
+                  {
+                    onSuccess: (data) => {
+                      // Update SMS text first, before closing the modal
+                      setSmsText(data.content)
+                      form.setValue('smsText', data.content)
+                      // Clear modal state
+                      setAiPrompt('')
+                      setSelectedAiModelId('')
+                      // Close modal last to avoid DOM issues
+                      setIsAiModalOpen(false)
+                      toast.success(
+                        t(
+                          'campaigns.smsGenerated',
+                          'SMS generated successfully',
+                        ),
+                      )
+                    },
+                    onError: () => {
+                      toast.error(
+                        t(
+                          'campaigns.smsGenerateFailed',
+                          'Failed to generate SMS',
+                        ),
+                      )
+                    },
+                  },
+                )
               }}
-              disabled={!aiPrompt}
+              disabled={
+                !aiPrompt || !selectedAiModelId || generateSmsMutation.isPending
+              }
             >
-              {t('common.generate', 'Generate')}
+              {generateSmsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('common.generating', 'Generating...')}
+                </>
+              ) : (
+                t('common.generate', 'Generate')
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

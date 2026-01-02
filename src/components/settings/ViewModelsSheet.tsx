@@ -72,12 +72,10 @@ import { Plus, MoreHorizontal, Edit, Trash, Loader2, Cpu } from 'lucide-react'
 // AI Model capabilities
 const CAPABILITIES = [
   'transcription',
+  'generation',
+  'sentiment',
   'chat',
-  'completion',
-  'embedding',
-  'image',
-  'audio',
-  'vision',
+  'auto_reply',
 ] as const
 
 // Form schema

@@ -40,4 +40,30 @@ export interface UpdateAiModelRequest {
 
 export interface AiModelQueryParams extends PaginationParams {
   providerId?: string
+  capability?: string
+}
+
+// AI SMS Generation
+export interface GenerateSmsRequest {
+  prompt: string
+  modelId: string
+  smsType?: string
+  maxLength?: number
+}
+
+export interface GenerateSmsResponse {
+  content: string
+  characterCount: number
+  smsType: string
+  modelUsed: {
+    id: string
+    name: string
+    provider: string
+  }
+  tokensUsed: {
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+  }
+  costAmount: number
 }
