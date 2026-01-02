@@ -230,7 +230,7 @@ export function EditLeadSheet({
   }
 
   const onSubmit = (data: LeadFormValues) => {
-    if (!assignment?.lead?.id || !assignment?.id) return
+    if (!assignment?.lead?.id) return
 
     // Update lead
     const leadPayload: UpdateLeadRequest = {
@@ -253,47 +253,67 @@ export function EditLeadSheet({
       notes: data.notes || null,
     }
 
-    // Update assignment
-    const assignmentPayload = {
-      leadId: assignment.lead.id,
-      clientId,
-      campaignId,
-      assignedSupervisorId: data.assignedSupervisorId || null,
-      assignedAgentId: data.assignedAgentId || null,
-      status: data.status,
-      lastCallStatus: data.lastCallStatus || null,
-      leadProgressNotes: data.leadProgressNotes || null,
-      followupCount: data.followupCount
-        ? parseInt(data.followupCount, 10)
-        : null,
-    }
+    // Only update assignment if there's a campaign context
+    const hasAssignment = !!assignment.id && !!campaignId
 
-    // Call both APIs
-    updateLead(
-      { id: assignment.lead.id, data: leadPayload },
-      {
-        onSuccess: () => {
-          updateAssignment(
-            { id: assignment.id, data: assignmentPayload },
-            {
-              onSuccess: () => {
-                toast.success(t('leads.updated', 'Lead updated successfully'))
-                handleClose()
-                onSuccess?.()
+    if (hasAssignment) {
+      // Update assignment
+      const assignmentPayload = {
+        leadId: assignment.lead.id,
+        clientId,
+        campaignId,
+        assignedSupervisorId: data.assignedSupervisorId || null,
+        assignedAgentId: data.assignedAgentId || null,
+        status: data.status,
+        lastCallStatus: data.lastCallStatus || null,
+        leadProgressNotes: data.leadProgressNotes || null,
+        followupCount: data.followupCount
+          ? parseInt(data.followupCount, 10)
+          : null,
+      }
+
+      // Call both APIs when there's an assignment
+      updateLead(
+        { id: assignment.lead.id, data: leadPayload },
+        {
+          onSuccess: () => {
+            updateAssignment(
+              { id: assignment.id, data: assignmentPayload },
+              {
+                onSuccess: () => {
+                  toast.success(t('leads.updated', 'Lead updated successfully'))
+                  handleClose()
+                  onSuccess?.()
+                },
+                onError: () => {
+                  toast.error(
+                    t('leads.updateFailed', 'Failed to update lead assignment'),
+                  )
+                },
               },
-              onError: () => {
-                toast.error(
-                  t('leads.updateFailed', 'Failed to update lead assignment'),
-                )
-              },
-            },
-          )
+            )
+          },
+          onError: () => {
+            toast.error(t('leads.updateFailed', 'Failed to update lead'))
+          },
         },
-        onError: () => {
-          toast.error(t('leads.updateFailed', 'Failed to update lead'))
+      )
+    } else {
+      // Only update lead when there's no assignment
+      updateLead(
+        { id: assignment.lead.id, data: leadPayload },
+        {
+          onSuccess: () => {
+            toast.success(t('leads.updated', 'Lead updated successfully'))
+            handleClose()
+            onSuccess?.()
+          },
+          onError: () => {
+            toast.error(t('leads.updateFailed', 'Failed to update lead'))
+          },
         },
-      },
-    )
+      )
+    }
   }
 
   return (

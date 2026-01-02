@@ -535,7 +535,7 @@ function LeadsPage() {
               <AlertDialogDescription>
                 {t(
                   'leads.confirmDeleteDescription',
-                  'Are you sure you want to delete {leadName}? This action cannot be undone.',
+                  'Are you sure you want to delete {{leadName}}? This action cannot be undone.',
                   { leadName: leadToDelete?.leadName || 'this lead' },
                 )}
               </AlertDialogDescription>
