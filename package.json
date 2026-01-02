@@ -12,7 +12,7 @@
     "check": "prettier --write . && eslint --fix",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "start": "bun .output/server/index.mjs"
+    "start": "bunx serve dist/client -l 3000"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.1",
