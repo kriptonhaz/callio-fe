@@ -75,6 +75,7 @@ import {
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { ViewModelsSheet } from '@/components/settings/ViewModelsSheet'
 
 // Define the form schema
 const formSchema = z.object({
@@ -291,6 +292,8 @@ function AiProviderPage(): React.ReactElement {
   const [editingProvider, setEditingProvider] = useState<AiProvider | null>(
     null,
   )
+  const [viewingModelsProvider, setViewingModelsProvider] =
+    useState<AiProvider | null>(null)
   const [isAddOpen, setIsAddOpen] = useState(false)
   const debouncedSearch = useDebounce(searchValue, 500)
   const [page, setPage] = useState(1)
@@ -576,7 +579,7 @@ function AiProviderPage(): React.ReactElement {
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation()
-                              console.log('View models:', provider.id)
+                              setViewingModelsProvider(provider)
                             }}
                           >
                             <Layers className="mr-2 h-4 w-4" />
@@ -694,6 +697,13 @@ function AiProviderPage(): React.ReactElement {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Models Sheet */}
+      <ViewModelsSheet
+        open={!!viewingModelsProvider}
+        onOpenChange={(open) => !open && setViewingModelsProvider(null)}
+        provider={viewingModelsProvider}
+      />
     </RoleGuard>
   )
 }
