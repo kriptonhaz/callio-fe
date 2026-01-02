@@ -505,7 +505,7 @@ export function SmsMaskingCard({
             <AlertDialogDescription>
               {t(
                 'clients.smsMasking.deleteDescription',
-                'Are you sure you want to delete the SMS masking "{name}"? This action cannot be undone.',
+                'Are you sure you want to delete the SMS masking "{{name}}"? This action cannot be undone.',
                 { name: deletingMasking?.name || '' },
               )}
             </AlertDialogDescription>
