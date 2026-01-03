@@ -226,3 +226,18 @@ export const useUpdateSipConfig = () => {
     },
   })
 }
+
+export const useSmsInbox = (
+  deviceId: string,
+  lineNumber: number,
+  enabled: boolean,
+) =>
+  useQuery({
+    queryKey: ['sms-inbox', deviceId, lineNumber],
+    queryFn: async () =>
+      await apiClient
+        .get(`goip/sms/inbox?deviceId=${deviceId}&lineNumber=${lineNumber}`)
+        .json(),
+    enabled: !!deviceId && !!lineNumber && enabled,
+    staleTime: 30 * 1000,
+  })

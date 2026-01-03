@@ -33,6 +33,7 @@ import {
   Plus,
   MoreHorizontal,
   Settings,
+  Inbox,
 } from 'lucide-react'
 import {
   GsmDeviceStatus,
@@ -46,6 +47,7 @@ import { CreateGsmDeviceForm } from '@/components/gsm-devices/CreateGsmDeviceFor
 import { CreateGsmDevicePortForm } from '@/components/gsm-devices/CreateGsmDevicePortForm'
 import { SendUssdModal } from '@/components/gsm-devices/SendUssdModal'
 import { SipConfigModal } from '@/components/gsm-devices/SipConfigModal'
+import { SmsInboxDialog } from '@/components/gsm-devices/SmsInboxDialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,10 +91,12 @@ function GsmDeviceDetailPage() {
   const [deletePortDialogOpen, setDeletePortDialogOpen] = useState(false)
   const [ussdDialogOpen, setUssdDialogOpen] = useState(false)
   const [sipConfigDialogOpen, setSipConfigDialogOpen] = useState(false)
+  const [smsInboxDialogOpen, setSmsInboxDialogOpen] = useState(false)
   const [editingPort, setEditingPort] = useState<GsmDevicePort | null>(null)
   const [deletingPort, setDeletingPort] = useState<GsmDevicePort | null>(null)
   const [ussdPort, setUssdPort] = useState<GsmDevicePort | null>(null)
   const [sipConfigPort, setSipConfigPort] = useState<GsmDevicePort | null>(null)
+  const [smsInboxPort, setSmsInboxPort] = useState<GsmDevicePort | null>(null)
 
   // Merge port data with GoIP status
   const mergedPortsData = portsData?.map((port) => {
@@ -416,6 +420,18 @@ function GsmDeviceDetailPage() {
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => {
+                                      setSmsInboxPort(port)
+                                      setSmsInboxDialogOpen(true)
+                                    }}
+                                  >
+                                    <Inbox className="mr-2 h-4 w-4" />
+                                    {t(
+                                      'gsmDevices.ports.smsInbox',
+                                      'SMS Inbox',
+                                    )}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
                                       setEditingPort(port)
                                       setEditPortDialogOpen(true)
                                     }}
@@ -492,6 +508,15 @@ function GsmDeviceDetailPage() {
             onOpenChange={setSipConfigDialogOpen}
             deviceId={gsmDeviceId}
             portNumber={sipConfigPort.portNumber}
+          />
+        )}
+
+        {smsInboxPort && (
+          <SmsInboxDialog
+            open={smsInboxDialogOpen}
+            onOpenChange={setSmsInboxDialogOpen}
+            deviceId={gsmDeviceId}
+            portNumber={smsInboxPort.portNumber}
           />
         )}
 
