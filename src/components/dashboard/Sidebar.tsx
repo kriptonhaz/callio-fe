@@ -32,6 +32,8 @@ import { useClient } from '@/hooks/api/useClients'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { ServiceType } from '@/lib/api/types/services.types'
 
+import rangcoolLogo from '@/assets/images/rangcool-logo.png'
+
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['settings']) // Default expand Settings
@@ -193,7 +195,77 @@ export function Sidebar() {
     }
 
     // Default fallback
-    return commonItems
+    return [
+      ...commonItems,
+      ...(hasVoipService
+        ? [
+            {
+              icon: PhoneCall,
+              label: t('dashboard.menu.voip', 'VoIP Service'),
+              href: '/dashboard/voip',
+              children: [
+                {
+                  label: t('dashboard.menu.callData', 'Call Data'),
+                  href: '/dashboard/voip/call-logs',
+                },
+              ],
+            },
+          ]
+        : []),
+      {
+        icon: Users,
+        label: t('dashboard.menu.leads', 'Leads'),
+        href: '/dashboard/leads',
+      },
+      {
+        icon: ClipboardList,
+        label: t('dashboard.menu.campaigns', 'Campaigns'),
+        href: '/dashboard/campaigns',
+      },
+      {
+        icon: Calendar,
+        label: t('dashboard.menu.appointments', 'Appointments'),
+        href: '/dashboard/appointments',
+      },
+      {
+        icon: GalleryThumbnails,
+        label: t('dashboard.menu.monitoring', 'Monitoring'),
+        href: '/dashboard/monitoring',
+      },
+      {
+        icon: ChartLine,
+        label: t('dashboard.menu.reports', 'Reports'),
+        href: '/dashboard/reports',
+      },
+      {
+        icon: Settings,
+        label: t('dashboard.menu.settings', 'Settings'),
+        id: 'settings', // Add ID for state management
+        href: '/dashboard/settings',
+        children: [
+          {
+            label: t('dashboard.menu.general', 'General'),
+            href: '/dashboard/settings/general',
+          },
+          {
+            label: t('dashboard.menu.users', 'Users'),
+            href: '/dashboard/settings/users',
+          },
+          {
+            label: t('dashboard.menu.roles', 'Roles'),
+            href: '/dashboard/settings/roles',
+          },
+          {
+            label: t('dashboard.menu.pricing', 'Pricing'),
+            href: '/dashboard/settings/default-pricing',
+          },
+          {
+            label: t('dashboard.menu.mobileOperator', 'Mobile Operator'),
+            href: '/dashboard/settings/mobile-operator',
+          },
+        ],
+      },
+    ]
   }, [role, t, hasVoipService])
 
   const toggleMenu = (menuId: string) => {
@@ -210,27 +282,61 @@ export function Sidebar() {
       animate={{ width: isCollapsed ? 80 : 256 }}
       className="h-full bg-card border-r border-border relative flex flex-col shadow-sm z-10"
     >
-      <div className="p-4 flex items-center justify-between border-b border-border h-16">
-        <AnimatePresence>
-          {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="font-bold text-2xl text-primary tracking-tight"
-            >
-              Callio
-            </motion.div>
+      <div
+        className={cn(
+          'p-4 flex items-center border-b border-border h-16 transition-all',
+          isCollapsed ? 'justify-center gap-1 px-2' : 'justify-between',
+        )}
+      >
+        <motion.div
+          layout
+          className={cn(
+            'flex items-center',
+            isCollapsed ? 'justify-center' : 'gap-3',
           )}
-        </AnimatePresence>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="ml-auto"
         >
-          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </Button>
+          <img
+            src={rangcoolLogo}
+            alt="RangCool"
+            className={cn(
+              'object-contain transition-all',
+              isCollapsed ? 'h-6 w-auto' : 'h-8 w-auto',
+            )}
+          />
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="font-bold text-xl text-primary tracking-tight whitespace-nowrap"
+              >
+                RangCool
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.div>
+
+        {!isCollapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="ml-auto shrink-0"
+          >
+            <ChevronLeft size={18} />
+          </Button>
+        )}
+        {isCollapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="h-6 w-6 ml-1 text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <ChevronRight size={14} />
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 py-4 overflow-y-auto">
