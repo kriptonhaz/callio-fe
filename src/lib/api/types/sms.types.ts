@@ -46,6 +46,7 @@ export interface SmsHistory {
   creator: {
     name: string
   } | null
+  operatorName: string | null
 }
 
 export interface SmsHistoryQueryParams extends PaginationParams {

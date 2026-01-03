@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -49,7 +50,6 @@ import {
   MessageSquare,
   Loader2,
   Calendar as CalendarIcon,
-  MoreHorizontal,
   Check,
   ChevronsUpDown,
   BrainCircuit,
@@ -76,6 +76,7 @@ interface ReportsSearch {
   endDate?: string
   aiServiceType?: string
   aiStatus?: string
+  search?: string
 }
 
 export const Route = createFileRoute('/dashboard/reports')({
@@ -92,6 +93,7 @@ export const Route = createFileRoute('/dashboard/reports')({
       endDate: (search.endDate as string) || undefined,
       aiServiceType: (search.aiServiceType as string) || undefined,
       aiStatus: (search.aiStatus as string) || undefined,
+      search: (search.search as string) || undefined,
     }
   },
 })
@@ -109,6 +111,10 @@ function ReportsPage(): React.ReactElement {
   )
   const [campaignComboboxOpen, setCampaignComboboxOpen] = useState(false)
   const [agentComboboxOpen, setAgentComboboxOpen] = useState(false)
+  const [voipStatusOpen, setVoipStatusOpen] = useState(false)
+  const [smsStatusOpen, setSmsStatusOpen] = useState(false)
+  const [aiStatusOpen, setAiStatusOpen] = useState(false)
+  const [aiServiceOpen, setAiServiceOpen] = useState(false)
 
   // Auth context
   const { data: me } = useMe()
@@ -204,6 +210,9 @@ function ReportsPage(): React.ReactElement {
     if (searchParams.endDate) {
       params.endDate = searchParams.endDate
     }
+    if (searchParams.search) {
+      params.search = searchParams.search
+    }
     return params
   }, [searchParams])
 
@@ -274,6 +283,11 @@ function ReportsPage(): React.ReactElement {
 
   const handlePageChange = (newPage: number): void => {
     updateParams({ page: newPage })
+  }
+
+  const handleExport = (type: string): void => {
+    // Placeholder for export functionality
+    console.log(`Exporting ${type} report`)
   }
 
   const handleDispositionFilter = (disposition: string): void => {
@@ -507,30 +521,31 @@ function ReportsPage(): React.ReactElement {
   return (
     <RoleGuard allowedRoles={['admin', 'supervisor']}>
       <div className="p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">
-            {t('reports.title', 'Reports')}
-          </h1>
-          <Button className="gap-2 bg-primary hover:bg-primary/90">
-            <Download className="h-4 w-4" />
-            {t('reports.exportReport', 'Export Report')}
-          </Button>
-        </div>
-
         {noServicesAvailable ? (
-          <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-            <Phone className="h-12 w-12 mb-4" />
-            <h3 className="text-lg font-medium">
-              {t('reports.noServices', 'No Active Services')}
-            </h3>
-            <p className="text-sm">
-              {t(
-                'reports.noServicesDescription',
-                'Contact your administrator to enable services.',
-              )}
-            </p>
-          </div>
+          <>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold tracking-tight">
+                {t('reports.title', 'Reports')}
+              </h1>
+              <Button className="gap-2 bg-primary hover:bg-primary/90">
+                <Download className="h-4 w-4" />
+                {t('reports.exportReport', 'Export Report')}
+              </Button>
+            </div>
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              <Phone className="h-12 w-12 mb-4" />
+              <h3 className="text-lg font-medium">
+                {t('reports.noServices', 'No Active Services')}
+              </h3>
+              <p className="text-sm">
+                {t(
+                  'reports.noServicesDescription',
+                  'Contact your administrator to enable services.',
+                )}
+              </p>
+            </div>
+          </>
         ) : (
           /* Tabs */
           <Tabs
@@ -538,44 +553,46 @@ function ReportsPage(): React.ReactElement {
             onValueChange={setActiveTab}
             className="space-y-6"
           >
-            <TabsList className="bg-transparent border-0 rounded-none p-0 h-auto w-full justify-start gap-6">
-              {hasVoipService && (
-                <TabsTrigger
-                  value="voip"
-                  className="border-0 border-b-2 border-b-transparent bg-transparent shadow-none rounded-none px-1 pb-3 pt-0 gap-2 text-muted-foreground data-[state=active]:border-0 data-[state=active]:border-b-2 data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary focus-visible:ring-0 focus-visible:border-0 focus-visible:border-b-2"
-                >
-                  <Phone className="h-4 w-4" />
-                  {t('reports.voipCallLogs', 'VoIP Call Logs')}
-                </TabsTrigger>
-              )}
-              {hasSmsService && (
-                <TabsTrigger
-                  value="sms"
-                  className="border-0 border-b-2 border-b-transparent bg-transparent shadow-none rounded-none px-1 pb-3 pt-0 gap-2 text-muted-foreground data-[state=active]:border-0 data-[state=active]:border-b-2 data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary focus-visible:ring-0 focus-visible:border-0 focus-visible:border-b-2"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  {t('reports.smsReports', 'SMS Reports')}
-                </TabsTrigger>
-              )}
-              {hasWhatsappService && (
-                <TabsTrigger
-                  value="whatsapp"
-                  className="border-0 border-b-2 border-b-transparent bg-transparent shadow-none rounded-none px-1 pb-3 pt-0 gap-2 text-muted-foreground data-[state=active]:border-0 data-[state=active]:border-b-2 data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary focus-visible:ring-0 focus-visible:border-0 focus-visible:border-b-2"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  {t('reports.whatsappReports', 'WhatsApp Reports')}
-                </TabsTrigger>
-              )}
-              {hasAiService && (
-                <TabsTrigger
-                  value="ai"
-                  className="border-0 border-b-2 border-b-transparent bg-transparent shadow-none rounded-none px-1 pb-3 pt-0 gap-2 text-muted-foreground data-[state=active]:border-0 data-[state=active]:border-b-2 data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary focus-visible:ring-0 focus-visible:border-0 focus-visible:border-b-2"
-                >
-                  <BrainCircuit className="h-4 w-4" />
-                  {t('reports.aiReports', 'AI Reports')}
-                </TabsTrigger>
-              )}
-            </TabsList>
+            {/* Header with Tabs */}
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold tracking-tight">
+                {t('reports.title', 'Reports')}
+              </h1>
+              <TabsList className="bg-muted/100 rounded-lg p-1 h-auto w-auto justify-start gap-1">
+                {hasVoipService && (
+                  <TabsTrigger
+                    value="voip"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  >
+                    VoIP
+                  </TabsTrigger>
+                )}
+                {hasSmsService && (
+                  <TabsTrigger
+                    value="sms"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  >
+                    SMS
+                  </TabsTrigger>
+                )}
+                {hasWhatsappService && (
+                  <TabsTrigger
+                    value="whatsapp"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  >
+                    WhatsApp
+                  </TabsTrigger>
+                )}
+                {hasAiService && (
+                  <TabsTrigger
+                    value="ai"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  >
+                    AI
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </div>
 
             {/* VoIP Call Logs Tab */}
             {hasVoipService && (
@@ -795,61 +812,99 @@ function ReportsPage(): React.ReactElement {
                         </PopoverContent>
                       </Popover>
 
-                      {/* Status Filter (uses disposition) */}
-                      <Select
-                        value={searchParams.disposition || 'all'}
-                        onValueChange={handleDispositionFilter}
+                      {/* Status Filter */}
+                      <Popover
+                        open={voipStatusOpen}
+                        onOpenChange={setVoipStatusOpen}
                       >
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue
-                            placeholder={t(
-                              'reports.allStatuses',
-                              'All Statuses',
-                            )}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">
-                            {t('reports.allStatuses', 'All Statuses')}
-                          </SelectItem>
-                          <SelectItem value="answered">
-                            {t('reports.answered', 'Answered')}
-                          </SelectItem>
-                          <SelectItem value="no_answer">
-                            {t('reports.noAnswer', 'No Answer')}
-                          </SelectItem>
-                          <SelectItem value="busy">
-                            {t('reports.busy', 'Busy')}
-                          </SelectItem>
-                          <SelectItem value="voicemail">
-                            {t('reports.voicemail', 'Voicemail')}
-                          </SelectItem>
-                          <SelectItem value="wrong_number">
-                            {t('reports.wrongNumber', 'Wrong Number')}
-                          </SelectItem>
-                          <SelectItem value="callback_requested">
-                            {t(
-                              'reports.callbackRequested',
-                              'Callback Requested',
-                            )}
-                          </SelectItem>
-                          <SelectItem value="not_interested">
-                            {t('reports.notInterested', 'Not Interested')}
-                          </SelectItem>
-                          <SelectItem value="interested">
-                            {t('reports.interested', 'Interested')}
-                          </SelectItem>
-                          <SelectItem value="disconnected">
-                            {t('reports.disconnected', 'Disconnected')}
-                          </SelectItem>
-                          <SelectItem value="invalid_number">
-                            {t('reports.invalidNumber', 'Invalid Number')}
-                          </SelectItem>
-                          <SelectItem value="failed">
-                            {t('reports.failed', 'Failed')}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={voipStatusOpen}
+                            className="w-[160px] justify-between"
+                          >
+                            {searchParams.disposition &&
+                            searchParams.disposition !== 'all'
+                              ? t(
+                                  `reports.${searchParams.disposition.replace('_', '')}`,
+                                  searchParams.disposition.replace('_', ' '),
+                                )
+                              : t('reports.allStatuses', 'All Statuses')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[160px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder={t(
+                                'reports.searchStatus',
+                                'Search status...',
+                              )}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {t('reports.noStatusFound', 'No status found.')}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="all"
+                                  onSelect={() => {
+                                    handleDispositionFilter('all')
+                                    setVoipStatusOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      !searchParams.disposition ||
+                                        searchParams.disposition === 'all'
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                    )}
+                                  />
+                                  {t('reports.allStatuses', 'All Statuses')}
+                                </CommandItem>
+                                {[
+                                  'answered',
+                                  'no_answer',
+                                  'busy',
+                                  'voicemail',
+                                  'wrong_number',
+                                  'callback_requested',
+                                  'not_interested',
+                                  'interested',
+                                  'disconnected',
+                                  'invalid_number',
+                                  'failed',
+                                ].map((status) => (
+                                  <CommandItem
+                                    key={status}
+                                    value={status}
+                                    onSelect={() => {
+                                      handleDispositionFilter(status)
+                                      setVoipStatusOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        searchParams.disposition === status
+                                          ? 'opacity-100'
+                                          : 'opacity-0',
+                                      )}
+                                    />
+                                    {t(
+                                      `reports.${status.replace('_', '')}`,
+                                      status.replace('_', ' '),
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 </div>
@@ -877,15 +932,12 @@ function ReportsPage(): React.ReactElement {
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                           {t('reports.status', 'STATUS')}
                         </TableHead>
-                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground text-right">
-                          {t('reports.actions', 'ACTION')}
-                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {isLoadingCallLogs ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
+                          <TableCell colSpan={6} className="h-24 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
                               {t('common.loading', 'Loading...')}
@@ -894,7 +946,7 @@ function ReportsPage(): React.ReactElement {
                         </TableRow>
                       ) : callLogsData?.data.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-32 text-center">
+                          <TableCell colSpan={6} className="h-32 text-center">
                             <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                               <Phone className="h-8 w-8" />
                               <p>
@@ -976,16 +1028,6 @@ function ReportsPage(): React.ReactElement {
                               <TableCell>
                                 {getDispositionBadge(log.disposition)}
                               </TableCell>
-                              {/* Action */}
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
                             </TableRow>
                           )
                         })
@@ -999,6 +1041,8 @@ function ReportsPage(): React.ReactElement {
                     totalItems={totalItems}
                     itemsPerPage={itemsPerPage}
                     onPageChange={handlePageChange}
+                    onExport={() => handleExport('voip')}
+                    exportLabel={t('reports.exportReport', 'Export Report')}
                   />
                 </div>
               </TabsContent>
@@ -1010,13 +1054,31 @@ function ReportsPage(): React.ReactElement {
                 {/* Filters Card */}
                 <div className="rounded-t-lg border border-b-0 bg-card p-4">
                   <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Search Bar */}
+                      <div className="relative w-full max-w-[160px]">
+                        <Input
+                          placeholder={t(
+                            'reports.searchSms',
+                            'Search by phone or message...',
+                          )}
+                          value={searchParams.search || ''}
+                          onChange={(e) => {
+                            updateParams({
+                              search: e.target.value || undefined,
+                              page: 1,
+                            })
+                          }}
+                          className="pl-3"
+                        />
+                      </div>
+
                       {/* Start Date Picker */}
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
-                            className="w-[150px] justify-start text-left font-normal"
+                            className="w-[130px] justify-start text-left font-normal"
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {startDate ? (
@@ -1042,7 +1104,7 @@ function ReportsPage(): React.ReactElement {
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
-                            className="w-[150px] justify-start text-left font-normal"
+                            className="w-[130px] justify-start text-left font-normal"
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {endDate ? (
@@ -1073,7 +1135,7 @@ function ReportsPage(): React.ReactElement {
                             variant="outline"
                             role="combobox"
                             aria-expanded={campaignComboboxOpen}
-                            className="w-[180px] justify-between"
+                            className="w-[140px] justify-between"
                           >
                             {searchParams.campaignId &&
                             searchParams.campaignId !== 'all'
@@ -1145,42 +1207,95 @@ function ReportsPage(): React.ReactElement {
                       </Popover>
 
                       {/* Status Filter */}
-                      <Select
-                        value={searchParams.status || 'all'}
-                        onValueChange={handleSmsStatusFilter}
+                      {/* Status Filter */}
+                      <Popover
+                        open={smsStatusOpen}
+                        onOpenChange={setSmsStatusOpen}
                       >
-                        <SelectTrigger className="w-[160px]">
-                          <SelectValue
-                            placeholder={t(
-                              'reports.allStatuses',
-                              'All Statuses',
-                            )}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">
-                            {t('reports.allStatuses', 'All Statuses')}
-                          </SelectItem>
-                          <SelectItem value={SmsStatus.PENDING}>
-                            {t('reports.pending', 'Pending')}
-                          </SelectItem>
-                          <SelectItem value={SmsStatus.SCHEDULED}>
-                            {t('reports.scheduled', 'Scheduled')}
-                          </SelectItem>
-                          <SelectItem value={SmsStatus.SENDING}>
-                            {t('reports.sending', 'Sending')}
-                          </SelectItem>
-                          <SelectItem value={SmsStatus.SENT}>
-                            {t('reports.sent', 'Sent')}
-                          </SelectItem>
-                          <SelectItem value={SmsStatus.FAILED}>
-                            {t('reports.failed', 'Failed')}
-                          </SelectItem>
-                          <SelectItem value={SmsStatus.CANCELLED}>
-                            {t('reports.cancelled', 'Cancelled')}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={smsStatusOpen}
+                            className="w-[130px] justify-between"
+                          >
+                            {searchParams.status &&
+                            searchParams.status !== 'all'
+                              ? t(
+                                  `reports.${searchParams.status.toLowerCase()}`,
+                                  searchParams.status,
+                                )
+                              : t('reports.allStatuses', 'All Statuses')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[130px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder={t(
+                                'reports.searchStatus',
+                                'Search status...',
+                              )}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {t('reports.noStatusFound', 'No status found.')}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="all"
+                                  onSelect={() => {
+                                    handleSmsStatusFilter('all')
+                                    setSmsStatusOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      !searchParams.status ||
+                                        searchParams.status === 'all'
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                    )}
+                                  />
+                                  {t('reports.allStatuses', 'All Statuses')}
+                                </CommandItem>
+                                {[
+                                  SmsStatus.PENDING,
+                                  SmsStatus.SCHEDULED,
+                                  SmsStatus.SENDING,
+                                  SmsStatus.SENT,
+                                  SmsStatus.FAILED,
+                                  SmsStatus.CANCELLED,
+                                ].map((status) => (
+                                  <CommandItem
+                                    key={status}
+                                    value={status}
+                                    onSelect={() => {
+                                      handleSmsStatusFilter(status)
+                                      setSmsStatusOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        searchParams.status === status
+                                          ? 'opacity-100'
+                                          : 'opacity-0',
+                                      )}
+                                    />
+                                    {t(
+                                      `reports.${status.toLowerCase()}`,
+                                      status.charAt(0).toUpperCase() +
+                                        status.slice(1).toLowerCase(),
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                 </div>
@@ -1200,6 +1315,9 @@ function ReportsPage(): React.ReactElement {
                           {t('reports.leadsName', 'LEADS NAME')}
                         </TableHead>
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.operator', 'OPERATOR')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                           {t('reports.phone', 'PHONE NUMBER')}
                         </TableHead>
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
@@ -1207,6 +1325,9 @@ function ReportsPage(): React.ReactElement {
                         </TableHead>
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                           {t('reports.message', 'MESSAGE')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.smsToken', 'SMS TOKEN')}
                         </TableHead>
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                           {t('reports.status', 'STATUS')}
@@ -1219,7 +1340,7 @@ function ReportsPage(): React.ReactElement {
                     <TableBody>
                       {isLoadingSmsHistory ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="h-24 text-center">
+                          <TableCell colSpan={10} className="h-24 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
                               {t('common.loading', 'Loading...')}
@@ -1228,7 +1349,7 @@ function ReportsPage(): React.ReactElement {
                         </TableRow>
                       ) : smsHistoryData?.data.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="h-32 text-center">
+                          <TableCell colSpan={10} className="h-32 text-center">
                             <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                               <MessageSquare className="h-8 w-8" />
                               <p>
@@ -1274,6 +1395,12 @@ function ReportsPage(): React.ReactElement {
                                   {sms.lead?.lead?.leadName || '-'}
                                 </span>
                               </TableCell>
+                              {/* Operator */}
+                              <TableCell>
+                                <span className="font-medium">
+                                  {sms.operatorName || '-'}
+                                </span>
+                              </TableCell>
                               {/* Phone Number */}
                               <TableCell>
                                 <span className="text-muted-foreground whitespace-nowrap">
@@ -1294,6 +1421,12 @@ function ReportsPage(): React.ReactElement {
                                 <p className="whitespace-pre-wrap text-sm leading-relaxed">
                                   {sms.message}
                                 </p>
+                              </TableCell>
+                              {/* SMS Token (Segment Count) */}
+                              <TableCell className="w-[100px]">
+                                <Badge variant="outline" className="font-mono">
+                                  {sms.segmentCount}
+                                </Badge>
                               </TableCell>
                               {/* Status */}
                               <TableCell className="w-[100px]">
@@ -1318,6 +1451,8 @@ function ReportsPage(): React.ReactElement {
                     itemsPerPage={itemsPerPage}
                     totalItems={totalItems}
                     onPageChange={handlePageChange}
+                    onExport={() => handleExport('sms')}
+                    exportLabel={t('reports.exportReport', 'Export Report')}
                   />
                 </div>
               </TabsContent>
@@ -1398,59 +1533,182 @@ function ReportsPage(): React.ReactElement {
                       </Popover>
 
                       {/* Service Type Filter */}
-                      <Select
-                        value={searchParams.aiServiceType || 'all'}
-                        onValueChange={handleAiServiceTypeFilter}
+                      {/* Service Type Filter */}
+                      <Popover
+                        open={aiServiceOpen}
+                        onOpenChange={setAiServiceOpen}
                       >
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue
-                            placeholder={t('reports.service', 'Service')}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">
-                            {t('reports.allServices', 'All Services')}
-                          </SelectItem>
-                          <SelectItem value="voice">
-                            {t('services.voice', 'Voice')}
-                          </SelectItem>
-                          <SelectItem value="sms">
-                            {t('services.sms', 'SMS')}
-                          </SelectItem>
-                          <SelectItem value="whatsapp">
-                            {t('services.whatsapp', 'WhatsApp')}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={aiServiceOpen}
+                            className="w-[140px] justify-between"
+                          >
+                            {searchParams.aiServiceType &&
+                            searchParams.aiServiceType !== 'all'
+                              ? t(
+                                  `services.${searchParams.aiServiceType}`,
+                                  searchParams.aiServiceType
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    searchParams.aiServiceType.slice(1),
+                                )
+                              : t('reports.allServices', 'All Services')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[140px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder={t(
+                                'reports.searchService',
+                                'Search service...',
+                              )}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {t(
+                                  'reports.noServiceFound',
+                                  'No service found.',
+                                )}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="all"
+                                  onSelect={() => {
+                                    handleAiServiceTypeFilter('all')
+                                    setAiServiceOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      !searchParams.aiServiceType ||
+                                        searchParams.aiServiceType === 'all'
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                    )}
+                                  />
+                                  {t('reports.allServices', 'All Services')}
+                                </CommandItem>
+                                {['voice', 'sms', 'whatsapp'].map((service) => (
+                                  <CommandItem
+                                    key={service}
+                                    value={service}
+                                    onSelect={() => {
+                                      handleAiServiceTypeFilter(service)
+                                      setAiServiceOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        searchParams.aiServiceType === service
+                                          ? 'opacity-100'
+                                          : 'opacity-0',
+                                      )}
+                                    />
+                                    {t(
+                                      `services.${service}`,
+                                      service.charAt(0).toUpperCase() +
+                                        service.slice(1),
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
 
                       {/* Status Filter */}
-                      <Select
-                        value={searchParams.aiStatus || 'all'}
-                        onValueChange={handleAiStatusFilter}
+                      {/* Status Filter */}
+                      <Popover
+                        open={aiStatusOpen}
+                        onOpenChange={setAiStatusOpen}
                       >
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue
-                            placeholder={t('reports.status', 'Status')}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">
-                            {t('reports.allStatus', 'All Status')}
-                          </SelectItem>
-                          <SelectItem value="success">
-                            {t('reports.success', 'Success')}
-                          </SelectItem>
-                          <SelectItem value="failed">
-                            {t('reports.failed', 'Failed')}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={aiStatusOpen}
+                            className="w-[140px] justify-between"
+                          >
+                            {searchParams.aiStatus &&
+                            searchParams.aiStatus !== 'all'
+                              ? t(
+                                  `reports.${searchParams.aiStatus}`,
+                                  searchParams.aiStatus
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    searchParams.aiStatus.slice(1),
+                                )
+                              : t('reports.allStatus', 'All Status')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[140px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder={t(
+                                'reports.searchStatus',
+                                'Search status...',
+                              )}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {t('reports.noStatusFound', 'No status found.')}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="all"
+                                  onSelect={() => {
+                                    handleAiStatusFilter('all')
+                                    setAiStatusOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      !searchParams.aiStatus ||
+                                        searchParams.aiStatus === 'all'
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                    )}
+                                  />
+                                  {t('reports.allStatus', 'All Status')}
+                                </CommandItem>
+                                {['success', 'failed'].map((status) => (
+                                  <CommandItem
+                                    key={status}
+                                    value={status}
+                                    onSelect={() => {
+                                      handleAiStatusFilter(status)
+                                      setAiStatusOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        searchParams.aiStatus === status
+                                          ? 'opacity-100'
+                                          : 'opacity-0',
+                                      )}
+                                    />
+                                    {t(
+                                      `reports.${status}`,
+                                      status.charAt(0).toUpperCase() +
+                                        status.slice(1),
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
-
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Download className="h-4 w-4" />
-                      {t('common.export', 'Export')}
-                    </Button>
                   </div>
                 </div>
 
@@ -1613,6 +1871,8 @@ function ReportsPage(): React.ReactElement {
                     itemsPerPage={itemsPerPage}
                     totalItems={totalItems}
                     onPageChange={handlePageChange}
+                    onExport={() => handleExport('ai')}
+                    exportLabel={t('reports.exportReport', 'Export Report')}
                   />
                 </div>
               </TabsContent>
