@@ -1,23 +1,27 @@
-import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router'
-import React from 'react'
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { Header } from '@/components/dashboard/Header'
 
 export const Route = createFileRoute('/dashboard')({
+  beforeLoad: async ({ location }) => {
+    // Check for token before rendering component
+    // Use typeof window to ensure this only runs on client-side
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('callio_access_token')
+      if (!token) {
+        throw redirect({
+          to: '/login',
+          search: {
+            redirect: location.href,
+          },
+        })
+      }
+    }
+  },
   component: DashboardLayout,
 })
 
 function DashboardLayout() {
-  const navigate = useNavigate()
-
-  // Client-side auth check to redirect to login if no token
-  React.useEffect(() => {
-    const token = localStorage.getItem('callio_access_token')
-    if (!token) {
-      navigate({ to: '/login', replace: true })
-    }
-  }, [navigate])
-
   return (
     <div className="h-screen overflow-hidden flex bg-background">
       <Sidebar />
