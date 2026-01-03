@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
+    "postbuild": "cd dist && zip -r client.zip client && echo 'Created client.zip in dist directory'",
     "serve": "vite preview",
     "test": "vitest run",
     "lint": "eslint",
