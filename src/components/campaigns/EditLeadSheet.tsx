@@ -92,6 +92,7 @@ interface EditLeadSheetProps {
   campaignId: string
   onSuccess?: () => void
   showAssignment?: boolean // Optional prop to show/hide assignment section
+  campaignServices?: { serviceType: string }[] // Campaign services to check VoIP availability
 }
 
 export function EditLeadSheet({
@@ -102,6 +103,7 @@ export function EditLeadSheet({
   campaignId,
   onSuccess,
   showAssignment = true, // Default to true for backward compatibility
+  campaignServices,
 }: EditLeadSheetProps) {
   const { t } = useTranslation()
   const { mutate: updateLead, isPending: isUpdatingLead } = useUpdateLead()
@@ -148,9 +150,16 @@ export function EditLeadSheet({
   const { data: enabledServices } = useEnabledServices(clientId)
   const { data: sipCredentials } = useSipCredentials()
   const isRegistered = useSipStore((state) => state.status === 'registered')
+
+  // Check if client has VoIP service enabled
   const isVoipEnabled = enabledServices?.some(
     (service) => service.serviceType === ServiceType.VOICE,
   )
+
+  // Check if campaign has VoIP service
+  const campaignHasVoipService =
+    campaignServices?.some((s) => s.serviceType === ServiceType.VOICE) ?? false
+
   const userHasSipExtension = !!sipCredentials
 
   useEffect(() => {
@@ -1161,6 +1170,7 @@ export function EditLeadSheet({
               {/* Call button on the left */}
               <div>
                 {isVoipEnabled &&
+                  campaignHasVoipService &&
                   userHasSipExtension &&
                   assignment?.lead?.phone && (
                     <div className="flex items-center gap-2">

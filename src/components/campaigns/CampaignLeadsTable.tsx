@@ -53,6 +53,7 @@ interface CampaignLeadsTableProps {
   selectedLeadIds?: string[]
   onSelectedLeadsChange?: (leadIds: string[]) => void
   onBulkUnassignClick?: () => void
+  campaignServices?: { serviceType: string }[] // Campaign services to pass to EditLeadSheet
 }
 
 export function CampaignLeadsTable({
@@ -61,6 +62,7 @@ export function CampaignLeadsTable({
   selectedLeadIds = [],
   onSelectedLeadsChange,
   onBulkUnassignClick,
+  campaignServices,
 }: CampaignLeadsTableProps) {
   const { t } = useTranslation()
 
@@ -410,7 +412,11 @@ export function CampaignLeadsTable({
         assignment={selectedAssignment}
         clientId={clientId}
         campaignId={campaignId}
-        onSuccess={() => refetch()}
+        campaignServices={campaignServices}
+        onSuccess={() => {
+          refetch()
+          setIsEditSheetOpen(false)
+        }}
       />
 
       {/* Delete Confirmation Dialog */}

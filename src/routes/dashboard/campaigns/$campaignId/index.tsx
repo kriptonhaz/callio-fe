@@ -624,6 +624,7 @@ function CampaignDetailPage() {
             <CampaignLeadsTable
               campaignId={campaignId}
               clientId={clientId || ''}
+              campaignServices={campaign.campaignServices}
               selectedLeadIds={selectedLeadIds}
               onSelectedLeadsChange={setSelectedLeadIds}
               onBulkUnassignClick={() => setBulkUnassignDialogOpen(true)}
