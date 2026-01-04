@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -8,6 +8,7 @@ import {
   useStopCallMonitor,
 } from '@/hooks/api/useMonitoring'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
+import { useSipStore } from '@/store/useSipStore'
 import { servicesApi } from '@/lib/api/services'
 import { ServiceType } from '@/lib/api/types/services.types'
 import type { ActiveCall, MonitorMode } from '@/lib/api/types/monitoring.types'
@@ -45,6 +46,7 @@ import {
   MonitorSmartphone,
   Phone,
   PhoneCall,
+  PhoneIncoming,
   MoreHorizontal,
   Eye,
   MessageSquare,
@@ -127,6 +129,16 @@ function MonitoringPage() {
   const [monitoringCall, setMonitoringCall] = useState<ActiveCall | null>(null)
   const [monitoringMode, setMonitoringMode] = useState<MonitorMode | null>(null)
   const [isMonitoringDialogOpen, setIsMonitoringDialogOpen] = useState(false)
+  // Phase: 'waiting' = waiting for incoming call, 'ringing' = incoming call arrived, 'connected' = call answered
+  const [monitoringPhase, setMonitoringPhase] = useState<
+    'waiting' | 'ringing' | 'connected'
+  >('waiting')
+
+  // SIP store for incoming call handling
+  const incomingCall = useSipStore((state) => state.incomingCall)
+  const callStatus = useSipStore((state) => state.callStatus)
+  const acceptIncomingCall = useSipStore((state) => state.acceptIncomingCall)
+  const hangup = useSipStore((state) => state.hangup)
 
   // SIP credentials for supervisor extension
   const { data: sipCredentials } = useSipCredentials()
@@ -158,6 +170,31 @@ function MonitoringPage() {
   const agentsMeta = agentsData?.meta
   const activeCalls = callsData?.data || []
 
+  // Watch for incoming call when monitoring is active
+  useEffect(() => {
+    if (
+      isMonitoringDialogOpen &&
+      monitoringPhase === 'waiting' &&
+      incomingCall
+    ) {
+      // Incoming call arrived while waiting for monitoring callback
+      setMonitoringPhase('ringing')
+    }
+  }, [isMonitoringDialogOpen, monitoringPhase, incomingCall])
+
+  // Watch for call status changes
+  useEffect(() => {
+    if (isMonitoringDialogOpen && callStatus === 'active') {
+      setMonitoringPhase('connected')
+    } else if (isMonitoringDialogOpen && callStatus === 'ended') {
+      // Call ended, close monitoring
+      setIsMonitoringDialogOpen(false)
+      setMonitoringCall(null)
+      setMonitoringMode(null)
+      setMonitoringPhase('waiting')
+    }
+  }, [isMonitoringDialogOpen, callStatus])
+
   // Handle start monitoring
   const handleStartMonitoring = (call: ActiveCall, mode: MonitorMode): void => {
     if (!sipCredentials?.extension) {
@@ -179,8 +216,11 @@ function MonitoringPage() {
         onSuccess: () => {
           setMonitoringCall(call)
           setMonitoringMode(mode)
+          setMonitoringPhase('waiting')
           setIsMonitoringDialogOpen(true)
-          toast.success(t('monitoring.monitoringStarted', 'Monitoring started'))
+          toast.success(
+            t('monitoring.waitingForCall', 'Waiting for incoming call...'),
+          )
         },
         onError: () => {
           toast.error(
@@ -191,15 +231,25 @@ function MonitoringPage() {
     )
   }
 
+  // Handle accepting the incoming monitoring call
+  const handleAcceptMonitoringCall = (): void => {
+    acceptIncomingCall()
+    setMonitoringPhase('connected')
+  }
+
   // Handle stop monitoring
   const handleStopMonitoring = (): void => {
     if (!monitoringCall) return
+
+    // Hangup the SIP call first
+    hangup()
 
     stopMonitor(monitoringCall.id, {
       onSuccess: () => {
         setIsMonitoringDialogOpen(false)
         setMonitoringCall(null)
         setMonitoringMode(null)
+        setMonitoringPhase('waiting')
         toast.success(t('monitoring.monitoringStopped', 'Monitoring stopped'))
       },
       onError: () => {
@@ -530,7 +580,12 @@ function MonitoringPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {monitoringMode === 'spy' ? (
+              {monitoringPhase === 'ringing' ? (
+                <>
+                  <PhoneIncoming className="h-5 w-5 animate-pulse text-green-500" />
+                  {t('monitoring.incomingCall', 'Incoming Monitoring Call')}
+                </>
+              ) : monitoringMode === 'spy' ? (
                 <>
                   <Eye className="h-5 w-5" />
                   {t('monitoring.spyingTitle', 'Spying on Call')}
@@ -543,20 +598,31 @@ function MonitoringPage() {
               )}
             </DialogTitle>
             <DialogDescription>
-              {monitoringMode === 'spy'
+              {monitoringPhase === 'waiting'
                 ? t(
-                    'monitoring.spyingDescription',
-                    'You are listening to this call. The agent and customer cannot hear you.',
+                    'monitoring.waitingDescription',
+                    'Waiting for Asterisk to call your extension...',
                   )
-                : t(
-                    'monitoring.coachingDescription',
-                    'You can speak to the agent. The customer cannot hear you.',
-                  )}
+                : monitoringPhase === 'ringing'
+                  ? t(
+                      'monitoring.answerToListen',
+                      'Answer the call to start listening.',
+                    )
+                  : monitoringMode === 'spy'
+                    ? t(
+                        'monitoring.spyingDescription',
+                        'You are listening to this call. The agent and customer cannot hear you.',
+                      )
+                    : t(
+                        'monitoring.coachingDescription',
+                        'You can speak to the agent. The customer cannot hear you.',
+                      )}
             </DialogDescription>
           </DialogHeader>
 
           {monitoringCall && (
             <div className="space-y-4">
+              {/* Call Info Card */}
               <div className="rounded-lg border p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
@@ -592,21 +658,56 @@ function MonitoringPage() {
                 </div>
               </div>
 
-              <div className="flex justify-center pt-2">
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  className="gap-2"
-                  onClick={handleStopMonitoring}
-                  disabled={isStoppingMonitor}
-                >
-                  {isStoppingMonitor ? (
+              {/* Actions based on phase */}
+              <div className="flex justify-center gap-3 pt-2">
+                {monitoringPhase === 'waiting' && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <PhoneOff className="h-4 w-4" />
-                  )}
-                  {t('monitoring.hangup', 'Hang Up')}
-                </Button>
+                    <span className="text-sm">
+                      {t('monitoring.callingYou', 'Calling your extension...')}
+                    </span>
+                  </div>
+                )}
+
+                {monitoringPhase === 'ringing' && (
+                  <>
+                    <Button
+                      variant="destructive"
+                      size="lg"
+                      className="gap-2"
+                      onClick={handleStopMonitoring}
+                    >
+                      <PhoneOff className="h-4 w-4" />
+                      {t('common.reject', 'Reject')}
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="lg"
+                      className="gap-2 bg-green-500 hover:bg-green-600"
+                      onClick={handleAcceptMonitoringCall}
+                    >
+                      <Phone className="h-4 w-4" />
+                      {t('common.answer', 'Answer')}
+                    </Button>
+                  </>
+                )}
+
+                {monitoringPhase === 'connected' && (
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    className="gap-2"
+                    onClick={handleStopMonitoring}
+                    disabled={isStoppingMonitor}
+                  >
+                    {isStoppingMonitor ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <PhoneOff className="h-4 w-4" />
+                    )}
+                    {t('monitoring.hangup', 'Hang Up')}
+                  </Button>
+                )}
               </div>
             </div>
           )}

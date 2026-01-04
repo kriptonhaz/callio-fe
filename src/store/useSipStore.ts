@@ -31,6 +31,11 @@ interface SipCredentials {
   wsUrl: string
 }
 
+interface IncomingCall {
+  remoteIdentity: string
+  session: any
+}
+
 interface SipStore {
   // Connection State
   status: SipConnectionStatus
@@ -45,6 +50,10 @@ interface SipStore {
   callSession: any | null
   remoteAudio: HTMLAudioElement | null
   ringbackAudio: HTMLAudioElement | null
+  ringAudio: HTMLAudioElement | null
+
+  // Incoming Call State
+  incomingCall: IncomingCall | null
 
   // Connection Actions
   initSipml: () => void
@@ -58,6 +67,11 @@ interface SipStore {
   makeCall: (destinationNumber: string, server: string) => void
   hangup: () => void
   setCallStatus: (status: CallStatus) => void
+
+  // Incoming Call Actions
+  acceptIncomingCall: () => void
+  rejectIncomingCall: () => void
+  clearIncomingCall: () => void
 }
 
 export const useSipStore = create<SipStore>((set, get) => ({
@@ -74,6 +88,10 @@ export const useSipStore = create<SipStore>((set, get) => ({
   callSession: null,
   remoteAudio: null,
   ringbackAudio: null,
+  ringAudio: null,
+
+  // Incoming call state
+  incomingCall: null,
 
   // Connection Actions
   setStatus: (status) => set({ status }),
@@ -192,6 +210,14 @@ export const useSipStore = create<SipStore>((set, get) => ({
         set({ ringbackAudio })
       }
 
+      // Create ring audio for incoming calls
+      let ringAudio = get().ringAudio
+      if (!ringAudio) {
+        ringAudio = new Audio('https://www.doubango.org/sipml5/sounds/ring.wav')
+        ringAudio.loop = true
+        set({ ringAudio })
+      }
+
       // Event handler for stack events
       const onStackEventListener = (e: any) => {
         console.log('SIPml Stack Event:', e.type)
@@ -234,18 +260,63 @@ export const useSipStore = create<SipStore>((set, get) => ({
             break
 
           case 'i_new_call': {
-            // Incoming Call - reject if busy or accept logic can be added here
-            const { callSession: existingCall } = get()
+            // Incoming Call - reject if busy or set up as incoming
+            const { callSession: existingCall, ringAudio } = get()
             if (existingCall) {
               // Busy - reject the call
               e.newSession.hangup()
             } else {
-              // Handle incoming call - for now just log it
-              console.log(
-                'Incoming call from:',
-                e.newSession?.getRemoteFriendlyName(),
-              )
-              // Could set up incoming call handling here
+              // Set up incoming call state
+              const remoteId =
+                e.newSession?.getRemoteFriendlyName() || 'Unknown'
+              console.log('Incoming call from:', remoteId)
+
+              // Configure the session for audio
+              e.newSession.setConfiguration({
+                audio_remote: get().remoteAudio,
+                video_local: null,
+                video_remote: null,
+                events_listener: {
+                  events: '*',
+                  listener: (ev: any) => {
+                    console.log('Incoming Call Event:', ev.type)
+                    const { ringAudio: rAudio } = get()
+                    switch (ev.type) {
+                      case 'connected':
+                        set({ callStatus: 'active' })
+                        // Stop ring
+                        rAudio?.pause()
+                        if (rAudio) rAudio.currentTime = 0
+                        break
+                      case 'terminating':
+                      case 'terminated':
+                        set({
+                          callStatus: 'ended',
+                          callSession: null,
+                          incomingCall: null,
+                        })
+                        rAudio?.pause()
+                        if (rAudio) rAudio.currentTime = 0
+                        setTimeout(() => set({ callStatus: 'idle' }), 1000)
+                        break
+                    }
+                  },
+                },
+              })
+
+              // Store the incoming call and set callSession
+              set({
+                incomingCall: {
+                  remoteIdentity: remoteId,
+                  session: e.newSession,
+                },
+                callSession: e.newSession,
+              })
+
+              // Start ring
+              ringAudio
+                ?.play()
+                .catch((err) => console.log('Ring play error:', err))
             }
             break
           }
@@ -433,6 +504,58 @@ export const useSipStore = create<SipStore>((set, get) => ({
       }
       set({ callSession: null, callStatus: 'idle' })
     }
+  },
+
+  // Incoming Call Actions
+  acceptIncomingCall: () => {
+    const { incomingCall, remoteAudio, ringAudio } = get()
+    if (!incomingCall?.session) return
+
+    try {
+      // Stop ring audio
+      ringAudio?.pause()
+      if (ringAudio) ringAudio.currentTime = 0
+
+      // Accept the call
+      incomingCall.session.accept({
+        audio_remote: remoteAudio,
+        video_local: null,
+        video_remote: null,
+      })
+
+      console.log('Incoming call accepted')
+      set({ incomingCall: null, callStatus: 'active' })
+    } catch (err: any) {
+      console.error('Failed to accept incoming call:', err)
+      set({ error: err?.message || 'Failed to accept call' })
+    }
+  },
+
+  rejectIncomingCall: () => {
+    const { incomingCall, ringAudio } = get()
+    if (!incomingCall?.session) return
+
+    try {
+      // Stop ring audio
+      ringAudio?.pause()
+      if (ringAudio) ringAudio.currentTime = 0
+
+      // Reject the call
+      incomingCall.session.reject()
+
+      console.log('Incoming call rejected')
+      set({ incomingCall: null, callSession: null })
+    } catch (err: any) {
+      console.error('Failed to reject incoming call:', err)
+      set({ error: err?.message || 'Failed to reject call' })
+    }
+  },
+
+  clearIncomingCall: () => {
+    const { ringAudio } = get()
+    ringAudio?.pause()
+    if (ringAudio) ringAudio.currentTime = 0
+    set({ incomingCall: null })
   },
 }))
 
