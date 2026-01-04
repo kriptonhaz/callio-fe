@@ -560,6 +560,15 @@ function MonitoringPage() {
                                     <MessageSquare className="mr-2 h-4 w-4" />
                                     {t('monitoring.coaching', 'Coaching')}
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleStartMonitoring(call, 'barge')
+                                    }
+                                    disabled={isStartingMonitor}
+                                  >
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    {t('monitoring.barge', 'Join Call')}
+                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
