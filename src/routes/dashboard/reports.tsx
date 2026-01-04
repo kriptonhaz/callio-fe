@@ -22,13 +22,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Popover,
@@ -54,6 +47,8 @@ import {
   ChevronsUpDown,
   BrainCircuit,
   AlertCircle,
+  MoreHorizontal,
+  Play,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -64,6 +59,20 @@ import {
 } from '@/lib/api/types/sms.types'
 
 import { StandardPagination } from '@/components/common/StandardPagination'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { toast } from 'sonner'
+import { apiClient } from '@/lib/api/client'
 
 interface ReportsSearch {
   page: number
@@ -115,6 +124,8 @@ function ReportsPage(): React.ReactElement {
   const [smsStatusOpen, setSmsStatusOpen] = useState(false)
   const [aiStatusOpen, setAiStatusOpen] = useState(false)
   const [aiServiceOpen, setAiServiceOpen] = useState(false)
+  const [playingRecording, setPlayingRecording] = useState<string | null>(null)
+  const [audioDialogOpen, setAudioDialogOpen] = useState(false)
 
   // Auth context
   const { data: me } = useMe()
@@ -369,6 +380,39 @@ function ReportsPage(): React.ReactElement {
     if (!phone) return '-'
     // Simple formatting, assuming Indonesian numbers
     return phone.replace(/(\+\d{2})(\d{3})(\d{4})(\d{4})/, '$1 $2 $3 $4')
+  }
+
+  // Handle play recording
+  const handlePlayRecording = async (callLogId: string): Promise<void> => {
+    try {
+      // Fetch the recording with authentication
+      const response = await apiClient.get(`call-logs/${callLogId}/recording`)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      setPlayingRecording(url)
+      setAudioDialogOpen(true)
+    } catch (error) {
+      toast.error(t('reports.playFailed', 'Failed to load recording'))
+    }
+  }
+
+  // Handle download recording
+  const handleDownloadRecording = async (callLogId: string): Promise<void> => {
+    try {
+      const response = await apiClient.get(`call-logs/${callLogId}/recording`)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `recording-${callLogId}.wav`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      toast.success(
+        t('reports.downloadSuccess', 'Recording downloaded successfully'),
+      )
+    } catch (error) {
+      toast.error(t('reports.downloadFailed', 'Failed to download recording'))
+    }
   }
 
   // Get disposition badge
@@ -932,12 +976,15 @@ function ReportsPage(): React.ReactElement {
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                           {t('reports.status', 'STATUS')}
                         </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('common.actions', 'ACTIONS')}
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {isLoadingCallLogs ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center">
+                          <TableCell colSpan={7} className="h-24 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
                               {t('common.loading', 'Loading...')}
@@ -946,7 +993,7 @@ function ReportsPage(): React.ReactElement {
                         </TableRow>
                       ) : callLogsData?.data.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-32 text-center">
+                          <TableCell colSpan={7} className="h-32 text-center">
                             <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                               <Phone className="h-8 w-8" />
                               <p>
@@ -1028,6 +1075,47 @@ function ReportsPage(): React.ReactElement {
                               <TableCell>
                                 {getDispositionBadge(log.disposition)}
                               </TableCell>
+                              {/* Actions */}
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <span className="sr-only">
+                                        {t('common.actions', 'Actions')}
+                                      </span>
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handlePlayRecording(log.id)
+                                      }
+                                    >
+                                      <Play className="mr-2 h-4 w-4" />
+                                      {t(
+                                        'reports.playRecording',
+                                        'Play Recording',
+                                      )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleDownloadRecording(log.id)
+                                      }
+                                    >
+                                      <Download className="mr-2 h-4 w-4" />
+                                      {t(
+                                        'reports.downloadRecording',
+                                        'Download Recording',
+                                      )}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
                             </TableRow>
                           )
                         })
@@ -1045,6 +1133,43 @@ function ReportsPage(): React.ReactElement {
                     exportLabel={t('reports.exportReport', 'Export Report')}
                   />
                 </div>
+
+                {/* Audio Player Dialog */}
+                <Dialog
+                  open={audioDialogOpen}
+                  onOpenChange={(open) => {
+                    setAudioDialogOpen(open)
+                    // Cleanup: revoke object URL when dialog closes
+                    if (!open && playingRecording) {
+                      window.URL.revokeObjectURL(playingRecording)
+                      setPlayingRecording(null)
+                    }
+                  }}
+                >
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {t('reports.playRecording', 'Play Recording')}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex items-center justify-center py-4">
+                      {playingRecording && (
+                        <audio
+                          controls
+                          autoPlay
+                          className="w-full"
+                          src={playingRecording}
+                        >
+                          <source src={playingRecording} type="audio/wav" />
+                          {t(
+                            'reports.audioNotSupported',
+                            'Your browser does not support the audio element.',
+                          )}
+                        </audio>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
             )}
 
@@ -1220,7 +1345,7 @@ function ReportsPage(): React.ReactElement {
                             className="w-[130px] justify-between"
                           >
                             {searchParams.status &&
-                            searchParams.status !== 'all'
+                            (searchParams.status as string) !== 'all'
                               ? t(
                                   `reports.${searchParams.status.toLowerCase()}`,
                                   searchParams.status,
@@ -1253,7 +1378,8 @@ function ReportsPage(): React.ReactElement {
                                     className={cn(
                                       'mr-2 h-4 w-4',
                                       !searchParams.status ||
-                                        searchParams.status === 'all'
+                                        (searchParams.status as string) ===
+                                          'all'
                                         ? 'opacity-100'
                                         : 'opacity-0',
                                     )}
