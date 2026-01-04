@@ -30,20 +30,40 @@ export interface RegisteredAgentsResponse {
 
 export interface ActiveCall {
   id: string
+  agentId: string
+  clientId: string
+  leadId: string
+  campaignId: string
   phoneNumber: string
-  sipChannel: string
+  goipPortId: string | null
+  direction: 'inbound' | 'outbound'
+  status: 'ringing' | 'connected' | 'hold' | string
+  disposition: string | null
   startTime: string
-  duration?: number
-  disposition?: string
-  agent?: {
+  answerTime: string | null
+  endTime: string | null
+  durationSeconds: number
+  billableSeconds: number
+  sipChannel: string
+  bridgeId: string | null
+  recordingPath: string | null
+  recordingDuration: number | null
+  sessionToken: string | null
+  createdAt: string
+  agent: {
+    id: string
+    name: string
+    sipExtension: string
+  }
+  client: {
     id: string
     name: string
   }
-  campaign?: {
+  campaign: {
     id: string
     name: string
   }
-  lead?: {
+  lead: {
     id: string
     leadName: string
     phone: string
@@ -52,5 +72,11 @@ export interface ActiveCall {
 
 export interface ActiveCallsResponse {
   data: ActiveCall[]
-  meta: PaginationMeta
+}
+
+export type MonitorMode = 'spy' | 'whisper' | 'barge'
+
+export interface StartMonitorRequest {
+  mode: MonitorMode
+  supervisorExtension: string
 }

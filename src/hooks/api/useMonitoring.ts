@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient, buildQueryString } from '@/lib/api/client'
 import type {
   RegisteredAgentsResponse,
   ActiveCallsResponse,
+  StartMonitorRequest,
 } from '@/lib/api/types/monitoring.types'
 
 export interface MonitoringQueryParams {
@@ -29,6 +30,15 @@ const monitoringApi = {
   getActiveCalls: async (): Promise<ActiveCallsResponse> => {
     return await apiClient.get('call-logs/active').json<ActiveCallsResponse>()
   },
+  startMonitor: async (
+    callLogId: string,
+    data: StartMonitorRequest,
+  ): Promise<void> => {
+    await apiClient.post(`call-logs/${callLogId}/monitor`, { json: data })
+  },
+  stopMonitor: async (callLogId: string): Promise<void> => {
+    await apiClient.delete(`call-logs/${callLogId}/monitor`)
+  },
 }
 
 export const useRegisteredAgents = (params?: MonitoringQueryParams) => {
@@ -44,7 +54,35 @@ export const useActiveCallLogs = () => {
   return useQuery({
     queryKey: monitoringKeys.activeCalls(),
     queryFn: monitoringApi.getActiveCalls,
-    refetchInterval: 5000, // Poll every 5 seconds for active calls
+    refetchInterval: 5000,
     staleTime: 2000,
+  })
+}
+
+export const useStartCallMonitor = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      callLogId,
+      data,
+    }: {
+      callLogId: string
+      data: StartMonitorRequest
+    }) => monitoringApi.startMonitor(callLogId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringKeys.activeCalls() })
+    },
+  })
+}
+
+export const useStopCallMonitor = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (callLogId: string) => monitoringApi.stopMonitor(callLogId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: monitoringKeys.activeCalls() })
+    },
   })
 }

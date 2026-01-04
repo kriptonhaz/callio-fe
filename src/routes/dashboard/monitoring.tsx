@@ -4,9 +4,13 @@ import { useTranslation } from 'react-i18next'
 import {
   useRegisteredAgents,
   useActiveCallLogs,
+  useStartCallMonitor,
+  useStopCallMonitor,
 } from '@/hooks/api/useMonitoring'
+import { useSipCredentials } from '@/hooks/api/useSipExtensions'
 import { servicesApi } from '@/lib/api/services'
 import { ServiceType } from '@/lib/api/types/services.types'
+import type { ActiveCall, MonitorMode } from '@/lib/api/types/monitoring.types'
 import { decodeJwt } from '@/lib/jwt'
 import { getAccessToken } from '@/lib/api/client'
 import { apiClient } from '@/lib/api/client'
@@ -19,17 +23,36 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Loader2,
   Users,
   MonitorSmartphone,
   Phone,
   PhoneCall,
+  MoreHorizontal,
+  Eye,
+  MessageSquare,
+  PhoneOff,
 } from 'lucide-react'
 import { StandardPagination } from '@/components/common/StandardPagination'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/dashboard/monitoring')({
   component: MonitoringPage,
@@ -100,6 +123,14 @@ function MonitoringPage() {
   const [agentPage, setAgentPage] = useState(1)
   const agentLimit = 10
 
+  // Monitoring dialog state
+  const [monitoringCall, setMonitoringCall] = useState<ActiveCall | null>(null)
+  const [monitoringMode, setMonitoringMode] = useState<MonitorMode | null>(null)
+  const [isMonitoringDialogOpen, setIsMonitoringDialogOpen] = useState(false)
+
+  // SIP credentials for supervisor extension
+  const { data: sipCredentials } = useSipCredentials()
+
   // Agent data with pagination
   const {
     data: agentsData,
@@ -117,9 +148,74 @@ function MonitoringPage() {
     error: callsError,
   } = useActiveCallLogs()
 
+  // Monitoring mutations
+  const { mutate: startMonitor, isPending: isStartingMonitor } =
+    useStartCallMonitor()
+  const { mutate: stopMonitor, isPending: isStoppingMonitor } =
+    useStopCallMonitor()
+
   const agents = agentsData?.data || []
   const agentsMeta = agentsData?.meta
   const activeCalls = callsData?.data || []
+
+  // Handle start monitoring
+  const handleStartMonitoring = (call: ActiveCall, mode: MonitorMode): void => {
+    if (!sipCredentials?.extension) {
+      toast.error(
+        t('monitoring.noSipExtension', 'You do not have a SIP extension'),
+      )
+      return
+    }
+
+    startMonitor(
+      {
+        callLogId: call.id,
+        data: {
+          mode,
+          supervisorExtension: sipCredentials.extension,
+        },
+      },
+      {
+        onSuccess: () => {
+          setMonitoringCall(call)
+          setMonitoringMode(mode)
+          setIsMonitoringDialogOpen(true)
+          toast.success(t('monitoring.monitoringStarted', 'Monitoring started'))
+        },
+        onError: () => {
+          toast.error(
+            t('monitoring.monitoringFailed', 'Failed to start monitoring'),
+          )
+        },
+      },
+    )
+  }
+
+  // Handle stop monitoring
+  const handleStopMonitoring = (): void => {
+    if (!monitoringCall) return
+
+    stopMonitor(monitoringCall.id, {
+      onSuccess: () => {
+        setIsMonitoringDialogOpen(false)
+        setMonitoringCall(null)
+        setMonitoringMode(null)
+        toast.success(t('monitoring.monitoringStopped', 'Monitoring stopped'))
+      },
+      onError: () => {
+        toast.error(
+          t('monitoring.stopMonitoringFailed', 'Failed to stop monitoring'),
+        )
+      },
+    })
+  }
+
+  // Handle dialog close
+  const handleDialogClose = (open: boolean): void => {
+    if (!open && monitoringCall) {
+      handleStopMonitoring()
+    }
+  }
 
   // Helper to get status badge variant
   const getStatusBadge = (status: string) => {
@@ -134,14 +230,6 @@ function MonitoringPage() {
       default:
         return <Badge className="bg-gray-500 hover:bg-gray-600">{status}</Badge>
     }
-  }
-
-  // Format duration (seconds to mm:ss)
-  const formatDuration = (seconds: number | undefined): string => {
-    if (!seconds) return '00:00'
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
   return (
@@ -348,7 +436,10 @@ function MonitoringPage() {
                           {t('monitoring.startTime', 'Start Time')}
                         </TableHead>
                         <TableHead className="font-semibold text-primary">
-                          {t('monitoring.duration', 'Duration')}
+                          {t('monitoring.status', 'Status')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-primary">
+                          {t('common.actions', 'Actions')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -356,7 +447,7 @@ function MonitoringPage() {
                       {activeCalls.length === 0 ? (
                         <TableRow>
                           <TableCell
-                            colSpan={6}
+                            colSpan={7}
                             className="h-24 text-center text-muted-foreground"
                           >
                             <div className="flex flex-col items-center gap-2">
@@ -369,18 +460,58 @@ function MonitoringPage() {
                         activeCalls.map((call) => (
                           <TableRow key={call.id}>
                             <TableCell className="font-medium">
-                              {call.agent?.name || '-'}
+                              <div className="flex flex-col">
+                                <span>{call.agent.name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  Ext: {call.agent.sipExtension}
+                                </span>
+                              </div>
                             </TableCell>
                             <TableCell>{call.phoneNumber}</TableCell>
-                            <TableCell>{call.campaign?.name || '-'}</TableCell>
-                            <TableCell>{call.lead?.leadName || '-'}</TableCell>
+                            <TableCell>{call.campaign.name}</TableCell>
+                            <TableCell>{call.lead.leadName}</TableCell>
                             <TableCell>
                               {call.startTime
                                 ? format(new Date(call.startTime), 'HH:mm:ss')
                                 : '-'}
                             </TableCell>
                             <TableCell>
-                              {formatDuration(call.duration)}
+                              <Badge className="bg-green-500 hover:bg-green-600">
+                                {call.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleStartMonitoring(call, 'spy')
+                                    }
+                                    disabled={isStartingMonitor}
+                                  >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    {t('monitoring.spying', 'Spying')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleStartMonitoring(call, 'whisper')
+                                    }
+                                    disabled={isStartingMonitor}
+                                  >
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    {t('monitoring.coaching', 'Coaching')}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))
@@ -393,6 +524,94 @@ function MonitoringPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Monitoring Dialog */}
+      <Dialog open={isMonitoringDialogOpen} onOpenChange={handleDialogClose}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {monitoringMode === 'spy' ? (
+                <>
+                  <Eye className="h-5 w-5" />
+                  {t('monitoring.spyingTitle', 'Spying on Call')}
+                </>
+              ) : (
+                <>
+                  <MessageSquare className="h-5 w-5" />
+                  {t('monitoring.coachingTitle', 'Coaching Call')}
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {monitoringMode === 'spy'
+                ? t(
+                    'monitoring.spyingDescription',
+                    'You are listening to this call. The agent and customer cannot hear you.',
+                  )
+                : t(
+                    'monitoring.coachingDescription',
+                    'You can speak to the agent. The customer cannot hear you.',
+                  )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {monitoringCall && (
+            <div className="space-y-4">
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {t('monitoring.campaign', 'Campaign')}
+                  </span>
+                  <span className="font-medium">
+                    {monitoringCall.campaign.name}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {t('monitoring.lead', 'Lead')}
+                  </span>
+                  <span className="font-medium">
+                    {monitoringCall.lead.leadName}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {t('monitoring.agent', 'Agent')}
+                  </span>
+                  <span className="font-medium">
+                    {monitoringCall.agent.name}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {t('monitoring.phoneNumber', 'Phone Number')}
+                  </span>
+                  <span className="font-medium">
+                    {monitoringCall.phoneNumber}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="destructive"
+                  size="lg"
+                  className="gap-2"
+                  onClick={handleStopMonitoring}
+                  disabled={isStoppingMonitor}
+                >
+                  {isStoppingMonitor ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <PhoneOff className="h-4 w-4" />
+                  )}
+                  {t('monitoring.hangup', 'Hang Up')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
