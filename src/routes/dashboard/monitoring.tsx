@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { useRegisteredAgents } from '@/hooks/api/useMonitoring'
+import {
+  useRegisteredAgents,
+  useActiveCallLogs,
+} from '@/hooks/api/useMonitoring'
 import { servicesApi } from '@/lib/api/services'
 import { ServiceType } from '@/lib/api/types/services.types'
 import { decodeJwt } from '@/lib/jwt'
@@ -16,7 +20,16 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Users, MonitorSmartphone } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Loader2,
+  Users,
+  MonitorSmartphone,
+  Phone,
+  PhoneCall,
+} from 'lucide-react'
+import { StandardPagination } from '@/components/common/StandardPagination'
+import { format } from 'date-fns'
 
 export const Route = createFileRoute('/dashboard/monitoring')({
   component: MonitoringPage,
@@ -83,9 +96,30 @@ export const Route = createFileRoute('/dashboard/monitoring')({
 
 function MonitoringPage() {
   const { t } = useTranslation()
-  const { data, isLoading, error } = useRegisteredAgents()
+  const [activeTab, setActiveTab] = useState('agents')
+  const [agentPage, setAgentPage] = useState(1)
+  const agentLimit = 10
 
-  const agents = data?.registered || []
+  // Agent data with pagination
+  const {
+    data: agentsData,
+    isLoading: isLoadingAgents,
+    error: agentsError,
+  } = useRegisteredAgents({
+    page: agentPage,
+    limit: agentLimit,
+  })
+
+  // Active calls data
+  const {
+    data: callsData,
+    isLoading: isLoadingCalls,
+    error: callsError,
+  } = useActiveCallLogs()
+
+  const agents = agentsData?.data || []
+  const agentsMeta = agentsData?.meta
+  const activeCalls = callsData?.data || []
 
   // Helper to get status badge variant
   const getStatusBadge = (status: string) => {
@@ -100,6 +134,14 @@ function MonitoringPage() {
       default:
         return <Badge className="bg-gray-500 hover:bg-gray-600">{status}</Badge>
     }
+  }
+
+  // Format duration (seconds to mm:ss)
+  const formatDuration = (seconds: number | undefined): string => {
+    if (!seconds) return '00:00'
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
   return (
@@ -118,6 +160,7 @@ function MonitoringPage() {
         </div>
       </div>
 
+      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -127,7 +170,9 @@ function MonitoringPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{agents.length}</div>
+            <div className="text-2xl font-bold">
+              {agentsMeta?.total || agents.length}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -143,70 +188,211 @@ function MonitoringPage() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {t('monitoring.activeCalls', 'Active Calls')}
+            </CardTitle>
+            <PhoneCall className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeCalls.length}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('monitoring.agentStatus', 'Agent Status')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex h-24 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : error ? (
-            <div className="flex h-24 items-center justify-center text-destructive">
-              {t('common.error', 'Failed to load data')}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    {t('monitoring.agentName', 'Agent Name')}
-                  </TableHead>
-                  <TableHead>
-                    {t('monitoring.extension', 'Extension')}
-                  </TableHead>
-                  <TableHead>{t('common.role', 'Role')}</TableHead>
-                  <TableHead>{t('common.email', 'Email')}</TableHead>
-                  <TableHead>{t('common.status', 'Status')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {agents.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="h-24 text-center text-muted-foreground"
-                    >
-                      {t('monitoring.noAgents', 'No active agents found')}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  agents.map((agent) => (
-                    <TableRow key={agent.extension}>
-                      <TableCell className="font-medium">
-                        {agent.user.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono">
-                          {agent.extension}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="capitalize">
-                        {agent.user.role}
-                      </TableCell>
-                      <TableCell>{agent.user.email}</TableCell>
-                      <TableCell>{getStatusBadge(agent.status)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Tabs */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
+        <TabsList>
+          <TabsTrigger value="agents" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            {t('monitoring.agentTab', 'Agent')}
+          </TabsTrigger>
+          <TabsTrigger value="calls" className="flex items-center gap-2">
+            <Phone className="h-4 w-4" />
+            {t('monitoring.callTab', 'Call')}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Agent Tab */}
+        <TabsContent value="agents">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {t('monitoring.agentStatus', 'Agent Status')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingAgents ? (
+                <div className="flex h-24 items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : agentsError ? (
+                <div className="flex h-24 items-center justify-center text-destructive">
+                  {t('common.error', 'Failed to load data')}
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
+                        <TableRow>
+                          <TableHead className="font-semibold text-primary">
+                            {t('monitoring.agentName', 'Agent Name')}
+                          </TableHead>
+                          <TableHead className="font-semibold text-primary">
+                            {t('monitoring.extension', 'Extension')}
+                          </TableHead>
+                          <TableHead className="font-semibold text-primary">
+                            {t('common.role', 'Role')}
+                          </TableHead>
+                          <TableHead className="font-semibold text-primary">
+                            {t('common.email', 'Email')}
+                          </TableHead>
+                          <TableHead className="font-semibold text-primary">
+                            {t('common.status', 'Status')}
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {agents.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={5}
+                              className="h-24 text-center text-muted-foreground"
+                            >
+                              {t(
+                                'monitoring.noAgents',
+                                'No active agents found',
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          agents.map((agent) => (
+                            <TableRow key={agent.extension}>
+                              <TableCell className="font-medium">
+                                {agent.user.name}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="font-mono">
+                                  {agent.extension}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="capitalize">
+                                {agent.user.role}
+                              </TableCell>
+                              <TableCell>{agent.user.email}</TableCell>
+                              <TableCell>
+                                {getStatusBadge(agent.status)}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {agentsMeta && (
+                    <StandardPagination
+                      currentPage={agentPage}
+                      totalPages={agentsMeta.totalPages}
+                      totalItems={agentsMeta.total}
+                      itemsPerPage={agentLimit}
+                      onPageChange={setAgentPage}
+                    />
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Call Tab */}
+        <TabsContent value="calls">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {t('monitoring.activeCalls', 'Active Calls')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingCalls ? (
+                <div className="flex h-24 items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : callsError ? (
+                <div className="flex h-24 items-center justify-center text-destructive">
+                  {t('common.error', 'Failed to load data')}
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
+                      <TableRow>
+                        <TableHead className="font-semibold text-primary">
+                          {t('monitoring.agent', 'Agent')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-primary">
+                          {t('monitoring.phoneNumber', 'Phone Number')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-primary">
+                          {t('monitoring.campaign', 'Campaign')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-primary">
+                          {t('monitoring.lead', 'Lead')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-primary">
+                          {t('monitoring.startTime', 'Start Time')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-primary">
+                          {t('monitoring.duration', 'Duration')}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activeCalls.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={6}
+                            className="h-24 text-center text-muted-foreground"
+                          >
+                            <div className="flex flex-col items-center gap-2">
+                              <Phone className="h-8 w-8" />
+                              {t('monitoring.noActiveCalls', 'No active calls')}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        activeCalls.map((call) => (
+                          <TableRow key={call.id}>
+                            <TableCell className="font-medium">
+                              {call.agent?.name || '-'}
+                            </TableCell>
+                            <TableCell>{call.phoneNumber}</TableCell>
+                            <TableCell>{call.campaign?.name || '-'}</TableCell>
+                            <TableCell>{call.lead?.leadName || '-'}</TableCell>
+                            <TableCell>
+                              {call.startTime
+                                ? format(new Date(call.startTime), 'HH:mm:ss')
+                                : '-'}
+                            </TableCell>
+                            <TableCell>
+                              {formatDuration(call.duration)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

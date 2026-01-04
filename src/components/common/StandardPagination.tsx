@@ -95,7 +95,6 @@ export function StandardPagination({
           className="h-8 w-8"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
-          asChild
         >
           <ChevronLeftIcon
             size={16}
@@ -124,7 +123,6 @@ export function StandardPagination({
           className="h-8 w-8"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(currentPage + 1)}
-          asChild
         >
           <ChevronRightIcon
             size={16}
