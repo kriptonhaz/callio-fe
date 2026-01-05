@@ -114,7 +114,6 @@ function LeadsPage() {
     isLoading,
     refetch,
   } = useLeads({
-    clientId,
     page: searchParams.page,
     limit: searchParams.limit,
     search: debouncedSearch,
