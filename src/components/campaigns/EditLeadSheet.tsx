@@ -1347,7 +1347,14 @@ export function EditLeadSheet({
                                   onSuccess: (data) => {
                                     // Step 2: Make call with phone number + session token
                                     if (assignment?.lead?.phone) {
-                                      const dialExtension = `${assignment.lead.phone}*${data.sessionToken}`
+                                      // Normalize phone number for dialing: convert +62xxx or 62xxx to 0xxx
+                                      let dialNumber = assignment.lead.phone
+                                      if (dialNumber.startsWith('+62')) {
+                                        dialNumber = '0' + dialNumber.slice(3)
+                                      } else if (dialNumber.startsWith('62')) {
+                                        dialNumber = '0' + dialNumber.slice(2)
+                                      }
+                                      const dialExtension = `${dialNumber}*${data.sessionToken}`
                                       makeCall(
                                         dialExtension,
                                         sipCredentials.server,
