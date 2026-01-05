@@ -7,7 +7,9 @@ export enum SmsStatus {
   SCHEDULED = 'scheduled',
   SENDING = 'sending',
   SENT = 'sent',
+  DELIVERED = 'delivered',
   FAILED = 'failed',
+  EXPIRED = 'expired',
   CANCELLED = 'cancelled',
 }
 

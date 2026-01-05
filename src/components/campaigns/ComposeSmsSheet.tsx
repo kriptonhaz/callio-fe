@@ -721,10 +721,13 @@ export function ComposeSmsSheet({
                               )}
                             >
                               {field.value ? (
-                                format(field.value, 'PPP')
+                                format(field.value, 'PPP p')
                               ) : (
                                 <span>
-                                  {t('campaigns.pickDate', 'Pick a date')}
+                                  {t(
+                                    'campaigns.pickDateTime',
+                                    'Pick a date & time',
+                                  )}
                                 </span>
                               )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -735,10 +738,77 @@ export function ComposeSmsSheet({
                           <Calendar
                             mode="single"
                             selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date()}
+                            onSelect={(date) => {
+                              if (date) {
+                                // Preserve existing time if set, otherwise use current time
+                                const existingDate = field.value
+                                if (existingDate) {
+                                  date.setHours(existingDate.getHours())
+                                  date.setMinutes(existingDate.getMinutes())
+                                } else {
+                                  const now = new Date()
+                                  date.setHours(now.getHours())
+                                  date.setMinutes(now.getMinutes() + 5)
+                                }
+                              }
+                              field.onChange(date)
+                            }}
+                            disabled={(date) => {
+                              const today = new Date()
+                              today.setHours(0, 0, 0, 0)
+                              return date < today
+                            }}
                             initialFocus
                           />
+                          <div className="border-t p-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">
+                                {t('campaigns.time', 'Time')}:
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={23}
+                                  value={field.value?.getHours() ?? 12}
+                                  onChange={(e) => {
+                                    const newDate = field.value
+                                      ? new Date(field.value)
+                                      : new Date()
+                                    newDate.setHours(
+                                      parseInt(e.target.value) || 0,
+                                    )
+                                    field.onChange(newDate)
+                                  }}
+                                  className="w-14 h-8 text-center border rounded-md text-sm"
+                                  placeholder="HH"
+                                />
+                                <span className="text-lg font-bold">:</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={59}
+                                  value={
+                                    field.value
+                                      ?.getMinutes()
+                                      .toString()
+                                      .padStart(2, '0') ?? '00'
+                                  }
+                                  onChange={(e) => {
+                                    const newDate = field.value
+                                      ? new Date(field.value)
+                                      : new Date()
+                                    newDate.setMinutes(
+                                      parseInt(e.target.value) || 0,
+                                    )
+                                    field.onChange(newDate)
+                                  }}
+                                  className="w-14 h-8 text-center border rounded-md text-sm"
+                                  placeholder="MM"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </PopoverContent>
                       </Popover>
                       <FormMessage />

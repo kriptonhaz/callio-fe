@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { RoleGuard } from '@/lib/auth-guard'
 import { useCallLogs } from '@/hooks/api/useRemainingModules'
-import { useSmsHistory } from '@/hooks/api/useSms'
+import { useSmsHistory, useBulkCancelSms } from '@/hooks/api/useSms'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useCampaigns } from '@/hooks/api/useCampaigns'
 import { useEnabledServices } from '@/hooks/api/useServices'
@@ -70,6 +70,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -131,7 +133,7 @@ function ReportsPage(): React.ReactElement {
 
   // SMS selection state
   const [selectedSmsIds, setSelectedSmsIds] = useState<Set<string>>(new Set())
-  const [isCancelling, setIsCancelling] = useState(false)
+  const [showCancelConfirmDialog, setShowCancelConfirmDialog] = useState(false)
 
   // Auth context
   const { data: me } = useMe()
@@ -259,11 +261,8 @@ function ReportsPage(): React.ReactElement {
     useCallLogs(queryParams)
 
   // Fetch SMS history
-  const {
-    data: smsHistoryData,
-    isLoading: isLoadingSmsHistory,
-    refetch: refetchSmsHistory,
-  } = useSmsHistory(smsQueryParams)
+  const { data: smsHistoryData, isLoading: isLoadingSmsHistory } =
+    useSmsHistory(smsQueryParams)
 
   // Fetch AI usage
   const { data: aiUsageData, isLoading: isLoadingAiUsage } =
@@ -513,6 +512,16 @@ function ReportsPage(): React.ReactElement {
 
   const getSmsStatusBadge = (status: SmsStatus): React.ReactElement => {
     switch (status) {
+      case SmsStatus.DELIVERED:
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1.5 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+            {t('reports.delivered', 'Delivered')}
+          </Badge>
+        )
       case SmsStatus.SENT:
         return (
           <Badge
@@ -524,8 +533,6 @@ function ReportsPage(): React.ReactElement {
           </Badge>
         )
       case SmsStatus.PENDING:
-      case SmsStatus.SCHEDULED:
-      case SmsStatus.SENDING:
         return (
           <Badge
             variant="outline"
@@ -535,8 +542,27 @@ function ReportsPage(): React.ReactElement {
             {t('reports.pending', 'Pending')}
           </Badge>
         )
+      case SmsStatus.SCHEDULED:
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1.5 bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 border-purple-200"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+            {t('reports.scheduled', 'Scheduled')}
+          </Badge>
+        )
+      case SmsStatus.SENDING:
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1.5 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+            {t('reports.sending', 'Sending')}
+          </Badge>
+        )
       case SmsStatus.FAILED:
-      case SmsStatus.CANCELLED:
         return (
           <Badge
             variant="outline"
@@ -544,6 +570,26 @@ function ReportsPage(): React.ReactElement {
           >
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
             {t('reports.failed', 'Failed')}
+          </Badge>
+        )
+      case SmsStatus.CANCELLED:
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1.5 bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 border-gray-200"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-gray-500" />
+            {t('reports.cancelled', 'Cancelled')}
+          </Badge>
+        )
+      case SmsStatus.EXPIRED:
+        return (
+          <Badge
+            variant="outline"
+            className="gap-1.5 bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 border-orange-200"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+            {t('reports.expired', 'Expired')}
           </Badge>
         )
       default:
@@ -579,59 +625,61 @@ function ReportsPage(): React.ReactElement {
   const allCurrentPageSmsSelected =
     smsData.length > 0 && smsData.every((sms) => selectedSmsIds.has(sms.id))
 
-  // Check if all selected SMS are scheduled
+  // Check if all selected SMS are scheduled (handle both enum and lowercase string)
   const canCancelSelected = useMemo(() => {
     if (selectedSmsIds.size === 0) return false
     const selectedSmsList = smsData.filter((sms) => selectedSmsIds.has(sms.id))
-    return selectedSmsList.every((sms) => sms.status === SmsStatus.SCHEDULED)
+    if (selectedSmsList.length === 0) return false
+    return selectedSmsList.every(
+      (sms) => (sms.status as string).toLowerCase() === 'scheduled',
+    )
   }, [selectedSmsIds, smsData])
 
+  // Bulk cancel mutation
+  const bulkCancelMutation = useBulkCancelSms()
+
   // Cancel scheduled SMS
-  const handleCancelScheduledSms = async (): Promise<void> => {
+  const handleCancelScheduledSms = (): void => {
     if (selectedSmsIds.size === 0) return
 
-    setIsCancelling(true)
-    try {
-      const response = await apiClient
-        .post('sms/cancel', {
-          json: { ids: Array.from(selectedSmsIds) },
-        })
-        .json<{
-          cancelled: number
-          failed: number
-          errors: Array<{ id: string; reason: string }>
-        }>()
+    bulkCancelMutation.mutate(
+      { ids: Array.from(selectedSmsIds) },
+      {
+        onSuccess: (response) => {
+          if (response.cancelled > 0) {
+            toast.success(
+              t(
+                'reports.smsCancelled',
+                '{{count}} SMS cancelled successfully',
+                {
+                  count: response.cancelled,
+                },
+              ),
+            )
+          }
 
-      if (response.cancelled > 0) {
-        toast.success(
-          t('reports.smsCancelled', '{{count}} SMS cancelled successfully', {
-            count: response.cancelled,
-          }),
-        )
-      }
+          if (response.failed > 0 && response.errors.length > 0) {
+            const reasons = response.errors.map((e) => e.reason).join(', ')
+            toast.error(
+              t(
+                'reports.smsCancelFailed',
+                '{{count}} SMS failed to cancel: {{reasons}}',
+                {
+                  count: response.failed,
+                  reasons,
+                },
+              ),
+            )
+          }
 
-      if (response.failed > 0 && response.errors.length > 0) {
-        const reasons = response.errors.map((e) => e.reason).join(', ')
-        toast.error(
-          t(
-            'reports.smsCancelFailed',
-            '{{count}} SMS failed to cancel: {{reasons}}',
-            {
-              count: response.failed,
-              reasons,
-            },
-          ),
-        )
-      }
-
-      // Clear selection and refetch
-      setSelectedSmsIds(new Set())
-      void refetchSmsHistory()
-    } catch {
-      toast.error(t('reports.cancelError', 'Failed to cancel SMS'))
-    } finally {
-      setIsCancelling(false)
-    }
+          // Clear selection
+          setSelectedSmsIds(new Set())
+        },
+        onError: () => {
+          toast.error(t('reports.cancelError', 'Failed to cancel SMS'))
+        },
+      },
+    )
   }
 
   // Pagination
@@ -1520,10 +1568,12 @@ function ReportsPage(): React.ReactElement {
                         variant="outline"
                         size="default"
                         className="gap-2"
-                        disabled={!canCancelSelected || isCancelling}
-                        onClick={handleCancelScheduledSms}
+                        disabled={
+                          !canCancelSelected || bulkCancelMutation.isPending
+                        }
+                        onClick={() => setShowCancelConfirmDialog(true)}
                       >
-                        {isCancelling ? (
+                        {bulkCancelMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <XCircle className="h-4 w-4" />
@@ -2146,6 +2196,49 @@ function ReportsPage(): React.ReactElement {
           </Tabs>
         )}
       </div>
+
+      {/* Cancel SMS Confirmation Dialog */}
+      <Dialog
+        open={showCancelConfirmDialog}
+        onOpenChange={setShowCancelConfirmDialog}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t('reports.cancelSmsTitle', 'Cancel Scheduled SMS')}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                'reports.cancelSmsDescription',
+                'Are you sure you want to cancel {{count}} scheduled SMS message(s)? This action cannot be undone.',
+                { count: selectedSmsIds.size },
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelConfirmDialog(false)}
+              disabled={bulkCancelMutation.isPending}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                handleCancelScheduledSms()
+                setShowCancelConfirmDialog(false)
+              }}
+              disabled={bulkCancelMutation.isPending}
+            >
+              {bulkCancelMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {t('reports.confirmCancel', 'Yes, Cancel SMS')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </RoleGuard>
   )
 }

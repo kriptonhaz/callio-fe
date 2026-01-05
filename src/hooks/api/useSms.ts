@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api/client'
 import type {
   ComposeSmsRequest,
@@ -8,6 +8,16 @@ import type {
 } from '@/lib/api/types/sms.types'
 import { PaginatedResponse } from '@/lib/api/types'
 import { buildQueryString } from '@/lib/api/client'
+
+export interface BulkCancelSmsRequest {
+  ids: string[]
+}
+
+export interface BulkCancelSmsResponse {
+  cancelled: number
+  failed: number
+  errors: Array<{ id: string; reason: string }>
+}
 
 const smsApi = {
   compose: async (
@@ -25,6 +35,13 @@ const smsApi = {
     return await apiClient
       .get(`sms/history${queryString}`)
       .json<PaginatedResponse<SmsHistory>>()
+  },
+  bulkCancel: async (
+    data: BulkCancelSmsRequest,
+  ): Promise<BulkCancelSmsResponse> => {
+    return await apiClient
+      .post('sms/bulk-cancel', { json: data })
+      .json<BulkCancelSmsResponse>()
   },
 }
 
@@ -51,5 +68,17 @@ export const useSmsHistory = (params: SmsHistoryQueryParams) => {
     queryKey: smsKeys.history(params),
     queryFn: () => smsApi.getHistory(params),
     placeholderData: (prev) => prev,
+  })
+}
+
+export const useBulkCancelSms = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: BulkCancelSmsRequest) => smsApi.bulkCancel(data),
+    onSuccess: () => {
+      // Invalidate SMS history queries to refetch data
+      void queryClient.invalidateQueries({ queryKey: smsKeys.all })
+    },
   })
 }
