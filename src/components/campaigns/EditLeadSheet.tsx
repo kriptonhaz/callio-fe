@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -17,6 +17,7 @@ import { ServiceType } from '@/lib/api/types/services.types'
 import { LastCallStatus } from '@/lib/api/types/lead-assignments.types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import type { UpdateLeadRequest } from '@/lib/api/types/leads.types'
+import ringbackSound from '@/assets/sound/ringback.wav'
 import {
   Sheet,
   SheetContent,
@@ -175,11 +176,50 @@ export function EditLeadSheet({
 
   const userHasSipExtension = !!sipCredentials
 
+  // Ringback audio ref
+  const ringbackAudioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Initialize ringback audio
+  useEffect(() => {
+    ringbackAudioRef.current = new Audio(ringbackSound)
+    ringbackAudioRef.current.loop = true
+
+    return () => {
+      if (ringbackAudioRef.current) {
+        ringbackAudioRef.current.pause()
+        ringbackAudioRef.current = null
+      }
+    }
+  }, [])
+
+  // Stop ringback when call becomes active or ends
+  useEffect(() => {
+    if (callStatus === 'active' || callStatus === 'idle') {
+      ringbackAudioRef.current?.pause()
+      if (ringbackAudioRef.current) {
+        ringbackAudioRef.current.currentTime = 0
+      }
+    }
+  }, [callStatus])
+
   useEffect(() => {
     if (open) {
       console.log('isRegistered', isRegistered)
     }
   }, [isRegistered, open])
+
+  const startRingback = () => {
+    ringbackAudioRef.current
+      ?.play()
+      .catch((e) => console.log('Ringback audio play blocked', e))
+  }
+
+  const stopRingback = () => {
+    ringbackAudioRef.current?.pause()
+    if (ringbackAudioRef.current) {
+      ringbackAudioRef.current.currentTime = 0
+    }
+  }
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -1355,6 +1395,10 @@ export function EditLeadSheet({
                                         dialNumber = '0' + dialNumber.slice(2)
                                       }
                                       const dialExtension = `${dialNumber}*${data.sessionToken}`
+
+                                      // Start ringback tone
+                                      startRingback()
+
                                       makeCall(
                                         dialExtension,
                                         sipCredentials.server,
@@ -1362,6 +1406,9 @@ export function EditLeadSheet({
                                     }
                                   },
                                   onError: (error) => {
+                                    // Stop ringback on error
+                                    stopRingback()
+
                                     toast.error(
                                       t(
                                         'leads.sessionInitFailed',
