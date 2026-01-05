@@ -179,15 +179,21 @@ export function EditLeadSheet({
   // Ringback audio ref
   const ringbackAudioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Initialize ringback audio
+  // Initialize ringback audio only once
   useEffect(() => {
-    ringbackAudioRef.current = new Audio(ringbackSound)
-    ringbackAudioRef.current.loop = true
+    // Only create new Audio if not already initialized
+    if (!ringbackAudioRef.current) {
+      const audio = new Audio(ringbackSound)
+      audio.loop = true
+      audio.preload = 'auto'
+      ringbackAudioRef.current = audio
+    }
 
     return () => {
+      // Just pause on unmount, don't destroy
       if (ringbackAudioRef.current) {
         ringbackAudioRef.current.pause()
-        ringbackAudioRef.current = null
+        ringbackAudioRef.current.currentTime = 0
       }
     }
   }, [])
@@ -195,8 +201,8 @@ export function EditLeadSheet({
   // Stop ringback when call becomes active or ends
   useEffect(() => {
     if (callStatus === 'active' || callStatus === 'idle') {
-      ringbackAudioRef.current?.pause()
       if (ringbackAudioRef.current) {
+        ringbackAudioRef.current.pause()
         ringbackAudioRef.current.currentTime = 0
       }
     }
@@ -209,14 +215,18 @@ export function EditLeadSheet({
   }, [isRegistered, open])
 
   const startRingback = () => {
-    ringbackAudioRef.current
-      ?.play()
-      .catch((e) => console.log('Ringback audio play blocked', e))
+    if (ringbackAudioRef.current) {
+      // Reset to start and play
+      ringbackAudioRef.current.currentTime = 0
+      ringbackAudioRef.current.play().catch((e) => {
+        console.log('Ringback audio play blocked', e)
+      })
+    }
   }
 
   const stopRingback = () => {
-    ringbackAudioRef.current?.pause()
     if (ringbackAudioRef.current) {
+      ringbackAudioRef.current.pause()
       ringbackAudioRef.current.currentTime = 0
     }
   }
