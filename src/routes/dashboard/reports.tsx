@@ -13,6 +13,7 @@ import { UserRole } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -49,6 +50,7 @@ import {
   AlertCircle,
   MoreHorizontal,
   Play,
+  XCircle,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -126,6 +128,10 @@ function ReportsPage(): React.ReactElement {
   const [aiServiceOpen, setAiServiceOpen] = useState(false)
   const [playingRecording, setPlayingRecording] = useState<string | null>(null)
   const [audioDialogOpen, setAudioDialogOpen] = useState(false)
+
+  // SMS selection state
+  const [selectedSmsIds, setSelectedSmsIds] = useState<Set<string>>(new Set())
+  const [isCancelling, setIsCancelling] = useState(false)
 
   // Auth context
   const { data: me } = useMe()
@@ -253,8 +259,11 @@ function ReportsPage(): React.ReactElement {
     useCallLogs(queryParams)
 
   // Fetch SMS history
-  const { data: smsHistoryData, isLoading: isLoadingSmsHistory } =
-    useSmsHistory(smsQueryParams)
+  const {
+    data: smsHistoryData,
+    isLoading: isLoadingSmsHistory,
+    refetch: refetchSmsHistory,
+  } = useSmsHistory(smsQueryParams)
 
   // Fetch AI usage
   const { data: aiUsageData, isLoading: isLoadingAiUsage } =
@@ -539,6 +548,89 @@ function ReportsPage(): React.ReactElement {
         )
       default:
         return <Badge variant="outline">{status}</Badge>
+    }
+  }
+
+  // SMS Selection handlers
+  const smsData = smsHistoryData?.data || []
+
+  const handleSelectAllSms = (checked: boolean): void => {
+    if (checked) {
+      const newSelected = new Set(selectedSmsIds)
+      smsData.forEach((sms) => newSelected.add(sms.id))
+      setSelectedSmsIds(newSelected)
+    } else {
+      const newSelected = new Set(selectedSmsIds)
+      smsData.forEach((sms) => newSelected.delete(sms.id))
+      setSelectedSmsIds(newSelected)
+    }
+  }
+
+  const handleSelectSms = (smsId: string, checked: boolean): void => {
+    const newSelected = new Set(selectedSmsIds)
+    if (checked) {
+      newSelected.add(smsId)
+    } else {
+      newSelected.delete(smsId)
+    }
+    setSelectedSmsIds(newSelected)
+  }
+
+  const allCurrentPageSmsSelected =
+    smsData.length > 0 && smsData.every((sms) => selectedSmsIds.has(sms.id))
+
+  // Check if all selected SMS are scheduled
+  const canCancelSelected = useMemo(() => {
+    if (selectedSmsIds.size === 0) return false
+    const selectedSmsList = smsData.filter((sms) => selectedSmsIds.has(sms.id))
+    return selectedSmsList.every((sms) => sms.status === SmsStatus.SCHEDULED)
+  }, [selectedSmsIds, smsData])
+
+  // Cancel scheduled SMS
+  const handleCancelScheduledSms = async (): Promise<void> => {
+    if (selectedSmsIds.size === 0) return
+
+    setIsCancelling(true)
+    try {
+      const response = await apiClient
+        .post('sms/cancel', {
+          json: { ids: Array.from(selectedSmsIds) },
+        })
+        .json<{
+          cancelled: number
+          failed: number
+          errors: Array<{ id: string; reason: string }>
+        }>()
+
+      if (response.cancelled > 0) {
+        toast.success(
+          t('reports.smsCancelled', '{{count}} SMS cancelled successfully', {
+            count: response.cancelled,
+          }),
+        )
+      }
+
+      if (response.failed > 0 && response.errors.length > 0) {
+        const reasons = response.errors.map((e) => e.reason).join(', ')
+        toast.error(
+          t(
+            'reports.smsCancelFailed',
+            '{{count}} SMS failed to cancel: {{reasons}}',
+            {
+              count: response.failed,
+              reasons,
+            },
+          ),
+        )
+      }
+
+      // Clear selection and refetch
+      setSelectedSmsIds(new Set())
+      void refetchSmsHistory()
+    } catch {
+      toast.error(t('reports.cancelError', 'Failed to cancel SMS'))
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -1185,7 +1277,7 @@ function ReportsPage(): React.ReactElement {
                         <Input
                           placeholder={t(
                             'reports.searchSms',
-                            'Search by phone or message...',
+                            'Search by ID, phone, or message...',
                           )}
                           value={searchParams.search || ''}
                           onChange={(e) => {
@@ -1422,6 +1514,27 @@ function ReportsPage(): React.ReactElement {
                           </Command>
                         </PopoverContent>
                       </Popover>
+
+                      {/* Cancel Scheduled Button */}
+                      <Button
+                        variant="outline"
+                        size="default"
+                        className="gap-2"
+                        disabled={!canCancelSelected || isCancelling}
+                        onClick={handleCancelScheduledSms}
+                      >
+                        {isCancelling ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <XCircle className="h-4 w-4" />
+                        )}
+                        {t('reports.cancelScheduled', 'Cancel Scheduled')}
+                        {selectedSmsIds.size > 0 && (
+                          <Badge variant="secondary" className="ml-1">
+                            {selectedSmsIds.size}
+                          </Badge>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -1431,6 +1544,16 @@ function ReportsPage(): React.ReactElement {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={allCurrentPageSmsSelected}
+                            onCheckedChange={handleSelectAllSms}
+                            aria-label={t('common.selectAll', 'Select all')}
+                          />
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.transactionId', 'TRANSACTION ID')}
+                        </TableHead>
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                           {t('reports.dateTime', 'DATE & TIME')}
                         </TableHead>
@@ -1466,7 +1589,7 @@ function ReportsPage(): React.ReactElement {
                     <TableBody>
                       {isLoadingSmsHistory ? (
                         <TableRow>
-                          <TableCell colSpan={10} className="h-24 text-center">
+                          <TableCell colSpan={12} className="h-24 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
                               {t('common.loading', 'Loading...')}
@@ -1475,7 +1598,7 @@ function ReportsPage(): React.ReactElement {
                         </TableRow>
                       ) : smsHistoryData?.data.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={10} className="h-32 text-center">
+                          <TableCell colSpan={12} className="h-32 text-center">
                             <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                               <MessageSquare className="h-8 w-8" />
                               <p>
@@ -1498,8 +1621,25 @@ function ReportsPage(): React.ReactElement {
                           return (
                             <TableRow
                               key={sms.id}
-                              className="hover:bg-muted/30"
+                              className={cn(
+                                'hover:bg-muted/30',
+                                selectedSmsIds.has(sms.id) && 'bg-muted/50',
+                              )}
                             >
+                              {/* Checkbox */}
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedSmsIds.has(sms.id)}
+                                  onCheckedChange={(checked) =>
+                                    handleSelectSms(sms.id, checked as boolean)
+                                  }
+                                  aria-label={`Select ${sms.id}`}
+                                />
+                              </TableCell>
+                              {/* Transaction ID */}
+                              <TableCell className="font-mono text-xs">
+                                {sms.id}
+                              </TableCell>
                               {/* Date & Time */}
                               <TableCell className="w-[140px]">
                                 <div className="flex flex-col">
