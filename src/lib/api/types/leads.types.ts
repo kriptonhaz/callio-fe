@@ -17,6 +17,7 @@ export interface Lead {
   officeAddress?: string | null
   salaryMin?: number | null
   salaryMax?: number | null
+  customFields?: Record<string, string> | null
   tags?: string | null
   notes?: string | null
   status: LeadStatus
@@ -44,6 +45,7 @@ export interface CreateLeadRequest {
   officeAddress?: string | null
   salaryMin?: number | null
   salaryMax?: number | null
+  customFields?: Record<string, string> | null
   tags?: string | null
   notes?: string | null
   campaignIds?: string[] | null

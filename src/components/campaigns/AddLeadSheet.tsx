@@ -36,7 +36,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Loader2, ChevronDown } from 'lucide-react'
+import { Loader2, ChevronDown, Plus, Trash2 } from 'lucide-react'
+
+interface CustomField {
+  label: string
+  value: string
+}
 
 const leadFormSchema = z.object({
   leadName: z.string().min(2, 'leads.validation.nameMin'),
@@ -85,6 +90,7 @@ export function AddLeadSheet({
   const [addressOpen, setAddressOpen] = useState(false)
   const [workOpen, setWorkOpen] = useState(false)
   const [additionalOpen, setAdditionalOpen] = useState(false)
+  const [customFields, setCustomFields] = useState<CustomField[]>([])
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -114,13 +120,40 @@ export function AddLeadSheet({
     setAddressOpen(false)
     setWorkOpen(false)
     setAdditionalOpen(false)
+    setCustomFields([])
     onOpenChange(false)
   }
 
+  const addCustomField = () => {
+    setCustomFields([...customFields, { label: '', value: '' }])
+  }
+
+  const removeCustomField = (index: number) => {
+    setCustomFields(customFields.filter((_, i) => i !== index))
+  }
+
+  const updateCustomField = (
+    index: number,
+    field: 'label' | 'value',
+    value: string,
+  ) => {
+    const updated = [...customFields]
+    updated[index][field] = value
+    setCustomFields(updated)
+  }
+
   const onSubmit = (data: LeadFormValues) => {
+    // Build customFields object from array
+    const customFieldsObj: Record<string, string> = {}
+    customFields.forEach((cf) => {
+      if (cf.label.trim() && cf.value.trim()) {
+        customFieldsObj[cf.label.trim()] = cf.value.trim()
+      }
+    })
+
     const payload: CreateLeadRequest = {
       clientId,
-      campaignIds: campaignId ? [campaignId] : [], // Empty array if no campaignId
+      campaignIds: campaignId ? [campaignId] : [],
       leadName: data.leadName,
       phone: data.phone,
       email: data.email || null,
@@ -136,6 +169,8 @@ export function AddLeadSheet({
       officeAddress: data.officeAddress || null,
       salaryMin: data.salaryMin ? parseInt(data.salaryMin, 10) : null,
       salaryMax: data.salaryMax ? parseInt(data.salaryMax, 10) : null,
+      customFields:
+        Object.keys(customFieldsObj).length > 0 ? customFieldsObj : null,
       tags: data.tags || null,
       notes: data.notes || null,
     }
@@ -645,6 +680,72 @@ export function AddLeadSheet({
                           </FormItem>
                         )}
                       />
+
+                      {/* Custom Fields Section */}
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-center justify-between">
+                          <FormLabel className="text-sm font-medium">
+                            {t('leads.customFields', 'Custom Fields')}
+                          </FormLabel>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={addCustomField}
+                            className="h-8 gap-1"
+                          >
+                            <Plus className="h-3 w-3" />
+                            {t('leads.addField', 'Add Field')}
+                          </Button>
+                        </div>
+
+                        {customFields.length === 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            {t(
+                              'leads.noCustomFields',
+                              'No custom fields added yet.',
+                            )}
+                          </p>
+                        )}
+
+                        {customFields.map((cf, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Input
+                              placeholder={t('leads.fieldLabel', 'Label')}
+                              value={cf.label}
+                              onChange={(e) =>
+                                updateCustomField(
+                                  index,
+                                  'label',
+                                  e.target.value,
+                                )
+                              }
+                              className="h-10 flex-1"
+                            />
+                            <Input
+                              placeholder={t('leads.fieldValue', 'Value')}
+                              value={cf.value}
+                              onChange={(e) =>
+                                updateCustomField(
+                                  index,
+                                  'value',
+                                  e.target.value,
+                                )
+                              }
+                              className="h-10 flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeCustomField(index)}
+                              className="h-10 w-10 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </CollapsibleContent>
                 </div>
