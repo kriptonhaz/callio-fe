@@ -1223,6 +1223,7 @@ function ReportsPage(): React.ReactElement {
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8 p-0"
+                                      disabled={log.disposition !== 'answered'}
                                     >
                                       <span className="sr-only">
                                         {t('common.actions', 'Actions')}
