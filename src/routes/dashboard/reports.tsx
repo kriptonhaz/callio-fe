@@ -3,7 +3,11 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { RoleGuard } from '@/lib/auth-guard'
 import { useCallLogs, useExportCallLogs } from '@/hooks/api/useRemainingModules'
-import { useSmsHistory, useBulkCancelSms } from '@/hooks/api/useSms'
+import {
+  useSmsHistory,
+  useBulkCancelSms,
+  useExportSmsHistory,
+} from '@/hooks/api/useSms'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useCampaigns } from '@/hooks/api/useCampaigns'
 import { useEnabledServices } from '@/hooks/api/useServices'
@@ -304,49 +308,76 @@ function ReportsPage(): React.ReactElement {
     updateParams({ page: newPage })
   }
 
-  // Export mutation
+  // Export mutations
   const exportCallLogs = useExportCallLogs()
+  const exportSmsHistory = useExportSmsHistory()
 
   const handleExport = (type: string): void => {
-    if (type !== 'voip') {
+    if (type === 'voip') {
+      exportCallLogs.mutate(
+        {
+          disposition: searchParams.disposition,
+          agentId: searchParams.agentId,
+          campaignId: searchParams.campaignId,
+          startDate: searchParams.startDate,
+          endDate: searchParams.endDate,
+        },
+        {
+          onSuccess: (blob) => {
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `voip-report-${new Date().toISOString().split('T')[0]}.csv`
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+            toast.success(
+              t('reports.exportSuccess', 'Report exported successfully'),
+            )
+          },
+          onError: (error) => {
+            console.error('Export failed:', error)
+            toast.error(t('reports.exportFailed', 'Failed to export report'))
+          },
+        },
+      )
+    } else if (type === 'sms') {
+      exportSmsHistory.mutate(
+        {
+          campaignId: searchParams.campaignId,
+          status: searchParams.status,
+          startDate: searchParams.startDate,
+          endDate: searchParams.endDate,
+        },
+        {
+          onSuccess: (blob) => {
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `sms-report-${new Date().toISOString().split('T')[0]}.csv`
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+            toast.success(
+              t('reports.exportSuccess', 'Report exported successfully'),
+            )
+          },
+          onError: (error) => {
+            console.error('Export failed:', error)
+            toast.error(t('reports.exportFailed', 'Failed to export report'))
+          },
+        },
+      )
+    } else {
       toast.info(
         t(
           'reports.exportNotImplemented',
           'Export not implemented for this type',
         ),
       )
-      return
     }
-
-    exportCallLogs.mutate(
-      {
-        disposition: searchParams.disposition,
-        agentId: searchParams.agentId,
-        campaignId: searchParams.campaignId,
-        startDate: searchParams.startDate,
-        endDate: searchParams.endDate,
-      },
-      {
-        onSuccess: (blob) => {
-          // Create download link
-          const url = window.URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `voip-report-${new Date().toISOString().split('T')[0]}.csv`
-          document.body.appendChild(a)
-          a.click()
-          window.URL.revokeObjectURL(url)
-          document.body.removeChild(a)
-          toast.success(
-            t('reports.exportSuccess', 'Report exported successfully'),
-          )
-        },
-        onError: (error) => {
-          console.error('Export failed:', error)
-          toast.error(t('reports.exportFailed', 'Failed to export report'))
-        },
-      },
-    )
   }
 
   const handleDispositionFilter = (disposition: string): void => {
@@ -1823,6 +1854,7 @@ function ReportsPage(): React.ReactElement {
                     onPageChange={handlePageChange}
                     onExport={() => handleExport('sms')}
                     exportLabel={t('reports.exportReport', 'Export Report')}
+                    isExporting={exportSmsHistory.isPending}
                   />
                 </div>
               </TabsContent>

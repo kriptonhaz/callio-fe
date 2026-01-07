@@ -106,3 +106,24 @@ export const useSmsAnalytics = (
     staleTime: 1000 * 60 * 5, // 5 minutes
   })
 }
+
+export interface SmsExportParams {
+  campaignId?: string
+  clientId?: string
+  leadAssignmentId?: string
+  status?: string
+  phoneNumber?: string
+  search?: string
+  startDate?: string
+  endDate?: string
+}
+
+export const useExportSmsHistory = () => {
+  return useMutation({
+    mutationFn: async (params: SmsExportParams): Promise<Blob> => {
+      const queryString = buildQueryString(params)
+      const response = await apiClient.get(`sms/history/export${queryString}`)
+      return response.blob()
+    },
+  })
+}
