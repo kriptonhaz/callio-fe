@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { KPICards } from '@/components/dashboard/KPICards'
-import { Charts } from '@/components/dashboard/Charts'
+import { VoipAnalyticsDashboard } from '@/components/dashboard/VoipAnalyticsDashboard'
 import { SmsAnalyticsDashboard } from '@/components/dashboard/SmsAnalyticsDashboard'
 import {
   DateRangeProvider,
@@ -82,10 +81,7 @@ function DashboardIndex() {
 
           {/* VoIP Analytics Content */}
           {activeTab === 'voip' && isVoipEnabled !== false && (
-            <div className="space-y-6">
-              <KPICards />
-              <Charts />
-            </div>
+            <VoipAnalyticsDashboard />
           )}
 
           {/* SMS Analytics Content */}

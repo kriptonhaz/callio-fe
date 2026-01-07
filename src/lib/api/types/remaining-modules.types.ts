@@ -249,3 +249,39 @@ export interface LeadHistoryQueryParams extends PaginationParams {
   agentId?: string
   action?: string
 }
+
+// VoIP Analytics Types
+export interface VoipAnalyticsQueryParams {
+  clientId?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface VoipAnalyticsSummary {
+  totalCalls: number
+  totalDurationMinutes: number
+  answeredCalls: number
+  unansweredCalls: number
+  answerRate: number
+}
+
+export interface VoipHourlyVolume {
+  hour: number
+  total: number
+  answered: number
+  unanswered: number
+}
+
+export interface VoipTopAgent {
+  agentId: string
+  agentName: string
+  totalCalls: number
+  totalDurationMinutes: number
+  answerRate: number
+}
+
+export interface VoipAnalyticsResponse {
+  summary: VoipAnalyticsSummary
+  hourlyVolumeToday: VoipHourlyVolume[]
+  topAgents: VoipTopAgent[]
+}
