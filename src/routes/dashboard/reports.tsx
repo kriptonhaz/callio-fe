@@ -23,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import {
   Popover,
   PopoverContent,
@@ -742,40 +742,52 @@ function ReportsPage(): React.ReactElement {
               <h1 className="text-3xl font-bold tracking-tight">
                 {t('reports.title', 'Reports')}
               </h1>
-              <TabsList className="bg-muted/100 rounded-lg p-1 h-auto w-auto justify-start gap-1">
+              <div className="flex items-center gap-2 bg-muted rounded-lg p-1 w-fit">
                 {hasVoipService && (
-                  <TabsTrigger
-                    value="voip"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  <Button
+                    variant={activeTab === 'voip' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('voip')}
+                    className="h-8 gap-2"
                   >
+                    <Phone className="h-4 w-4" />
                     VoIP
-                  </TabsTrigger>
+                  </Button>
                 )}
                 {hasSmsService && (
-                  <TabsTrigger
-                    value="sms"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  <Button
+                    variant={activeTab === 'sms' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('sms')}
+                    className="h-8 gap-2"
                   >
+                    <MessageSquare className="h-4 w-4" />
                     SMS
-                  </TabsTrigger>
+                  </Button>
                 )}
                 {hasWhatsappService && (
-                  <TabsTrigger
-                    value="whatsapp"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  <Button
+                    variant={activeTab === 'whatsapp' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('whatsapp')}
+                    className="h-8 gap-2"
                   >
+                    <MessageSquare className="h-4 w-4" />
                     WhatsApp
-                  </TabsTrigger>
+                  </Button>
                 )}
                 {hasAiService && (
-                  <TabsTrigger
-                    value="ai"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                  <Button
+                    variant={activeTab === 'ai' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setActiveTab('ai')}
+                    className="h-8 gap-2"
                   >
+                    <BrainCircuit className="h-4 w-4" />
                     AI
-                  </TabsTrigger>
+                  </Button>
                 )}
-              </TabsList>
+              </div>
             </div>
 
             {/* VoIP Call Logs Tab */}
