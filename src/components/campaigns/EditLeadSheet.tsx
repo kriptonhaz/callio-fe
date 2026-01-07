@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -17,7 +17,6 @@ import { ServiceType } from '@/lib/api/types/services.types'
 import { LastCallStatus } from '@/lib/api/types/lead-assignments.types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import type { UpdateLeadRequest } from '@/lib/api/types/leads.types'
-import ringbackSound from '@/assets/sound/ringback.wav'
 import {
   Sheet,
   SheetContent,
@@ -175,61 +174,6 @@ export function EditLeadSheet({
     campaignServices?.some((s) => s.serviceType === ServiceType.VOICE) ?? false
 
   const userHasSipExtension = !!sipCredentials
-
-  // Ringback audio ref
-  const ringbackAudioRef = useRef<HTMLAudioElement | null>(null)
-
-  // Initialize ringback audio only once
-  useEffect(() => {
-    // Only create new Audio if not already initialized
-    if (!ringbackAudioRef.current) {
-      const audio = new Audio(ringbackSound)
-      audio.loop = true
-      audio.preload = 'auto'
-      ringbackAudioRef.current = audio
-    }
-
-    return () => {
-      // Just pause on unmount, don't destroy
-      if (ringbackAudioRef.current) {
-        ringbackAudioRef.current.pause()
-        ringbackAudioRef.current.currentTime = 0
-      }
-    }
-  }, [])
-
-  // Stop ringback when call becomes active or ends
-  useEffect(() => {
-    if (callStatus === 'active' || callStatus === 'idle') {
-      if (ringbackAudioRef.current) {
-        ringbackAudioRef.current.pause()
-        ringbackAudioRef.current.currentTime = 0
-      }
-    }
-  }, [callStatus])
-
-  useEffect(() => {
-    if (open) {
-      console.log('isRegistered', isRegistered)
-    }
-  }, [isRegistered, open])
-
-  const startRingback = () => {
-    if (ringbackAudioRef.current) {
-      // Reset to start and play
-      ringbackAudioRef.current.currentTime = 0
-      ringbackAudioRef.current.play().catch((e) => {
-        console.log('Ringback audio play blocked', e)
-      })
-    }
-  }
-
-  const stopRingback = () => {
-    if (ringbackAudioRef.current) {
-      ringbackAudioRef.current.pause()
-      ringbackAudioRef.current.currentTime = 0
-    }
-  }
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -1406,9 +1350,6 @@ export function EditLeadSheet({
                                       }
                                       const dialExtension = `${dialNumber}*${data.sessionToken}`
 
-                                      // Start ringback tone
-                                      startRingback()
-
                                       makeCall(
                                         dialExtension,
                                         sipCredentials.server,
@@ -1416,9 +1357,6 @@ export function EditLeadSheet({
                                     }
                                   },
                                   onError: (error) => {
-                                    // Stop ringback on error
-                                    stopRingback()
-
                                     toast.error(
                                       t(
                                         'leads.sessionInitFailed',
