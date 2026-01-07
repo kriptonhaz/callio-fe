@@ -5,6 +5,8 @@ import type {
   ComposeSmsResponse,
   SmsHistory,
   SmsHistoryQueryParams,
+  SmsAnalyticsQueryParams,
+  SmsAnalyticsResponse,
 } from '@/lib/api/types/sms.types'
 import { PaginatedResponse } from '@/lib/api/types'
 import { buildQueryString } from '@/lib/api/client'
@@ -43,12 +45,22 @@ const smsApi = {
       .post('sms/bulk-cancel', { json: data })
       .json<BulkCancelSmsResponse>()
   },
+  getAnalytics: async (
+    params: SmsAnalyticsQueryParams,
+  ): Promise<SmsAnalyticsResponse> => {
+    const queryString = buildQueryString(params)
+    return await apiClient
+      .get(`sms/analytics${queryString}`)
+      .json<SmsAnalyticsResponse>()
+  },
 }
 
 export const smsKeys = {
   all: ['sms'] as const,
   history: (params: SmsHistoryQueryParams) =>
     [...smsKeys.all, 'history', params] as const,
+  analytics: (params: SmsAnalyticsQueryParams) =>
+    [...smsKeys.all, 'analytics', params] as const,
 }
 
 export const useComposeSms = () => {
@@ -80,5 +92,17 @@ export const useBulkCancelSms = () => {
       // Invalidate SMS history queries to refetch data
       void queryClient.invalidateQueries({ queryKey: smsKeys.all })
     },
+  })
+}
+
+export const useSmsAnalytics = (
+  params: SmsAnalyticsQueryParams,
+  enabled = true,
+) => {
+  return useQuery({
+    queryKey: smsKeys.analytics(params),
+    queryFn: () => smsApi.getAnalytics(params),
+    enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 }

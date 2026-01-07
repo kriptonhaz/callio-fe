@@ -73,3 +73,54 @@ export interface ComposeSmsResponse {
   scheduledCount?: number
   sentCount?: number
 }
+
+// SMS Analytics Types
+export interface SmsAnalyticsQueryParams {
+  clientId?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface SmsAnalyticsSummary {
+  totalMessages: number
+  totalSent: number
+  totalFailed: number
+  totalPending: number
+  successRate: number
+  totalSegments: number
+  totalCost: number
+}
+
+export interface SmsAnalyticsByMasking {
+  maskingId: string
+  maskingName: string
+  count: number
+  percentage: number
+}
+
+export interface SmsAnalyticsByStatus {
+  status: string
+  count: number
+  percentage: number
+}
+
+export interface SmsAnalyticsByOperator {
+  operatorName: string
+  count: number
+  percentage: number
+}
+
+export interface SmsAnalyticsDailyTrend {
+  date: string
+  total: number
+  sent: number
+  failed: number
+}
+
+export interface SmsAnalyticsResponse {
+  summary: SmsAnalyticsSummary
+  byMasking: SmsAnalyticsByMasking[]
+  byStatus: SmsAnalyticsByStatus[]
+  byOperator: SmsAnalyticsByOperator[]
+  dailyTrend: SmsAnalyticsDailyTrend[]
+}
