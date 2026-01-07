@@ -293,6 +293,28 @@ export const useCallLogsAnalytics = (
     staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
+export interface CallLogsExportParams {
+  direction?: string
+  status?: string
+  agentId?: string
+  leadId?: string
+  campaignId?: string
+  clientId?: string
+  startDate?: string
+  endDate?: string
+  disposition?: string
+}
+
+export const useExportCallLogs = () => {
+  return useMutation({
+    mutationFn: async (params: CallLogsExportParams): Promise<Blob> => {
+      const queryString = buildQueryString(params)
+      const response = await apiClient.get(`call-logs/export${queryString}`)
+      return response.blob()
+    },
+  })
+}
+
 // ========== SYSTEM LOGS ==========
 
 export const systemLogsKeys = {

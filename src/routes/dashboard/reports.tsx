@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { RoleGuard } from '@/lib/auth-guard'
-import { useCallLogs } from '@/hooks/api/useRemainingModules'
+import { useCallLogs, useExportCallLogs } from '@/hooks/api/useRemainingModules'
 import { useSmsHistory, useBulkCancelSms } from '@/hooks/api/useSms'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useCampaigns } from '@/hooks/api/useCampaigns'
@@ -304,9 +304,49 @@ function ReportsPage(): React.ReactElement {
     updateParams({ page: newPage })
   }
 
+  // Export mutation
+  const exportCallLogs = useExportCallLogs()
+
   const handleExport = (type: string): void => {
-    // Placeholder for export functionality
-    console.log(`Exporting ${type} report`)
+    if (type !== 'voip') {
+      toast.info(
+        t(
+          'reports.exportNotImplemented',
+          'Export not implemented for this type',
+        ),
+      )
+      return
+    }
+
+    exportCallLogs.mutate(
+      {
+        disposition: searchParams.disposition,
+        agentId: searchParams.agentId,
+        campaignId: searchParams.campaignId,
+        startDate: searchParams.startDate,
+        endDate: searchParams.endDate,
+      },
+      {
+        onSuccess: (blob) => {
+          // Create download link
+          const url = window.URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `voip-report-${new Date().toISOString().split('T')[0]}.csv`
+          document.body.appendChild(a)
+          a.click()
+          window.URL.revokeObjectURL(url)
+          document.body.removeChild(a)
+          toast.success(
+            t('reports.exportSuccess', 'Report exported successfully'),
+          )
+        },
+        onError: (error) => {
+          console.error('Export failed:', error)
+          toast.error(t('reports.exportFailed', 'Failed to export report'))
+        },
+      },
+    )
   }
 
   const handleDispositionFilter = (disposition: string): void => {
@@ -1284,6 +1324,7 @@ function ReportsPage(): React.ReactElement {
                     onPageChange={handlePageChange}
                     onExport={() => handleExport('voip')}
                     exportLabel={t('reports.exportReport', 'Export Report')}
+                    isExporting={exportCallLogs.isPending}
                   />
                 </div>
 

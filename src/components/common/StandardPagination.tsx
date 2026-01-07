@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { ChevronLeftIcon } from '@/components/ui/chevron-left'
 import { ChevronRightIcon } from '@/components/ui/chevron-right'
-import { Download } from 'lucide-react'
+import { Download, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 interface StandardPaginationProps {
@@ -12,6 +12,7 @@ interface StandardPaginationProps {
   onPageChange: (page: number) => void
   onExport?: () => void
   exportLabel?: string
+  isExporting?: boolean
   className?: string
 }
 
@@ -23,6 +24,7 @@ export function StandardPagination({
   onPageChange,
   onExport,
   exportLabel,
+  isExporting = false,
   className = '',
 }: StandardPaginationProps) {
   const { t } = useTranslation()
@@ -84,8 +86,13 @@ export function StandardPagination({
             size="sm"
             className="h-8 gap-2 mr-2 bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={onExport}
+            disabled={isExporting}
           >
-            <Download className="h-4 w-4" />
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
             {exportLabel || t('common.export', 'Export')}
           </Button>
         )}
