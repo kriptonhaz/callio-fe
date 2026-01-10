@@ -5,7 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from 'sonner'
 import { useUpdateLead } from '@/hooks/api/useLeads'
-import { useUpdateLeadAssignment } from '@/hooks/api/useLeadAssignments'
+import {
+  useUpdateLeadAssignment,
+  useLeadAssignment,
+} from '@/hooks/api/useLeadAssignments'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
@@ -153,8 +156,38 @@ export function EditLeadSheet({
   const [selectedRecording, setSelectedRecording] =
     useState<VoiceRecording | null>(null)
   const [showRecordingsDialog, setShowRecordingsDialog] = useState(false)
+  const [isPollingForCall, setIsPollingForCall] = useState(false)
+  const [callWasActive, setCallWasActive] = useState(false)
   const { mutate: dialRecording, isPending: isDialingRecording } =
     useDialRecording()
+
+  // Poll for lead assignment to check active call status
+  const { data: polledAssignment } = useLeadAssignment(assignment?.id, {
+    refetchInterval: isPollingForCall ? 2000 : false,
+  })
+
+  // Check active call from polled data or original assignment
+  const activeCallData = polledAssignment?.activeCall ?? assignment?.activeCall
+
+  // Track when call becomes active
+  useEffect(() => {
+    if (isPollingForCall && polledAssignment?.activeCall) {
+      setCallWasActive(true)
+    }
+  }, [isPollingForCall, polledAssignment?.activeCall])
+
+  // Stop polling ONLY when call was active and then becomes null
+  useEffect(() => {
+    if (
+      isPollingForCall &&
+      callWasActive &&
+      polledAssignment &&
+      !polledAssignment.activeCall
+    ) {
+      setIsPollingForCall(false)
+      setCallWasActive(false)
+    }
+  }, [isPollingForCall, callWasActive, polledAssignment])
 
   const isPending = isUpdatingLead || isUpdatingAssignment
 
@@ -1354,7 +1387,8 @@ export function EditLeadSheet({
                             variant="default"
                             className="gap-2 bg-green-600 hover:bg-green-700 text-white"
                             disabled={
-                              !!assignment?.activeCall ||
+                              !!activeCallData ||
+                              isPollingForCall ||
                               (callMode === 'live'
                                 ? !isRegistered ||
                                   !sipmlReady ||
@@ -1363,24 +1397,29 @@ export function EditLeadSheet({
                                 : !selectedRecording || isDialingRecording)
                             }
                             title={
-                              assignment?.activeCall
+                              activeCallData
                                 ? t(
                                     'leads.leadOnCall',
                                     'Lead is currently on call with {{agent}}',
-                                    { agent: assignment.activeCall.agentName },
+                                    { agent: activeCallData.agentName },
                                   )
-                                : callMode === 'live' && !isRegistered
+                                : isPollingForCall
                                   ? t(
-                                      'leads.connectToSipFirst',
-                                      'Please connect to SIP first',
+                                      'leads.callInProgress',
+                                      'Call in progress...',
                                     )
-                                  : callMode === 'recording' &&
-                                      !selectedRecording
+                                  : callMode === 'live' && !isRegistered
                                     ? t(
-                                        'leads.selectRecording',
-                                        'Please select a recording',
+                                        'leads.connectToSipFirst',
+                                        'Please connect to SIP first',
                                       )
-                                    : undefined
+                                    : callMode === 'recording' &&
+                                        !selectedRecording
+                                      ? t(
+                                          'leads.selectRecording',
+                                          'Please select a recording',
+                                        )
+                                      : undefined
                             }
                             onClick={() => {
                               if (!assignment?.lead?.phone) return
@@ -1408,6 +1447,8 @@ export function EditLeadSheet({
                                   },
                                   {
                                     onSuccess: () => {
+                                      // Start polling AFTER dial-recording succeeds
+                                      setIsPollingForCall(true)
                                       toast.success(
                                         t(
                                           'leads.callInitiated',

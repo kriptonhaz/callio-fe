@@ -32,6 +32,10 @@ const getAll = async (
     .json<PaginatedResponse<LeadAssignment>>()
 }
 
+const getById = async (id: string): Promise<LeadAssignment> => {
+  return await apiClient.get(`lead-assignments/${id}`).json<LeadAssignment>()
+}
+
 const update = async (
   id: string,
   data: UpdateLeadAssignmentRequest,
@@ -79,6 +83,7 @@ const bulkUnassignLeads = async (data: {
 
 export const leadAssignmentsApi = {
   getAll,
+  getById,
   update,
   delete: deleteLead,
   bulkAssign: bulkAssignLeads,
@@ -93,6 +98,19 @@ export const useLeadAssignments = (
     queryFn: () => leadAssignmentsApi.getAll(params),
     enabled: !!params.campaignId,
     staleTime: 30 * 1000,
+  })
+}
+
+export const useLeadAssignment = (
+  id: string | undefined,
+  options?: { refetchInterval?: number | false },
+): UseQueryResult<LeadAssignment, Error> => {
+  return useQuery({
+    queryKey: leadAssignmentsKeys.detail(id ?? ''),
+    queryFn: () => leadAssignmentsApi.getById(id!),
+    enabled: !!id,
+    staleTime: 5 * 1000,
+    refetchInterval: options?.refetchInterval,
   })
 }
 
