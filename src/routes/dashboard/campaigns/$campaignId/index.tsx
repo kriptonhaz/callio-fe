@@ -119,9 +119,11 @@ function CampaignDetailPage() {
   const { mutate: bulkUnassignLeads, isPending: isBulkUnassigning } =
     useBulkUnassignLeads()
 
-  // Fetch SMS masking - superadmin needs to pass clientId, others use JWT
+  // Fetch SMS masking - only for admin or superadmin
+  const canAccessSmsMasking = isSuperadmin || isAdmin
   const { data: smsMaskingData } = useSmsMasking(
     isSuperadmin ? clientId : undefined,
+    canAccessSmsMasking, // Only enable query for admin/superadmin
   )
   const activeMaskingList =
     smsMaskingData?.data?.filter((m) => m.isActive) || []
