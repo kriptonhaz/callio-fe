@@ -99,6 +99,7 @@ export interface CallLog {
   phoneNumber: string
   goipPortId?: string | null
   direction: CallDirection
+  callType: 'regular' | 'voiceblast'
   status: CallStatus
   disposition?: string | null
   startTime: string

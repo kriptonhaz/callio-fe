@@ -1197,6 +1197,9 @@ function ReportsPage(): React.ReactElement {
                           {t('reports.duration', 'DURATION')}
                         </TableHead>
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.callType', 'CALL TYPE')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                           {t('reports.status', 'STATUS')}
                         </TableHead>
                         <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
@@ -1207,7 +1210,7 @@ function ReportsPage(): React.ReactElement {
                     <TableBody>
                       {isLoadingCallLogs ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
+                          <TableCell colSpan={8} className="h-24 text-center">
                             <div className="flex items-center justify-center gap-2">
                               <Loader2 className="h-4 w-4 animate-spin" />
                               {t('common.loading', 'Loading...')}
@@ -1294,51 +1297,81 @@ function ReportsPage(): React.ReactElement {
                               <TableCell className="text-muted-foreground">
                                 {formatDuration(log.billableSeconds)}
                               </TableCell>
+                              {/* Call Type */}
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    log.callType === 'voiceblast'
+                                      ? 'secondary'
+                                      : 'outline'
+                                  }
+                                  className={
+                                    log.callType === 'voiceblast'
+                                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300'
+                                      : ''
+                                  }
+                                >
+                                  {log.callType === 'voiceblast'
+                                    ? t('reports.voiceBlast', 'Voice Blast')
+                                    : t('reports.regular', 'Regular')}
+                                </Badge>
+                              </TableCell>
                               {/* Status */}
                               <TableCell>
                                 {getDispositionBadge(log.disposition)}
                               </TableCell>
                               {/* Actions */}
                               <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 p-0"
-                                      disabled={log.disposition !== 'answered'}
-                                    >
-                                      <span className="sr-only">
-                                        {t('common.actions', 'Actions')}
-                                      </span>
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        handlePlayRecording(log.id)
-                                      }
-                                    >
-                                      <Play className="mr-2 h-4 w-4" />
-                                      {t(
-                                        'reports.playRecording',
-                                        'Play Recording',
-                                      )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        handleDownloadRecording(log.id)
-                                      }
-                                    >
-                                      <Download className="mr-2 h-4 w-4" />
-                                      {t(
-                                        'reports.downloadRecording',
-                                        'Download Recording',
-                                      )}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                {log.callType === 'voiceblast' ? (
+                                  <span className="text-xs text-muted-foreground italic">
+                                    {t(
+                                      'reports.noRecordingVoiceBlast',
+                                      'No recording for voice blast',
+                                    )}
+                                  </span>
+                                ) : (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 p-0"
+                                        disabled={
+                                          log.disposition !== 'answered'
+                                        }
+                                      >
+                                        <span className="sr-only">
+                                          {t('common.actions', 'Actions')}
+                                        </span>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handlePlayRecording(log.id)
+                                        }
+                                      >
+                                        <Play className="mr-2 h-4 w-4" />
+                                        {t(
+                                          'reports.playRecording',
+                                          'Play Recording',
+                                        )}
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleDownloadRecording(log.id)
+                                        }
+                                      >
+                                        <Download className="mr-2 h-4 w-4" />
+                                        {t(
+                                          'reports.downloadRecording',
+                                          'Download Recording',
+                                        )}
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
                               </TableCell>
                             </TableRow>
                           )
