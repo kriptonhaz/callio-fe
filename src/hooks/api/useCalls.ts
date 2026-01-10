@@ -23,6 +23,19 @@ interface InitiateSessionResponse {
   callLogId: string
 }
 
+interface DialRecordingRequest {
+  destinationNumber: string
+  voiceRecordingId: string
+  leadId: string
+  campaignId: string
+}
+
+interface DialRecordingResponse {
+  callId?: string
+  status?: string
+  message?: string
+}
+
 const callsApi = {
   dial: async (data: DialCallRequest): Promise<DialCallResponse> => {
     return apiClient.post('calls/dial', { json: data }).json<DialCallResponse>()
@@ -33,6 +46,13 @@ const callsApi = {
     return apiClient
       .post('call-logs/initiate-session', { json: data })
       .json<InitiateSessionResponse>()
+  },
+  dialRecording: async (
+    data: DialRecordingRequest,
+  ): Promise<DialRecordingResponse> => {
+    return apiClient
+      .post('calls/dial-recording', { json: data })
+      .json<DialRecordingResponse>()
   },
 }
 
@@ -45,5 +65,11 @@ export const useDialCall = () => {
 export const useInitiateCallSession = () => {
   return useMutation({
     mutationFn: callsApi.initiateSession,
+  })
+}
+
+export const useDialRecording = () => {
+  return useMutation({
+    mutationFn: callsApi.dialRecording,
   })
 }

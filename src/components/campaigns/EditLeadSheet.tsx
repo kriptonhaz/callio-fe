@@ -9,7 +9,7 @@ import { useUpdateLeadAssignment } from '@/hooks/api/useLeadAssignments'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
-import { useInitiateCallSession } from '@/hooks/api/useCalls'
+import { useInitiateCallSession, useDialRecording } from '@/hooks/api/useCalls'
 import { useMe } from '@/hooks/api/useAuth'
 import { useSipStore } from '@/store/useSipStore'
 import { LeadStatus, UserRole } from '@/lib/api/types'
@@ -54,8 +54,12 @@ import {
   PhoneOff,
   Plus,
   Trash2,
+  Music,
+  Mic,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import { VoiceRecordingsDialog } from './VoiceRecordingsDialog'
+import type { VoiceRecording } from '@/hooks/api/useVoiceRecordings'
 
 interface CustomField {
   label: string
@@ -143,6 +147,14 @@ export function EditLeadSheet({
   const [additionalOpen, setAdditionalOpen] = useState(false)
   const [assignmentOpen, setAssignmentOpen] = useState(true)
   const [customFields, setCustomFields] = useState<CustomField[]>([])
+
+  // Voice recording call mode state
+  const [callMode, setCallMode] = useState<'live' | 'recording'>('live')
+  const [selectedRecording, setSelectedRecording] =
+    useState<VoiceRecording | null>(null)
+  const [showRecordingsDialog, setShowRecordingsDialog] = useState(false)
+  const { mutate: dialRecording, isPending: isDialingRecording } =
+    useDialRecording()
 
   const isPending = isUpdatingLead || isUpdatingAssignment
 
@@ -1281,7 +1293,7 @@ export function EditLeadSheet({
 
             {/* Footer with call button on left, save/cancel on right */}
             <div className="flex items-center justify-between gap-3 px-6 py-4 border-t bg-background">
-              {/* Call button on the left */}
+              {/* Call section on the left */}
               <div>
                 {isVoipEnabled &&
                   campaignHasVoipService &&
@@ -1299,91 +1311,179 @@ export function EditLeadSheet({
                           {t('leads.hangup', 'Hang Up')}
                         </Button>
                       ) : (
-                        <Button
-                          type="button"
-                          variant="default"
-                          className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-                          disabled={
-                            !isRegistered ||
-                            !sipmlReady ||
-                            isInitiatingSession ||
-                            !currentUser
-                          }
-                          title={
-                            !isRegistered
-                              ? t(
-                                  'leads.connectToSipFirst',
-                                  'Please connect to SIP first',
-                                )
-                              : !currentUser
-                                ? t(
-                                    'leads.loadingUserInfo',
-                                    'Loading user information...',
-                                  )
-                                : undefined
-                          }
-                          onClick={() => {
-                            if (
-                              assignment?.lead?.phone &&
-                              assignment?.lead?.id &&
-                              sipCredentials &&
-                              currentUser?.id
-                            ) {
-                              // Step 1: Initiate session to get token
-                              initiateSession(
-                                {
-                                  campaignId,
-                                  leadId: assignment.lead.id,
-                                  phoneNumber: assignment.lead.phone,
-                                  agentId: currentUser.id,
-                                },
-                                {
-                                  onSuccess: (data) => {
-                                    // Step 2: Make call with phone number + session token
-                                    if (assignment?.lead?.phone) {
-                                      // Normalize phone number for dialing: convert +62xxx or 62xxx to 0xxx
-                                      let dialNumber = assignment.lead.phone
-                                      if (dialNumber.startsWith('+62')) {
-                                        dialNumber = '0' + dialNumber.slice(3)
-                                      } else if (dialNumber.startsWith('62')) {
-                                        dialNumber = '0' + dialNumber.slice(2)
-                                      }
-                                      const dialExtension = `${dialNumber}*${data.sessionToken}`
+                        <>
+                          {/* Call Mode Toggle */}
+                          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+                            <Button
+                              type="button"
+                              variant={
+                                callMode === 'live' ? 'default' : 'ghost'
+                              }
+                              size="sm"
+                              className="h-7 gap-1.5 text-xs"
+                              onClick={() => {
+                                setCallMode('live')
+                                setSelectedRecording(null)
+                              }}
+                            >
+                              <Mic className="h-3.5 w-3.5" />
+                              {t('leads.liveVoice', 'Live')}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={
+                                callMode === 'recording' ? 'default' : 'ghost'
+                              }
+                              size="sm"
+                              className="h-7 gap-1.5 text-xs"
+                              onClick={() => setShowRecordingsDialog(true)}
+                            >
+                              <Music className="h-3.5 w-3.5" />
+                              {selectedRecording
+                                ? selectedRecording.name.substring(0, 10) +
+                                  (selectedRecording.name.length > 10
+                                    ? '...'
+                                    : '')
+                                : t('leads.recording', 'Recording')}
+                            </Button>
+                          </div>
 
+                          {/* Call Button */}
+                          <Button
+                            type="button"
+                            variant="default"
+                            className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                            disabled={
+                              callMode === 'live'
+                                ? !isRegistered ||
+                                  !sipmlReady ||
+                                  isInitiatingSession ||
+                                  !currentUser
+                                : !selectedRecording || isDialingRecording
+                            }
+                            title={
+                              callMode === 'live' && !isRegistered
+                                ? t(
+                                    'leads.connectToSipFirst',
+                                    'Please connect to SIP first',
+                                  )
+                                : callMode === 'recording' && !selectedRecording
+                                  ? t(
+                                      'leads.selectRecording',
+                                      'Please select a recording',
+                                    )
+                                  : undefined
+                            }
+                            onClick={() => {
+                              if (!assignment?.lead?.phone) return
+
+                              // Normalize phone number
+                              let dialNumber = assignment.lead.phone
+                              if (dialNumber.startsWith('+62')) {
+                                dialNumber = '0' + dialNumber.slice(3)
+                              } else if (dialNumber.startsWith('62')) {
+                                dialNumber = '0' + dialNumber.slice(2)
+                              }
+
+                              if (
+                                callMode === 'recording' &&
+                                selectedRecording &&
+                                assignment?.lead?.id
+                              ) {
+                                // Dial with recording
+                                dialRecording(
+                                  {
+                                    destinationNumber: dialNumber,
+                                    voiceRecordingId: selectedRecording.id,
+                                    leadId: assignment.lead.id,
+                                    campaignId,
+                                  },
+                                  {
+                                    onSuccess: () => {
+                                      toast.success(
+                                        t(
+                                          'leads.callInitiated',
+                                          'Call initiated with recording',
+                                        ),
+                                      )
+                                    },
+                                    onError: (error) => {
+                                      toast.error(
+                                        error.message ||
+                                          t(
+                                            'leads.callFailed',
+                                            'Failed to initiate call',
+                                          ),
+                                      )
+                                    },
+                                  },
+                                )
+                              } else if (
+                                callMode === 'live' &&
+                                assignment?.lead?.id &&
+                                sipCredentials &&
+                                currentUser?.id
+                              ) {
+                                // Live voice call - initiate session first
+                                initiateSession(
+                                  {
+                                    campaignId,
+                                    leadId: assignment.lead.id,
+                                    phoneNumber: assignment.lead.phone,
+                                    agentId: currentUser.id,
+                                  },
+                                  {
+                                    onSuccess: (data) => {
+                                      const dialExtension = `${dialNumber}*${data.sessionToken}`
                                       makeCall(
                                         dialExtension,
                                         sipCredentials.server,
                                       )
-                                    }
+                                    },
+                                    onError: (error) => {
+                                      toast.error(
+                                        t(
+                                          'leads.sessionInitFailed',
+                                          'Failed to initiate call session',
+                                        ),
+                                      )
+                                      console.error(
+                                        'Failed to initiate call session:',
+                                        error,
+                                      )
+                                    },
                                   },
-                                  onError: (error) => {
-                                    toast.error(
-                                      t(
-                                        'leads.sessionInitFailed',
-                                        'Failed to initiate call session',
-                                      ),
-                                    )
-                                    console.error(
-                                      'Failed to initiate call session:',
-                                      error,
-                                    )
-                                  },
-                                },
-                              )
-                            }
-                          }}
-                        >
-                          {isDialing ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Phone className="h-4 w-4" />
-                          )}
-                          {t('leads.call', 'Call')}
-                        </Button>
+                                )
+                              }
+                            }}
+                          >
+                            {isDialing || isDialingRecording ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Phone className="h-4 w-4" />
+                            )}
+                            {t('leads.call', 'Call')}
+                          </Button>
+                        </>
                       )}
                     </div>
                   )}
               </div>
+
+              {/* Voice Recordings Dialog */}
+              <VoiceRecordingsDialog
+                open={showRecordingsDialog}
+                onOpenChange={setShowRecordingsDialog}
+                selectedRecordingId={selectedRecording?.id}
+                onSelect={(recording) => {
+                  setSelectedRecording(recording)
+                  if (recording) {
+                    setCallMode('recording')
+                  } else {
+                    setCallMode('live')
+                  }
+                }}
+              />
 
               {/* Save and Cancel buttons on the right */}
               <div className="flex items-center gap-3">
