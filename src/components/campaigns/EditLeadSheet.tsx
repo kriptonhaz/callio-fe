@@ -12,7 +12,11 @@ import {
 import { useUsers } from '@/hooks/api/useUsers'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
-import { useInitiateCallSession, useDialRecording } from '@/hooks/api/useCalls'
+import {
+  useInitiateCallSession,
+  useDialRecording,
+  useHangupCall,
+} from '@/hooks/api/useCalls'
 import { useMe } from '@/hooks/api/useAuth'
 import { useSipStore } from '@/store/useSipStore'
 import { LeadStatus, UserRole } from '@/lib/api/types'
@@ -158,8 +162,12 @@ export function EditLeadSheet({
   const [showRecordingsDialog, setShowRecordingsDialog] = useState(false)
   const [isPollingForCall, setIsPollingForCall] = useState(false)
   const [callWasActive, setCallWasActive] = useState(false)
+  const [recordingCallLogId, setRecordingCallLogId] = useState<string | null>(
+    null,
+  )
   const { mutate: dialRecording, isPending: isDialingRecording } =
     useDialRecording()
+  const { mutate: hangupCall, isPending: isHangingUp } = useHangupCall()
 
   // Poll for lead assignment to check active call status
   const { data: polledAssignment } = useLeadAssignment(assignment?.id, {
@@ -186,6 +194,7 @@ export function EditLeadSheet({
     ) {
       setIsPollingForCall(false)
       setCallWasActive(false)
+      setRecordingCallLogId(null)
     }
   }, [isPollingForCall, callWasActive, polledAssignment])
 
@@ -1333,6 +1342,7 @@ export function EditLeadSheet({
                   userHasSipExtension &&
                   assignment?.lead?.phone && (
                     <div className="flex items-center gap-2">
+                      {/* Hangup button for live calls (SIP) */}
                       {isCallActive ? (
                         <Button
                           type="button"
@@ -1341,6 +1351,45 @@ export function EditLeadSheet({
                           onClick={() => hangup()}
                         >
                           <PhoneOff className="h-4 w-4" />
+                          {t('leads.hangup', 'Hang Up')}
+                        </Button>
+                      ) : /* Hangup button for recording calls */
+                      recordingCallLogId ? (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="gap-2"
+                          disabled={isHangingUp}
+                          onClick={() => {
+                            hangupCall(
+                              { callLogId: recordingCallLogId },
+                              {
+                                onSuccess: () => {
+                                  toast.success(
+                                    t('leads.callEnded', 'Call ended'),
+                                  )
+                                  setRecordingCallLogId(null)
+                                  setIsPollingForCall(false)
+                                  setCallWasActive(false)
+                                },
+                                onError: (error) => {
+                                  toast.error(
+                                    error.message ||
+                                      t(
+                                        'leads.hangupFailed',
+                                        'Failed to hang up call',
+                                      ),
+                                  )
+                                },
+                              },
+                            )
+                          }}
+                        >
+                          {isHangingUp ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <PhoneOff className="h-4 w-4" />
+                          )}
                           {t('leads.hangup', 'Hang Up')}
                         </Button>
                       ) : (
@@ -1446,7 +1495,9 @@ export function EditLeadSheet({
                                     campaignId,
                                   },
                                   {
-                                    onSuccess: () => {
+                                    onSuccess: (data) => {
+                                      // Store callLogId for hangup
+                                      setRecordingCallLogId(data.callLogId)
                                       // Start polling AFTER dial-recording succeeds
                                       setIsPollingForCall(true)
                                       toast.success(

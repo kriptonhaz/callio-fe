@@ -31,9 +31,19 @@ interface DialRecordingRequest {
 }
 
 interface DialRecordingResponse {
-  callId?: string
-  status?: string
-  message?: string
+  message: string
+  callLogId: string
+  port: number
+  destination: string
+  recordingPath: string
+}
+
+interface HangupRequest {
+  callLogId: string
+}
+
+interface HangupResponse {
+  message: string
 }
 
 const callsApi = {
@@ -54,6 +64,9 @@ const callsApi = {
       .post('calls/dial-recording', { json: data })
       .json<DialRecordingResponse>()
   },
+  hangup: async (data: HangupRequest): Promise<HangupResponse> => {
+    return apiClient.post('calls/hangup', { json: data }).json<HangupResponse>()
+  },
 }
 
 export const useDialCall = () => {
@@ -71,5 +84,11 @@ export const useInitiateCallSession = () => {
 export const useDialRecording = () => {
   return useMutation({
     mutationFn: callsApi.dialRecording,
+  })
+}
+
+export const useHangupCall = () => {
+  return useMutation({
+    mutationFn: callsApi.hangup,
   })
 }
