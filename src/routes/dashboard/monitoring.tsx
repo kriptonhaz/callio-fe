@@ -271,12 +271,24 @@ function MonitoringPage() {
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
       case 'online':
-        return <Badge className="bg-green-500 hover:bg-green-600">Online</Badge>
+        return (
+          <Badge className="bg-green-500 hover:bg-green-600">
+            {t('monitoring.status.online')}
+          </Badge>
+        )
       case 'busy':
       case 'incall':
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Busy</Badge>
+        return (
+          <Badge className="bg-yellow-500 hover:bg-yellow-600">
+            {t('monitoring.status.busy')}
+          </Badge>
+        )
       case 'offline':
-        return <Badge className="bg-red-500 hover:bg-red-600">Offline</Badge>
+        return (
+          <Badge className="bg-red-500 hover:bg-red-600">
+            {t('monitoring.status.offline')}
+          </Badge>
+        )
       default:
         return <Badge className="bg-gray-500 hover:bg-gray-600">{status}</Badge>
     }

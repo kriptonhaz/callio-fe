@@ -192,11 +192,11 @@ function SipExtensionsPage() {
         ...values,
         clientId: null,
       })
-      toast.success('SIP extension created successfully')
+      toast.success(t('sipExtensions.createSuccess'))
       setCreateDialogOpen(false)
       form.reset()
     } catch (error) {
-      toast.error('Failed to create SIP extension')
+      toast.error(t('sipExtensions.createError'))
     }
   }
 
@@ -204,11 +204,13 @@ function SipExtensionsPage() {
   const onBulkSubmit = async (values: z.infer<typeof bulkFormSchema>) => {
     try {
       const result = await bulkCreateMutation.mutateAsync(values)
-      toast.success(`Successfully created ${result.created} extensions`)
+      toast.success(
+        t('sipExtensions.bulkCreateSuccess', { count: result.created }),
+      )
       setBulkCreateDialogOpen(false)
       bulkForm.reset()
     } catch (error) {
-      toast.error('Failed to bulk create SIP extensions')
+      toast.error(t('sipExtensions.bulkCreateError'))
     }
   }
 
@@ -218,11 +220,11 @@ function SipExtensionsPage() {
 
     try {
       await deleteMutation.mutateAsync(deletingExtension.id)
-      toast.success('SIP extension deleted successfully')
+      toast.success(t('sipExtensions.deleteSuccess'))
       setDeleteDialogOpen(false)
       setDeletingExtension(null)
     } catch (error) {
-      toast.error('Failed to delete SIP extension')
+      toast.error(t('sipExtensions.deleteError'))
     }
   }
 
@@ -235,19 +237,19 @@ function SipExtensionsPage() {
   const getExtensionTypeInfo = (extensionType: string | null) => {
     if (extensionType === 'user') {
       return {
-        label: 'User',
+        label: t('sipExtensions.type.user'),
         icon: Users,
         variant: 'default' as const,
       }
     } else if (extensionType === 'goip') {
       return {
-        label: 'GoIP',
+        label: t('sipExtensions.type.goip'),
         icon: Router,
         variant: 'secondary' as const,
       }
     }
     return {
-      label: 'Unknown',
+      label: t('sipExtensions.type.unknown'),
       icon: Phone,
       variant: 'outline' as const,
     }
@@ -284,7 +286,9 @@ function SipExtensionsPage() {
         <Badge
           variant={row.original.webrtc === 'yes' ? 'default' : 'secondary'}
         >
-          {row.original.webrtc === 'yes' ? 'Enabled' : 'Disabled'}
+          {row.original.webrtc === 'yes'
+            ? t('common.enabled')
+            : t('common.disabled')}
         </Badge>
       ),
     },
@@ -378,7 +382,11 @@ function SipExtensionsPage() {
           return <span>{row.original.assignedTo.name}</span>
         }
 
-        return <Badge variant="outline">Unassigned</Badge>
+        return (
+          <Badge variant="outline">
+            {t('sipExtensions.status.unassigned')}
+          </Badge>
+        )
       },
     },
     {
@@ -423,7 +431,7 @@ function SipExtensionsPage() {
   if (error) {
     return (
       <RoleGuard allowedRoles={['superadmin']}>
-        <div className="p-4 text-red-500">Error loading SIP extensions</div>
+        <div className="p-4 text-red-500">{t('sipExtensions.loadError')}</div>
       </RoleGuard>
     )
   }
@@ -486,7 +494,7 @@ function SipExtensionsPage() {
             onClick={() => setBulkCreateDialogOpen(true)}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Bulk Create
+            {t('sipExtensions.bulkCreate')}
           </Button>
         </div>
 
@@ -578,9 +586,9 @@ function SipExtensionsPage() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add SIP Extension</DialogTitle>
+            <DialogTitle>{t('sipExtensions.createTitle')}</DialogTitle>
             <DialogDescription>
-              Create a new SIP extension for your system.
+              {t('sipExtensions.createDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -591,7 +599,7 @@ function SipExtensionsPage() {
                 name="id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Extension ID</FormLabel>
+                    <FormLabel>{t('sipExtensions.form.extensionId')}</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="1004"
@@ -611,19 +619,25 @@ function SipExtensionsPage() {
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Type</FormLabel>
+                    <FormLabel>{t('sipExtensions.form.type')}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select extension type" />
+                          <SelectValue
+                            placeholder={t('sipExtensions.form.selectType')}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="goip">GoIP</SelectItem>
+                        <SelectItem value="user">
+                          {t('sipExtensions.type.user')}
+                        </SelectItem>
+                        <SelectItem value="goip">
+                          {t('sipExtensions.type.goip')}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -636,13 +650,15 @@ function SipExtensionsPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t('sipExtensions.form.password')}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
                           {...field}
                           type={showPassword ? 'text' : 'password'}
-                          placeholder="Enter password"
+                          placeholder={t(
+                            'sipExtensions.form.passwordPlaceholder',
+                          )}
                         />
                         <Button
                           type="button"
@@ -673,7 +689,9 @@ function SipExtensionsPage() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Creating...' : 'Create'}
+                  {createMutation.isPending
+                    ? t('common.creating')
+                    : t('common.create')}
                 </Button>
               </DialogFooter>
             </form>
@@ -688,9 +706,9 @@ function SipExtensionsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Bulk Create SIP Extensions</DialogTitle>
+            <DialogTitle>{t('sipExtensions.bulkCreateTitle')}</DialogTitle>
             <DialogDescription>
-              Create multiple SIP extensions in a range.
+              {t('sipExtensions.bulkCreateDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -704,7 +722,7 @@ function SipExtensionsPage() {
                 name="rangeStart"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Range Start</FormLabel>
+                    <FormLabel>{t('sipExtensions.form.rangeStart')}</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="1001"
@@ -726,7 +744,7 @@ function SipExtensionsPage() {
                 name="rangeEnd"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Range End</FormLabel>
+                    <FormLabel>{t('sipExtensions.form.rangeEnd')}</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="1100"
@@ -748,19 +766,25 @@ function SipExtensionsPage() {
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Type</FormLabel>
+                    <FormLabel>{t('sipExtensions.form.type')}</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select extension type" />
+                          <SelectValue
+                            placeholder={t('sipExtensions.form.selectType')}
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="goip">GoIP</SelectItem>
+                        <SelectItem value="user">
+                          {t('sipExtensions.type.user')}
+                        </SelectItem>
+                        <SelectItem value="goip">
+                          {t('sipExtensions.type.goip')}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -774,10 +798,12 @@ function SipExtensionsPage() {
                   variant="outline"
                   onClick={() => setBulkCreateDialogOpen(false)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" disabled={bulkCreateMutation.isPending}>
-                  {bulkCreateMutation.isPending ? 'Creating...' : 'Create'}
+                  {bulkCreateMutation.isPending
+                    ? t('common.creating')
+                    : t('common.create')}
                 </Button>
               </DialogFooter>
             </form>
@@ -789,20 +815,24 @@ function SipExtensionsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t('common.deleteConfirmTitle')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the SIP extension{' '}
-              <strong>{deletingExtension?.id}</strong>. This action cannot be
-              undone.
+              {t('sipExtensions.deleteDescription', {
+                extension: deletingExtension?.id,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteMutation.isPending
+                ? t('common.deleting')
+                : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
