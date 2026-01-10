@@ -1354,25 +1354,33 @@ export function EditLeadSheet({
                             variant="default"
                             className="gap-2 bg-green-600 hover:bg-green-700 text-white"
                             disabled={
-                              callMode === 'live'
+                              !!assignment?.activeCall ||
+                              (callMode === 'live'
                                 ? !isRegistered ||
                                   !sipmlReady ||
                                   isInitiatingSession ||
                                   !currentUser
-                                : !selectedRecording || isDialingRecording
+                                : !selectedRecording || isDialingRecording)
                             }
                             title={
-                              callMode === 'live' && !isRegistered
+                              assignment?.activeCall
                                 ? t(
-                                    'leads.connectToSipFirst',
-                                    'Please connect to SIP first',
+                                    'leads.leadOnCall',
+                                    'Lead is currently on call with {{agent}}',
+                                    { agent: assignment.activeCall.agentName },
                                   )
-                                : callMode === 'recording' && !selectedRecording
+                                : callMode === 'live' && !isRegistered
                                   ? t(
-                                      'leads.selectRecording',
-                                      'Please select a recording',
+                                      'leads.connectToSipFirst',
+                                      'Please connect to SIP first',
                                     )
-                                  : undefined
+                                  : callMode === 'recording' &&
+                                      !selectedRecording
+                                    ? t(
+                                        'leads.selectRecording',
+                                        'Please select a recording',
+                                      )
+                                    : undefined
                             }
                             onClick={() => {
                               if (!assignment?.lead?.phone) return

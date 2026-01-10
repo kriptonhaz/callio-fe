@@ -14,6 +14,14 @@ export enum LastCallStatus {
   INVALID_NUMBER = 'invalid_number',
 }
 
+export interface ActiveCall {
+  status: string
+  agentId: string
+  agentName: string
+  startTime: string
+  answerTime?: string
+}
+
 export interface LeadAssignment {
   id: string
   leadId: string
@@ -40,6 +48,7 @@ export interface LeadAssignment {
     name: string
     email?: string
   }
+  activeCall?: ActiveCall | null
 }
 
 export interface UpdateLeadAssignmentRequest {
