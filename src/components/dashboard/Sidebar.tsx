@@ -24,6 +24,7 @@ import { Router } from '@/components/animate-ui/icons/router'
 import { Activity } from '@/components/animate-ui/icons/activity'
 import { ChartLine } from '@/components/animate-ui/icons/chart-line'
 import { GalleryThumbnails } from '@/components/animate-ui/icons/gallery-thumbnails'
+import { MessageCircleMore } from '@/components/animate-ui/icons/message-circle-more'
 import { useTranslation } from 'react-i18next'
 import { decodeJwt } from '@/lib/jwt'
 import { getAccessToken } from '@/lib/api/client'
@@ -170,6 +171,11 @@ export function Sidebar({
           icon: ClipboardList,
           label: t('dashboard.menu.leads'),
           href: '/dashboard/leads',
+        },
+        {
+          icon: MessageCircleMore,
+          label: t('dashboard.menu.whatsapp', 'WhatsApp'),
+          href: '/dashboard/whatsapp',
         },
         {
           icon: PieChart,
