@@ -17,7 +17,9 @@ import { useEffect, useState, useRef } from 'react'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
 import { useSipStore } from '@/store/useSipStore'
 
-export function Header() {
+import rangcoolLogo from '@/assets/images/rangcool-logo.png'
+
+export function Header(): React.ReactElement {
   const { i18n } = useTranslation()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
@@ -55,7 +57,22 @@ export function Header() {
   }
 
   return (
-    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-end sticky top-0 z-10">
+    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between sticky top-0 z-10">
+      {/* Mobile logo - visible only on mobile */}
+      <div className="flex items-center gap-2 md:hidden">
+        <img
+          src={rangcoolLogo}
+          alt="RangCool"
+          className="h-8 w-auto object-contain"
+        />
+        <span className="font-bold text-xl text-primary tracking-tight">
+          RangCool
+        </span>
+      </div>
+
+      {/* Spacer for desktop */}
+      <div className="hidden md:block" />
+
       <div className="flex items-center space-x-4">
         <VoipConnectionButton />
         <DropdownMenu>

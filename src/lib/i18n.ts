@@ -349,6 +349,7 @@ const resources = {
         email: 'Email',
         type: 'Type',
         password: 'Password',
+        menu: 'Menu',
       },
       services: {
         voice: 'VoIP',
@@ -808,6 +809,7 @@ const resources = {
         email: 'Email',
         type: 'Tipe',
         password: 'Kata Sandi',
+        menu: 'Menu',
       },
       services: {
         voice: 'VoIP',

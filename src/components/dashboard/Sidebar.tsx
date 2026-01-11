@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -34,12 +34,39 @@ import { ServiceType } from '@/lib/api/types/services.types'
 
 import rangcoolLogo from '@/assets/images/rangcool-logo.png'
 
-export function Sidebar() {
+interface SidebarProps {
+  isMobileOpen?: boolean
+  onMobileClose?: () => void
+}
+
+export function Sidebar({
+  isMobileOpen = false,
+  onMobileClose,
+}: SidebarProps): React.ReactElement {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['settings']) // Default expand Settings
   const location = useLocation()
   const { t } = useTranslation()
   const logout = useLogout()
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    if (isMobileOpen && onMobileClose) {
+      onMobileClose()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
+
+  // Close mobile sidebar when window resizes to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isMobileOpen && onMobileClose) {
+        onMobileClose()
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [isMobileOpen, onMobileClose])
 
   // Role determination logic
   const token = getAccessToken()
@@ -277,284 +304,325 @@ export function Sidebar() {
   }
 
   return (
-    <motion.div
-      initial={{ width: 256 }}
-      animate={{ width: isCollapsed ? 80 : 256 }}
-      className="h-full bg-card border-r border-border relative flex flex-col shadow-sm z-10"
-    >
-      <div
-        className={cn(
-          'p-4 flex items-center border-b border-border h-16 transition-all',
-          isCollapsed ? 'justify-center gap-1 px-2' : 'justify-between',
-        )}
-      >
-        <motion.div
-          layout
-          className={cn(
-            'flex items-center',
-            isCollapsed ? 'justify-center' : 'gap-3',
-          )}
-        >
-          <img
-            src={rangcoolLogo}
-            alt="RangCool"
-            className={cn(
-              'object-contain transition-all',
-              isCollapsed ? 'h-6 w-auto' : 'h-8 w-auto',
-            )}
+    <>
+      {/* Mobile overlay backdrop */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onMobileClose}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
           />
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.span
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="font-bold text-xl text-primary tracking-tight whitespace-nowrap"
-              >
-                RangCool
-              </motion.span>
-            )}
-          </AnimatePresence>
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <AnimatePresence>
+        {/* Desktop sidebar - always visible */}
+        <motion.div
+          initial={{ width: 256 }}
+          animate={{ width: isCollapsed ? 80 : 256 }}
+          className="h-full bg-card border-r border-border relative flex-col shadow-sm z-10 hidden md:flex"
+        >
+          {renderSidebarContent()}
         </motion.div>
 
-        {!isCollapsed && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="ml-auto shrink-0"
+        {/* Mobile sidebar - overlay */}
+        {isMobileOpen && (
+          <motion.div
+            initial={{ x: -256 }}
+            animate={{ x: 0 }}
+            exit={{ x: -256 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed inset-y-0 left-0 w-64 bg-card border-r border-border flex flex-col shadow-lg z-[60] md:hidden"
           >
-            <ChevronLeft size={18} />
-          </Button>
+            {renderSidebarContent()}
+          </motion.div>
         )}
-        {isCollapsed && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="h-6 w-6 ml-1 text-muted-foreground hover:text-foreground shrink-0"
+      </AnimatePresence>
+    </>
+  )
+
+  function renderSidebarContent() {
+    return (
+      <>
+        <div
+          className={cn(
+            'p-4 flex items-center border-b border-border h-16 transition-all',
+            isCollapsed ? 'justify-center gap-1 px-2' : 'justify-between',
+          )}
+        >
+          <motion.div
+            layout
+            className={cn(
+              'flex items-center',
+              isCollapsed ? 'justify-center' : 'gap-3',
+            )}
           >
-            <ChevronRight size={14} />
-          </Button>
-        )}
-      </div>
+            <img
+              src={rangcoolLogo}
+              alt="RangCool"
+              className={cn(
+                'object-contain transition-all',
+                isCollapsed ? 'h-6 w-auto' : 'h-8 w-auto',
+              )}
+            />
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="font-bold text-xl text-primary tracking-tight whitespace-nowrap"
+                >
+                  RangCool
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
-      <div className="flex-1 py-4 overflow-y-auto">
-        <nav className="space-y-1 px-2">
-          {menuItems.map((item: any) => {
-            const isActive =
-              item.href === '/dashboard'
-                ? location.pathname === '/dashboard' ||
-                  location.pathname === '/dashboard/'
-                : location.pathname.startsWith(item.href)
-            const hasChildren = item.children && item.children.length > 0
-            const isExpanded = item.id ? expandedMenus.includes(item.id) : false
+          {!isCollapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="ml-auto shrink-0"
+            >
+              <ChevronLeft size={18} />
+            </Button>
+          )}
+          {isCollapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="h-6 w-6 ml-1 text-muted-foreground hover:text-foreground shrink-0"
+            >
+              <ChevronRight size={14} />
+            </Button>
+          )}
+        </div>
 
-            return (
-              <div key={item.href}>
-                {hasChildren ? (
-                  // Expandable menu item
-                  <div>
-                    <AnimateIcon animateOnHover asChild>
-                      <div
-                        onClick={() => item.id && toggleMenu(item.id)}
-                        className={cn(
-                          'flex items-center justify-between px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
-                          isActive
-                            ? 'bg-primary/10 text-primary font-medium'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                        )}
-                      >
-                        <div className="flex items-center">
-                          <item.icon
-                            size={20}
-                            className={cn(
-                              isActive
-                                ? 'text-primary'
-                                : 'text-muted-foreground group-hover:text-foreground',
-                            )}
-                          />
-                          <AnimatePresence>
-                            {!isCollapsed && (
-                              <motion.span
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                className="ml-3 whitespace-nowrap"
-                              >
-                                {item.label}
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                        <AnimatePresence>
-                          {!isCollapsed && (
-                            <motion.div
-                              initial={{ opacity: 0 }}
-                              animate={{
-                                opacity: 1,
-                                rotate: isExpanded ? 180 : 0,
-                              }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <ChevronDown size={16} />
-                            </motion.div>
+        <div className="flex-1 py-4 overflow-y-auto">
+          <nav className="space-y-1 px-2">
+            {menuItems.map((item: any) => {
+              const isActive =
+                item.href === '/dashboard'
+                  ? location.pathname === '/dashboard' ||
+                    location.pathname === '/dashboard/'
+                  : location.pathname.startsWith(item.href)
+              const hasChildren = item.children && item.children.length > 0
+              const isExpanded = item.id
+                ? expandedMenus.includes(item.id)
+                : false
+
+              return (
+                <div key={item.href}>
+                  {hasChildren ? (
+                    // Expandable menu item
+                    <div>
+                      <AnimateIcon animateOnHover asChild>
+                        <div
+                          onClick={() => item.id && toggleMenu(item.id)}
+                          className={cn(
+                            'flex items-center justify-between px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
+                            isActive
+                              ? 'bg-primary/10 text-primary font-medium'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                           )}
-                        </AnimatePresence>
-                      </div>
-                    </AnimateIcon>
-                    {/* Children submenu */}
-                    <AnimatePresence>
-                      {isExpanded && !isCollapsed && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden pl-4 mt-1"
                         >
-                          {item.children.map((child: any) => {
-                            const childIsActive = location.pathname.startsWith(
-                              child.href,
-                            )
-                            return (
-                              <Link
-                                key={child.href}
-                                to={child.href}
-                                className="block"
-                              >
-                                <div
-                                  className={cn(
-                                    'flex items-center px-3 py-2 rounded-md transition-colors group relative overflow-hidden cursor-pointer text-sm',
-                                    childIsActive
-                                      ? 'bg-primary/10 text-primary font-medium'
-                                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                                  )}
+                          <div className="flex items-center">
+                            <item.icon
+                              size={20}
+                              className={cn(
+                                isActive
+                                  ? 'text-primary'
+                                  : 'text-muted-foreground group-hover:text-foreground',
+                              )}
+                            />
+                            <AnimatePresence>
+                              {!isCollapsed && (
+                                <motion.span
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: -10 }}
+                                  className="ml-3 whitespace-nowrap"
                                 >
-                                  <child.icon
-                                    size={18}
-                                    className={cn(
-                                      childIsActive
-                                        ? 'text-primary'
-                                        : 'text-muted-foreground group-hover:text-foreground',
-                                    )}
-                                  />
-                                  <span className="ml-3 whitespace-nowrap">
-                                    {child.label}
-                                  </span>
-                                  {childIsActive && (
-                                    <motion.div
-                                      layoutId="active-pill-child"
-                                      className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
-                                    />
-                                  )}
-                                </div>
-                              </Link>
-                            )
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ) : (
-                  // Regular menu item
-                  <Link to={item.href} className="block">
-                    <AnimateIcon animateOnHover asChild>
-                      <div
-                        className={cn(
-                          'flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
-                          isActive
-                            ? 'bg-primary/10 text-primary font-medium'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                        )}
-                      >
-                        <div className="flex items-center">
-                          <item.icon
-                            size={20}
-                            className={cn(
-                              isActive
-                                ? 'text-primary'
-                                : 'text-muted-foreground group-hover:text-foreground',
-                            )}
-                          />
+                                  {item.label}
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </div>
                           <AnimatePresence>
                             {!isCollapsed && (
-                              <motion.span
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -10 }}
-                                className="ml-3 whitespace-nowrap"
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{
+                                  opacity: 1,
+                                  rotate: isExpanded ? 180 : 0,
+                                }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.2 }}
                               >
-                                {item.label}
-                              </motion.span>
+                                <ChevronDown size={16} />
+                              </motion.div>
                             )}
                           </AnimatePresence>
                         </div>
-                        {isActive && (
+                      </AnimateIcon>
+                      {/* Children submenu */}
+                      <AnimatePresence>
+                        {isExpanded && !isCollapsed && (
                           <motion.div
-                            layoutId="active-pill"
-                            className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
-                          />
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden pl-4 mt-1"
+                          >
+                            {item.children.map((child: any) => {
+                              const childIsActive =
+                                location.pathname.startsWith(child.href)
+                              return (
+                                <Link
+                                  key={child.href}
+                                  to={child.href}
+                                  className="block"
+                                >
+                                  <div
+                                    className={cn(
+                                      'flex items-center px-3 py-2 rounded-md transition-colors group relative overflow-hidden cursor-pointer text-sm',
+                                      childIsActive
+                                        ? 'bg-primary/10 text-primary font-medium'
+                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                    )}
+                                  >
+                                    <child.icon
+                                      size={18}
+                                      className={cn(
+                                        childIsActive
+                                          ? 'text-primary'
+                                          : 'text-muted-foreground group-hover:text-foreground',
+                                      )}
+                                    />
+                                    <span className="ml-3 whitespace-nowrap">
+                                      {child.label}
+                                    </span>
+                                    {childIsActive && (
+                                      <motion.div
+                                        layoutId="active-pill-child"
+                                        className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
+                                      />
+                                    )}
+                                  </div>
+                                </Link>
+                              )
+                            })}
+                          </motion.div>
                         )}
-                      </div>
-                    </AnimateIcon>
-                  </Link>
-                )}
-              </div>
-            )
-          })}
-        </nav>
-      </div>
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    // Regular menu item
+                    <Link to={item.href} className="block">
+                      <AnimateIcon animateOnHover asChild>
+                        <div
+                          className={cn(
+                            'flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
+                            isActive
+                              ? 'bg-primary/10 text-primary font-medium'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                          )}
+                        >
+                          <div className="flex items-center">
+                            <item.icon
+                              size={20}
+                              className={cn(
+                                isActive
+                                  ? 'text-primary'
+                                  : 'text-muted-foreground group-hover:text-foreground',
+                              )}
+                            />
+                            <AnimatePresence>
+                              {!isCollapsed && (
+                                <motion.span
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  exit={{ opacity: 0, x: -10 }}
+                                  className="ml-3 whitespace-nowrap"
+                                >
+                                  {item.label}
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          {isActive && (
+                            <motion.div
+                              layoutId="active-pill"
+                              className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
+                            />
+                          )}
+                        </div>
+                      </AnimateIcon>
+                    </Link>
+                  )}
+                </div>
+              )
+            })}
+          </nav>
+        </div>
 
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="h-9 w-9 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
-              {user?.name?.charAt(0) || decodedToken?.email?.charAt(0) || 'U'}
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="h-9 w-9 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center font-bold">
+                {user?.name?.charAt(0) || decodedToken?.email?.charAt(0) || 'U'}
+              </div>
+              <AnimatePresence>
+                {!isCollapsed && (
+                  <motion.div
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    className="ml-3 overflow-hidden"
+                  >
+                    <p className="text-sm font-medium truncate">
+                      {user?.name || decodedToken?.email || 'User'}
+                    </p>
+
+                    {client && (
+                      <p className="text-xs text-primary font-medium truncate mt-0.5">
+                        {client.name}
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <AnimatePresence>
               {!isCollapsed && (
                 <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  className="ml-3 overflow-hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                 >
-                  <p className="text-sm font-medium truncate">
-                    {user?.name || decodedToken?.email || 'User'}
-                  </p>
-
-                  {client && (
-                    <p className="text-xs text-primary font-medium truncate mt-0.5">
-                      {client.name}
-                    </p>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={logout}
+                    title={t('common.logout', 'Logout')}
+                  >
+                    <LogOut size={18} />
+                  </Button>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={logout}
-                  title={t('common.logout', 'Logout')}
-                >
-                  <LogOut size={18} />
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
-      </div>
-    </motion.div>
-  )
+      </>
+    )
+  }
 }
