@@ -295,58 +295,68 @@ function MonitoringPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            {t('monitoring.title', 'Live Monitoring')}
-          </h2>
-          <p className="text-muted-foreground">
-            {t(
-              'monitoring.description',
-              'Real-time view of agent activity and connection status.',
-            )}
-          </p>
-        </div>
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+          {t('monitoring.title', 'Live Monitoring')}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {t(
+            'monitoring.description',
+            'Real-time view of agent activity and connection status.',
+          )}
+        </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+      {/* Summary Cards - Smaller on mobile */}
+      <div className="grid grid-cols-3 gap-2 md:gap-4">
+        <Card className="p-2 md:p-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 md:p-4 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">
               {t('monitoring.totalAgents', 'Total Agents')}
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">
               {agentsMeta?.total || agents.length}
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t('monitoring.onlineAgents', 'Online Agents')}
+        <Card className="p-2 md:p-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 md:p-4 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">
+              <span className="hidden sm:inline">
+                {t('monitoring.onlineAgents', 'Online Agents')}
+              </span>
+              <span className="sm:hidden">
+                {t('monitoring.online', 'Online')}
+              </span>
             </CardTitle>
-            <MonitorSmartphone className="h-4 w-4 text-muted-foreground" />
+            <MonitorSmartphone className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">
               {agents.filter((a) => a.status === 'online').length}
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t('monitoring.activeCalls', 'Active Calls')}
+        <Card className="p-2 md:p-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 md:p-4 md:pb-2">
+            <CardTitle className="text-xs md:text-sm font-medium">
+              <span className="hidden sm:inline">
+                {t('monitoring.activeCalls', 'Active Calls')}
+              </span>
+              <span className="sm:hidden">
+                {t('monitoring.calls', 'Calls')}
+              </span>
             </CardTitle>
-            <PhoneCall className="h-4 w-4 text-muted-foreground" />
+            <PhoneCall className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeCalls.length}</div>
+          <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+            <div className="text-lg md:text-2xl font-bold">
+              {activeCalls.length}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -387,7 +397,7 @@ function MonitoringPage() {
                 </div>
               ) : (
                 <>
-                  <div className="rounded-md border">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                         <TableRow>

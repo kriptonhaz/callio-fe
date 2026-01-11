@@ -148,9 +148,9 @@ export function VoipAnalyticsDashboard(): React.ReactElement {
       </div>
 
       {/* Charts Row: Call Volume & Top Agents */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
         {/* Hourly Call Volume - Line Chart */}
-        <Card className="col-span-4">
+        <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>
               {t('dashboard.callVolumeToday', 'Call Volume Today')}
@@ -222,7 +222,7 @@ export function VoipAnalyticsDashboard(): React.ReactElement {
         </Card>
 
         {/* Top Agents - Bar Chart */}
-        <Card className="col-span-3">
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>{t('dashboard.topAgents', 'Top Agents')}</CardTitle>
           </CardHeader>

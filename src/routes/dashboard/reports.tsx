@@ -775,15 +775,15 @@ function ReportsPage(): React.ReactElement {
 
   return (
     <RoleGuard allowedRoles={['admin', 'supervisor']}>
-      <div className="p-6 space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {noServicesAvailable ? (
           <>
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold tracking-tight">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                 {t('reports.title', 'Reports')}
               </h1>
-              <Button className="gap-2 bg-primary hover:bg-primary/90">
+              <Button className="gap-2 bg-primary hover:bg-primary/90 w-full sm:w-auto">
                 <Download className="h-4 w-4" />
                 {t('reports.exportReport', 'Export Report')}
               </Button>
@@ -809,11 +809,11 @@ function ReportsPage(): React.ReactElement {
             className="space-y-6"
           >
             {/* Header with Tabs */}
-            <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold tracking-tight">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                 {t('reports.title', 'Reports')}
               </h1>
-              <div className="flex items-center gap-2 bg-muted rounded-lg p-1 w-fit">
+              <div className="flex flex-wrap items-center gap-2 bg-muted rounded-lg p-1 w-fit">
                 {hasVoipService && (
                   <Button
                     variant={activeTab === 'voip' ? 'default' : 'ghost'}
@@ -822,7 +822,7 @@ function ReportsPage(): React.ReactElement {
                     className="h-8 gap-2"
                   >
                     <Phone className="h-4 w-4" />
-                    VoIP
+                    <span className="hidden sm:inline">VoIP</span>
                   </Button>
                 )}
                 {hasSmsService && (
@@ -833,7 +833,7 @@ function ReportsPage(): React.ReactElement {
                     className="h-8 gap-2"
                   >
                     <MessageSquare className="h-4 w-4" />
-                    SMS
+                    <span className="hidden sm:inline">SMS</span>
                   </Button>
                 )}
                 {hasWhatsappService && (
@@ -844,7 +844,7 @@ function ReportsPage(): React.ReactElement {
                     className="h-8 gap-2"
                   >
                     <MessageSquare className="h-4 w-4" />
-                    WhatsApp
+                    <span className="hidden sm:inline">WhatsApp</span>
                   </Button>
                 )}
                 {hasAiService && (
@@ -855,7 +855,7 @@ function ReportsPage(): React.ReactElement {
                     className="h-8 gap-2"
                   >
                     <BrainCircuit className="h-4 w-4" />
-                    AI
+                    <span className="hidden sm:inline">AI</span>
                   </Button>
                 )}
               </div>
@@ -865,9 +865,9 @@ function ReportsPage(): React.ReactElement {
             {hasVoipService && (
               <TabsContent value="voip" className="space-y-0 mt-0">
                 {/* Filters Card */}
-                <div className="rounded-t-lg border border-b-0 bg-card p-4">
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex items-center gap-3 flex-wrap">
+                <div className="rounded-t-lg border border-b-0 bg-card p-3 md:p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:flex-wrap md:gap-4">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3">
                       {/* Start Date Picker */}
                       <Popover>
                         <PopoverTrigger asChild>

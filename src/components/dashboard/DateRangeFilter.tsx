@@ -114,12 +114,12 @@ export function DateRangeFilter(): React.ReactElement {
   } = useDateRange()
 
   return (
-    <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
+    <div className="flex flex-wrap items-center gap-1 bg-muted rounded-lg p-1">
       <Button
         variant={dateRangeType === 'today' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => setDateRangeType('today')}
-        className="h-8"
+        className="h-8 text-xs sm:text-sm"
       >
         {t('dashboard.today', 'Today')}
       </Button>
@@ -127,7 +127,7 @@ export function DateRangeFilter(): React.ReactElement {
         variant={dateRangeType === 'week' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => setDateRangeType('week')}
-        className="h-8"
+        className="h-8 text-xs sm:text-sm"
       >
         {t('dashboard.thisWeek', 'This Week')}
       </Button>
@@ -135,7 +135,7 @@ export function DateRangeFilter(): React.ReactElement {
         variant={dateRangeType === 'month' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => setDateRangeType('month')}
-        className="h-8"
+        className="h-8 text-xs sm:text-sm"
       >
         {t('dashboard.thisMonth', 'This Month')}
       </Button>
@@ -144,15 +144,23 @@ export function DateRangeFilter(): React.ReactElement {
           <Button
             variant={dateRangeType === 'custom' ? 'default' : 'ghost'}
             size="sm"
-            className="h-8 gap-1"
+            className="h-8 gap-1 text-xs sm:text-sm"
           >
             <CalendarIcon className="h-3.5 w-3.5" />
-            {t('dashboard.pickDateRange', 'Pick Range')}
+            <span className="hidden sm:inline">
+              {t('dashboard.pickDateRange', 'Pick Range')}
+            </span>
+            <span className="sm:hidden">{t('dashboard.range', 'Range')}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-4" align="end">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+        <PopoverContent
+          className="w-auto p-3 max-w-[calc(100vw-2rem)]"
+          align="end"
+          side="bottom"
+        >
+          <div className="space-y-3">
+            {/* Single column on mobile, two columns on larger screens */}
+            <div className="flex flex-col sm:flex-row sm:gap-4 gap-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">
                   {t('common.startDate', 'Start Date')}
@@ -166,6 +174,7 @@ export function DateRangeFilter(): React.ReactElement {
                   }}
                   disabled={(date) => date > new Date()}
                   initialFocus
+                  className="rounded-md border"
                 />
               </div>
               <div className="space-y-2">
@@ -184,6 +193,7 @@ export function DateRangeFilter(): React.ReactElement {
                     if (customStartDate && date < customStartDate) return true
                     return false
                   }}
+                  className="rounded-md border"
                 />
               </div>
             </div>

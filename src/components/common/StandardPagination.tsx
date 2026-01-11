@@ -67,7 +67,7 @@ export function StandardPagination({
     <div
       className={`flex items-center justify-between px-4 py-3 border-t bg-muted/30 ${className}`}
     >
-      <div className="text-sm text-muted-foreground">
+      <div className="text-xs sm:text-sm text-muted-foreground">
         {t(
           'common.pagination.showing',
           'Showing {{start}} to {{end}} of {{total}} results',
@@ -93,7 +93,9 @@ export function StandardPagination({
             ) : (
               <Download className="h-4 w-4" />
             )}
-            {exportLabel || t('common.export', 'Export')}
+            <span className="hidden sm:inline">
+              {exportLabel || t('common.export', 'Export')}
+            </span>
           </Button>
         )}
         <Button

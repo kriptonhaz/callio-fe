@@ -400,7 +400,7 @@ function CampaignDetailPage() {
   if (isLoading) {
     return (
       <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
-        <div className="p-6 space-y-6">
+        <div className="space-y-4 md:space-y-6">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-48" />
           <Skeleton className="h-64" />
@@ -432,26 +432,28 @@ function CampaignDetailPage() {
 
   return (
     <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
-      <div className="p-6 space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild>
               <Link to="/dashboard/campaigns" search={{ page: 1, limit: 10 }}>
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold tracking-tight">
-                  {campaign.name}
-                </h1>
-                {getStatusBadge(campaign.status)}
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                {campaign.name}
+              </h1>
+              {getStatusBadge(campaign.status)}
             </div>
           </div>
           {isAdmin && (
-            <Button variant="outline" onClick={openEditDialog}>
+            <Button
+              variant="outline"
+              onClick={openEditDialog}
+              className="w-full sm:w-auto"
+            >
               <Edit className="h-4 w-4 mr-2" />
               {t('common.edit', 'Edit')}
             </Button>
@@ -539,8 +541,8 @@ function CampaignDetailPage() {
 
         {/* Leads Section - Full Width */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
@@ -553,7 +555,7 @@ function CampaignDetailPage() {
                 </CardDescription>
               </div>
               {isAdmin && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {/* Compose SMS Button - Only show if campaign has SMS service */}
                   {campaign.campaignServices?.some(
                     (s) => s.serviceType === ServiceType.SMS,
@@ -561,7 +563,7 @@ function CampaignDetailPage() {
                     <Button
                       size="sm"
                       onClick={() => setIsComposeSmsSheetOpen(true)}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
                       disabled={!campaign._count?.leadAssignments}
                       title={
                         !campaign._count?.leadAssignments
@@ -572,17 +574,22 @@ function CampaignDetailPage() {
                           : undefined
                       }
                     >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      {t('campaigns.composeSms', 'Compose SMS')}
+                      <MessageSquare className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">
+                        {t('campaigns.composeSms', 'Compose SMS')}
+                      </span>
                     </Button>
                   )}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleDownloadSample}
+                    className="flex-1 sm:flex-none"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    {t('campaigns.downloadSample', 'Download Sample')}
+                    <Download className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      {t('campaigns.downloadSample', 'Download Sample')}
+                    </span>
                   </Button>
                   <input
                     type="file"
@@ -598,25 +605,37 @@ function CampaignDetailPage() {
                       document.getElementById('csv-upload')?.click()
                     }
                     disabled={isImporting}
+                    className="flex-1 sm:flex-none"
                   >
                     {isImporting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
                     ) : (
-                      <Upload className="h-4 w-4 mr-2" />
+                      <Upload className="h-4 w-4 sm:mr-2" />
                     )}
-                    {t('campaigns.import', 'Import')}
+                    <span className="hidden sm:inline">
+                      {t('campaigns.import', 'Import')}
+                    </span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setIsAddExistingDialogOpen(true)}
+                    className="flex-1 sm:flex-none"
                   >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    {t('campaigns.addExisting', 'Add from Existing')}
+                    <UserPlus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      {t('campaigns.addExisting', 'Add from Existing')}
+                    </span>
                   </Button>
-                  <Button size="sm" onClick={() => setIsAddLeadSheetOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('campaigns.addLead', 'Add Lead')}
+                  <Button
+                    size="sm"
+                    onClick={() => setIsAddLeadSheetOpen(true)}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">
+                      {t('campaigns.addLead', 'Add Lead')}
+                    </span>
                   </Button>
                 </div>
               )}

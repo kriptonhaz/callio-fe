@@ -223,13 +223,13 @@ function InternalUserPage() {
 
   return (
     <RoleGuard allowedRoles={['superadmin']}>
-      <div className="space-y-6 p-4">
-        <h1 className="text-2xl font-bold">
+      <div className="space-y-4 md:space-y-6">
+        <h1 className="text-2xl md:text-3xl font-bold">
           {t('internalUser.title', 'Internal Users')}
         </h1>
 
         {/* Search and Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -241,10 +241,13 @@ function InternalUserPage() {
               onChange={(e) => {
                 setSearchValue(e.target.value)
               }}
-              className="pl-8 max-w-sm"
+              className="pl-8"
             />
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button
+            className="w-full sm:w-auto"
+            onClick={() => setCreateDialogOpen(true)}
+          >
             <Plus className="mr-2 h-4 w-4" />
             {t('internalUser.create', 'Add User')}
           </Button>
@@ -281,7 +284,7 @@ function InternalUserPage() {
             </Button>
           </div>
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                 {table.getHeaderGroups().map((headerGroup) => (

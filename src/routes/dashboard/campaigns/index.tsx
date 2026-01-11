@@ -361,13 +361,16 @@ function CampaignsPage() {
 
   return (
     <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {t('campaigns.title', 'Campaigns')}
           </h1>
           {isAdmin && (
-            <Button className="gap-2" onClick={openCreateDialog}>
+            <Button
+              className="gap-2 w-full sm:w-auto"
+              onClick={openCreateDialog}
+            >
               <Plus className="h-4 w-4" />
               {t('campaigns.addCampaign', 'Add Campaign')}
             </Button>
@@ -375,14 +378,14 @@ function CampaignsPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-4">
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 {t('campaigns.list', 'Campaign List')}
               </CardTitle>
-              <div className="flex items-center gap-4">
-                <div className="relative w-72">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={t(
@@ -398,7 +401,7 @@ function CampaignsPage() {
                   value={searchParams.status || 'all'}
                   onValueChange={handleStatusFilter}
                 >
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[150px]">
                     <SelectValue
                       placeholder={t('campaigns.filterStatus', 'Filter status')}
                     />

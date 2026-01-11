@@ -115,72 +115,86 @@ function ClientListPage() {
 
   return (
     <RoleGuard allowedRoles={['superadmin']}>
-      <div className="space-y-6">
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="space-y-4 md:space-y-6">
+        {/* Stats Cards - Smaller on mobile */}
+        <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
           <Card className="border-l-4 border-l-blue-500 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">
-                {t('clients.stats.total', 'Total Clients')}
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 md:p-4 pb-1 md:pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium text-blue-700 dark:text-blue-400">
+                <span className="hidden sm:inline">
+                  {t('clients.stats.total', 'Total Clients')}
+                </span>
+                <span className="sm:hidden">
+                  {t('clients.stats.totalShort', 'Total')}
+                </span>
               </CardTitle>
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <div className="p-1 md:p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <Users
-                  className="h-5 w-5 text-blue-600 dark:text-blue-400"
+                  className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400"
                   animateOnHover
                 />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+            <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold text-blue-900 dark:text-blue-100">
                 {data?.meta.total || 0}
               </div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-green-500 bg-gradient-to-br from-green-50 to-white dark:from-green-950/20 dark:to-background">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-700 dark:text-green-400">
-                {t('clients.stats.active', 'Active Clients')}
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 md:p-4 pb-1 md:pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium text-green-700 dark:text-green-400">
+                <span className="hidden sm:inline">
+                  {t('clients.stats.active', 'Active Clients')}
+                </span>
+                <span className="sm:hidden">
+                  {t('clients.stats.activeShort', 'Active')}
+                </span>
               </CardTitle>
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <div className="p-1 md:p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                 <UserCheck
-                  className="h-5 w-5 text-green-600 dark:text-green-400"
+                  className="h-4 w-4 md:h-5 md:w-5 text-green-600 dark:text-green-400"
                   animateOnHover
                 />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-900 dark:text-green-100">
-                {/* This would ideally come from a separate stats API or filtered query */}
+            <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold text-green-900 dark:text-green-100">
                 -
               </div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-purple-500 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-background">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-400">
-                {t('clients.stats.new', 'New This Month')}
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 md:p-4 pb-1 md:pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium text-purple-700 dark:text-purple-400">
+                <span className="hidden sm:inline">
+                  {t('clients.stats.new', 'New This Month')}
+                </span>
+                <span className="sm:hidden">
+                  {t('clients.stats.newShort', 'New')}
+                </span>
               </CardTitle>
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <UserPlus className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-1 md:p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <UserPlus className="h-4 w-4 md:h-5 md:w-5 text-purple-600 dark:text-purple-400" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+            <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold text-purple-900 dark:text-purple-100">
                 -
               </div>
             </CardContent>
           </Card>
           <Card className="border-l-4 border-l-orange-500 bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/20 dark:to-background">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-400">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-2 md:p-4 pb-1 md:pb-2">
+              <CardTitle className="text-xs md:text-sm font-medium text-orange-700 dark:text-orange-400">
                 {t('clients.stats.inactive', 'Inactive')}
               </CardTitle>
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <UserMinus className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <div className="p-1 md:p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <UserMinus className="h-4 w-4 md:h-5 md:w-5 text-orange-600 dark:text-orange-400" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+            <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+              <div className="text-lg md:text-2xl font-bold text-orange-900 dark:text-orange-100">
                 -
               </div>
             </CardContent>
@@ -188,49 +202,49 @@ function ClientListPage() {
         </div>
 
         {/* Actions & Filters */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-1 items-center gap-2">
-            <div className="relative w-[300px]">
-              <Search className="text-muted-foreground absolute left-2 top-2.5 h-4 w-4" />
-              <Input
-                placeholder={t(
-                  'clients.searchPlaceholder',
-                  'Search clients...',
-                )}
-                value={searchValue}
-                onChange={(e) => {
-                  setSearchValue(e.target.value)
-                  // Debounce is handled by the hook, but we need to update the local state immediately
-                  // The effect of debounced value change will trigger the query update
-                }}
-                className="pl-8"
-              />
-            </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1">
+            <Search className="text-muted-foreground absolute left-2 top-2.5 h-4 w-4" />
+            <Input
+              placeholder={t('clients.searchPlaceholder', 'Search clients...')}
+              value={searchValue}
+              onChange={(e) => {
+                setSearchValue(e.target.value)
+              }}
+              className="pl-8"
+            />
           </div>
-          <select
-            className="flex h-10 w-[180px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            value={searchParams.status || ''}
-            onChange={(e) =>
-              updateParams({
-                status: (e.target.value as ClientStatus) || undefined,
-              })
-            }
-          >
-            <option value="">{t('common.all', 'All')}</option>
-            {Object.values(ClientStatus).map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-          <Button onClick={() => navigate({ to: '/dashboard/clients/create' })}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('clients.create', 'Add Client')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <select
+              className="flex h-10 flex-1 sm:flex-none sm:w-[140px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={searchParams.status || ''}
+              onChange={(e) =>
+                updateParams({
+                  status: (e.target.value as ClientStatus) || undefined,
+                })
+              }
+            >
+              <option value="">{t('common.all', 'All')}</option>
+              {Object.values(ClientStatus).map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+            <Button
+              onClick={() => navigate({ to: '/dashboard/clients/create' })}
+              className="flex-1 sm:flex-none"
+            >
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">
+                {t('clients.create', 'Add Client')}
+              </span>
+            </Button>
+          </div>
         </div>
 
         {/* Table */}
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
           <Table>
             <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
               {table.getHeaderGroups().map((headerGroup) => (

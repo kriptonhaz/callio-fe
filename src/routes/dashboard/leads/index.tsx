@@ -328,13 +328,13 @@ function LeadsPage() {
 
   return (
     <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {t('leads.title', 'Leads')}
           </h1>
           {isAdmin && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {selectedLeadIds.length > 0 && (
                 <Button
                   variant="destructive"
@@ -351,8 +351,10 @@ function LeadsPage() {
                 size="sm"
                 onClick={handleDownloadSample}
               >
-                <Download className="h-4 w-4 mr-2" />
-                {t('leads.downloadSample', 'Download Sample')}
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {t('leads.downloadSample', 'Download Sample')}
+                </span>
               </Button>
               <input
                 type="file"
@@ -368,14 +370,16 @@ function LeadsPage() {
                 disabled={isImporting}
               >
                 {isImporting ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
                 ) : (
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 sm:mr-2" />
                 )}
-                {t('leads.import', 'Import')}
+                <span className="hidden sm:inline">
+                  {t('leads.import', 'Import')}
+                </span>
               </Button>
               <Button
-                className="gap-2"
+                className="gap-2 flex-1 sm:flex-none"
                 onClick={() => setIsAddLeadSheetOpen(true)}
               >
                 <Plus className="h-4 w-4" />
@@ -386,14 +390,14 @@ function LeadsPage() {
         </div>
 
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-4">
               <CardTitle className="flex items-center gap-2">
                 <UsersIcon className="h-5 w-5" />
                 {t('leads.list', 'Leads List')}
               </CardTitle>
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="relative w-72">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={t(
@@ -409,7 +413,7 @@ function LeadsPage() {
                   value={searchParams.gender || 'all'}
                   onValueChange={handleGenderFilter}
                 >
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-full sm:w-[140px]">
                     <SelectValue
                       placeholder={t('leads.filterGender', 'Filter gender')}
                     />
@@ -433,7 +437,7 @@ function LeadsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                   <TableRow>

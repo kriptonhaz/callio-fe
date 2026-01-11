@@ -167,9 +167,9 @@ function GsmDevicesPage() {
 
   return (
     <RoleGuard allowedRoles={['superadmin']}>
-      <div className="space-y-6 p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl md:text-3xl font-bold">
             {t('gsmDevices.title', 'GSM Devices')}
           </h1>
           <div className="flex items-center gap-2">
@@ -193,14 +193,17 @@ function GsmDevicesPage() {
             </div>
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              {t('gsmDevices.create', 'Add Device')}
+              <span className="hidden sm:inline">
+                {t('gsmDevices.create', 'Add Device')}
+              </span>
+              <span className="sm:hidden">{t('common.add', 'Add')}</span>
             </Button>
           </div>
         </div>
 
         {/* Filters */}
         <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t(
@@ -244,7 +247,7 @@ function GsmDevicesPage() {
             </Button>
           </div>
         ) : searchParams.view === 'table' ? (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                 {table.getHeaderGroups().map((headerGroup) => (

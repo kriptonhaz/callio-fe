@@ -418,22 +418,22 @@ function UsersPage() {
 
   return (
     <RoleGuard allowedRoles={['admin']}>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {t('users.title', 'User Management')}
           </h1>
-          <Button className="gap-2" onClick={openCreateDialog}>
+          <Button className="gap-2 w-full sm:w-auto" onClick={openCreateDialog}>
             <UserPlus className="h-4 w-4" />
             {t('users.addUser', 'Add User')}
           </Button>
         </div>
 
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col gap-4">
               <CardTitle>{t('users.userList', 'Users')}</CardTitle>
-              <div className="relative w-72">
+              <div className="relative flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder={t('users.searchPlaceholder', 'Search users...')}
@@ -445,7 +445,7 @@ function UsersPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                   <TableRow>

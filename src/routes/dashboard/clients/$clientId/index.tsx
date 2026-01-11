@@ -108,10 +108,10 @@ function ClientDetailsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
@@ -125,8 +125,10 @@ function ClientDetailsPage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{client.name}</h1>
-            <div className="flex items-center mt-1 space-x-2">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              {client.name}
+            </h1>
+            <div className="flex flex-wrap items-center mt-1 gap-2">
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   client.status === ClientStatus.ACTIVE
@@ -138,44 +140,56 @@ function ClientDetailsPage() {
               >
                 {client.status}
               </span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-[150px] sm:max-w-none">
                 ID: {client.id}
               </span>
             </div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            className="flex-1 sm:flex-none"
             onClick={() =>
               navigate({ to: `/dashboard/clients/${client.id}/edit` })
             }
           >
-            <Edit className="mr-2 h-4 w-4" />
-            {t('common.edit', 'Edit')}
+            <Edit className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('common.edit', 'Edit')}</span>
           </Button>
 
-          <Button variant="destructive" onClick={handleDelete}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            {t('common.delete', 'Delete')}
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            className="flex-1 sm:flex-none"
+          >
+            <Trash2 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">
+              {t('common.delete', 'Delete')}
+            </span>
           </Button>
         </div>
       </div>
 
       {/* Tabbed Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">
+        <TabsList className="w-full flex overflow-x-auto">
+          <TabsTrigger value="overview" className="flex-1 text-xs sm:text-sm">
             {t('clients.tabs.overview', 'Overview')}
           </TabsTrigger>
-          <TabsTrigger value="users">
+          <TabsTrigger value="users" className="flex-1 text-xs sm:text-sm">
             {t('clients.tabs.users', 'Users')}
           </TabsTrigger>
-          <TabsTrigger value="pricing">
+          <TabsTrigger value="pricing" className="flex-1 text-xs sm:text-sm">
             {t('clients.tabs.pricing', 'Pricing')}
           </TabsTrigger>
-          <TabsTrigger value="payments">
-            {t('clients.tabs.payments', 'Payment History')}
+          <TabsTrigger value="payments" className="flex-1 text-xs sm:text-sm">
+            <span className="hidden sm:inline">
+              {t('clients.tabs.payments', 'Payment History')}
+            </span>
+            <span className="sm:hidden">
+              {t('clients.tabs.paymentsShort', 'Payments')}
+            </span>
           </TabsTrigger>
         </TabsList>
 

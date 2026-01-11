@@ -438,14 +438,14 @@ function SipExtensionsPage() {
 
   return (
     <RoleGuard allowedRoles={['superadmin']}>
-      <div className="space-y-6 p-4">
+      <div className="space-y-4 md:space-y-6">
         {/* Title */}
-        <h1 className="text-2xl font-bold">
+        <h1 className="text-2xl md:text-3xl font-bold">
           {t('sipExtensions.title', 'SIP Extensions')}
         </h1>
 
         {/* Filters and Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -460,42 +460,55 @@ function SipExtensionsPage() {
               className="pl-8"
             />
           </div>
-          <Select
-            value={searchParams.type || 'all'}
-            onValueChange={(value) =>
-              updateParams({
-                type: value === 'all' ? undefined : (value as SipExtensionType),
-              })
-            }
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue
-                placeholder={t('sipExtensions.filterType', 'Filter by type')}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t('sipExtensions.allTypes', 'All Types')}
-              </SelectItem>
-              <SelectItem value={SipExtensionType.USER}>
-                {t('sipExtensions.typeUser', 'User')}
-              </SelectItem>
-              <SelectItem value={SipExtensionType.GOIP}>
-                {t('sipExtensions.typeGoip', 'GoIP')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('sipExtensions.create', 'Add Extension')}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setBulkCreateDialogOpen(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {t('sipExtensions.bulkCreate')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Select
+              value={searchParams.type || 'all'}
+              onValueChange={(value) =>
+                updateParams({
+                  type:
+                    value === 'all' ? undefined : (value as SipExtensionType),
+                })
+              }
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue
+                  placeholder={t('sipExtensions.filterType', 'Filter by type')}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t('sipExtensions.allTypes', 'All Types')}
+                </SelectItem>
+                <SelectItem value={SipExtensionType.USER}>
+                  {t('sipExtensions.typeUser', 'User')}
+                </SelectItem>
+                <SelectItem value={SipExtensionType.GOIP}>
+                  {t('sipExtensions.typeGoip', 'GoIP')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              className="flex-1 sm:flex-none"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">
+                {t('sipExtensions.create', 'Add Extension')}
+              </span>
+              <span className="sm:hidden">{t('common.add', 'Add')}</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 sm:flex-none"
+              onClick={() => setBulkCreateDialogOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">
+                {t('sipExtensions.bulkCreate')}
+              </span>
+              <span className="sm:hidden">{t('common.bulk', 'Bulk')}</span>
+            </Button>
+          </div>
         </div>
 
         {/* Content */}
@@ -525,7 +538,7 @@ function SipExtensionsPage() {
             </Button>
           </div>
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                 {table.getHeaderGroups().map((headerGroup) => (

@@ -371,12 +371,12 @@ function MobileOperatorPage(): React.ReactElement {
 
   return (
     <RoleGuard allowedRoles={['superadmin', 'admin']}>
-      <div className="space-y-6 p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl md:text-3xl font-bold">
             {t('operatorPrefix.title', 'Mobile Operator')}
           </h1>
-          <Button onClick={handleCreate}>
+          <Button className="w-full sm:w-auto" onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
             {t('operatorPrefix.addNew', 'Add Prefix')}
           </Button>
@@ -384,7 +384,7 @@ function MobileOperatorPage(): React.ReactElement {
 
         {/* Search */}
         <div className="flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={t(
@@ -425,7 +425,7 @@ function MobileOperatorPage(): React.ReactElement {
             </Button>
           </div>
         ) : (
-          <div className="rounded-md border overflow-hidden">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                 <TableRow className="hover:bg-transparent">

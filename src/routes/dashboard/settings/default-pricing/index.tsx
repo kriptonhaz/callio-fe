@@ -230,8 +230,8 @@ function DefaultPricingPage() {
 
   return (
     <RoleGuard allowedRoles={['superadmin']}>
-      <div className="space-y-6 p-4">
-        <h1 className="text-2xl font-bold">
+      <div className="space-y-4 md:space-y-6">
+        <h1 className="text-2xl md:text-3xl font-bold">
           {t('pricing.title', 'Default Pricing')}
         </h1>
 
@@ -245,7 +245,7 @@ function DefaultPricingPage() {
               onChange={(e) => {
                 setSearchValue(e.target.value)
               }}
-              className="pl-8 max-w-sm"
+              className="pl-8"
             />
           </div>
         </div>
@@ -270,7 +270,7 @@ function DefaultPricingPage() {
             </p>
           </div>
         ) : (
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
                 {table.getHeaderGroups().map((headerGroup) => (
