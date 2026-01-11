@@ -21,10 +21,10 @@ import rangcoolLogo from '@/assets/images/rangcool-logo.png'
 
 export function Header(): React.ReactElement {
   const { i18n } = useTranslation()
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
 
   useEffect(() => {
-    // Check localStorage first, then fall back to checking the DOM
+    // Check localStorage first, then fall back to dark theme
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
     if (savedTheme) {
       setTheme(savedTheme)
@@ -33,11 +33,11 @@ export function Header(): React.ReactElement {
       } else {
         document.documentElement.classList.remove('dark')
       }
-    } else if (document.documentElement.classList.contains('dark')) {
-      setTheme('dark')
-      localStorage.setItem('theme', 'dark')
     } else {
-      localStorage.setItem('theme', 'light')
+      // Default to dark theme
+      setTheme('dark')
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
     }
   }, [])
 

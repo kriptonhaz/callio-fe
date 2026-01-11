@@ -44,7 +44,7 @@ export function Sidebar({
   onMobileClose,
 }: SidebarProps): React.ReactElement {
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(['settings']) // Default expand Settings
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]) // Default collapsed
   const location = useLocation()
   const { t } = useTranslation()
   const logout = useLogout()
@@ -296,11 +296,15 @@ export function Sidebar({
   }, [role, t, hasVoipService])
 
   const toggleMenu = (menuId: string) => {
-    setExpandedMenus((prev) =>
-      prev.includes(menuId)
-        ? prev.filter((id) => id !== menuId)
-        : [...prev, menuId],
+    setExpandedMenus(
+      (prev) =>
+        prev.includes(menuId) ? prev.filter((id) => id !== menuId) : [menuId], // Only keep this menu expanded, collapse others
     )
+  }
+
+  // Collapse all expandable menus when clicking a non-expandable item
+  const collapseAllMenus = () => {
+    setExpandedMenus([])
   }
 
   return (
@@ -427,7 +431,7 @@ export function Sidebar({
                         <div
                           onClick={() => item.id && toggleMenu(item.id)}
                           className={cn(
-                            'flex items-center justify-between px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
+                            'flex items-center justify-between px-3 py-2 rounded-md transition-colors group relative overflow-hidden cursor-pointer text-sm',
                             isActive
                               ? 'bg-primary/10 text-primary font-medium'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -435,7 +439,7 @@ export function Sidebar({
                         >
                           <div className="flex items-center">
                             <item.icon
-                              size={20}
+                              size={18}
                               className={cn(
                                 isActive
                                   ? 'text-primary'
@@ -493,14 +497,14 @@ export function Sidebar({
                                 >
                                   <div
                                     className={cn(
-                                      'flex items-center px-3 py-2 rounded-md transition-colors group relative overflow-hidden cursor-pointer text-sm',
+                                      'flex items-center px-3 py-1.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer text-sm',
                                       childIsActive
                                         ? 'bg-primary/10 text-primary font-medium'
                                         : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                     )}
                                   >
                                     <child.icon
-                                      size={18}
+                                      size={16}
                                       className={cn(
                                         childIsActive
                                           ? 'text-primary'
@@ -526,11 +530,15 @@ export function Sidebar({
                     </div>
                   ) : (
                     // Regular menu item
-                    <Link to={item.href} className="block">
+                    <Link
+                      to={item.href}
+                      className="block"
+                      onClick={collapseAllMenus}
+                    >
                       <AnimateIcon animateOnHover asChild>
                         <div
                           className={cn(
-                            'flex items-center px-3 py-2.5 rounded-md transition-colors group relative overflow-hidden cursor-pointer',
+                            'flex items-center px-3 py-2 rounded-md transition-colors group relative overflow-hidden cursor-pointer text-sm',
                             isActive
                               ? 'bg-primary/10 text-primary font-medium'
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -538,7 +546,7 @@ export function Sidebar({
                         >
                           <div className="flex items-center">
                             <item.icon
-                              size={20}
+                              size={18}
                               className={cn(
                                 isActive
                                   ? 'text-primary'

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Loader2, LogIn, Eye, EyeOff, ArrowLeft, Mail } from 'lucide-react'
+import { Loader2, Eye, EyeOff, ArrowLeft, Mail } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,8 +23,9 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Checkbox } from '@/components/ui/checkbox'
-import { AnimatedIcon } from '@/components/AnimatedIcon'
 import { useLogin, useForgotPassword } from '@/hooks/api/useAuth'
+
+import rangcoolLogo from '@/assets/images/rangcool-logo.png'
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
@@ -118,13 +119,15 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
       <Card className="w-full max-w-md shadow-lg border-t-4 border-t-primary">
         <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <AnimatedIcon
-                icon={showForgotPassword ? Mail : LogIn}
-                className="text-primary h-6 w-6"
-              />
-            </div>
+          <div className="flex flex-col items-center justify-center mb-4 gap-2">
+            <img
+              src={rangcoolLogo}
+              alt="RangCool"
+              className="h-16 w-auto object-contain"
+            />
+            <span className="font-bold text-2xl text-primary tracking-tight">
+              RangCool
+            </span>
           </div>
           <CardTitle className="text-2xl font-bold text-primary">
             {showForgotPassword
