@@ -100,13 +100,14 @@ const whatsappApi = {
   },
 
   uploadMedia: async (
+    instanceId: string,
     file: File,
   ): Promise<{ filename: string; mediaUrl: string }> => {
     const formData = new FormData()
     formData.append('file', file)
 
     return await apiClient
-      .post('whatsapp/messages/upload', { body: formData })
+      .post(`whatsapp/messages/upload/${instanceId}`, { body: formData })
       .json<{ filename: string; mediaUrl: string }>()
   },
 
@@ -248,7 +249,8 @@ export const useMarkMessageAsRead = () => {
 
 export const useUploadMedia = () => {
   return useMutation({
-    mutationFn: whatsappApi.uploadMedia,
+    mutationFn: ({ instanceId, file }: { instanceId: string; file: File }) =>
+      whatsappApi.uploadMedia(instanceId, file),
   })
 }
 

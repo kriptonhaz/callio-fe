@@ -186,7 +186,10 @@ export function BlastWhatsAppSheet({
 
       if (selectedFile) {
         setIsUploading(true)
-        const uploadResult = await uploadMutation.mutateAsync(selectedFile)
+        const uploadResult = await uploadMutation.mutateAsync({
+          instanceId: data.instanceId,
+          file: selectedFile,
+        })
         mediaUrl = uploadResult.mediaUrl
         mediaMimeType = selectedFile.type
         mediaName = selectedFile.name

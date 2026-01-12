@@ -137,7 +137,10 @@ function WhatsAppDetailsPage(): React.ReactElement {
 
       // Handle file upload if present
       if (selectedFile) {
-        const result = await uploadMediaMutation.mutateAsync(selectedFile)
+        const result = await uploadMediaMutation.mutateAsync({
+          instanceId,
+          file: selectedFile,
+        })
         mediaUrl = result.mediaUrl
 
         // Determine message type
