@@ -18,6 +18,7 @@ import { AddLeadSheet } from '@/components/campaigns/AddLeadSheet'
 import { CampaignLeadsTable } from '@/components/campaigns/CampaignLeadsTable'
 import { AddExistingLeadsDialog } from '@/components/campaigns/AddExistingLeadsDialog'
 import { ComposeSmsSheet } from '@/components/campaigns/ComposeSmsSheet'
+import { BlastWhatsAppSheet } from '@/components/campaigns/BlastWhatsAppSheet'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
 import {
   Card,
@@ -76,6 +77,7 @@ import {
   Download,
   UserPlus,
   MessageSquare,
+  Send,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -162,6 +164,8 @@ function CampaignDetailPage() {
   const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
   const [isAddExistingDialogOpen, setIsAddExistingDialogOpen] = useState(false)
   const [isComposeSmsSheetOpen, setIsComposeSmsSheetOpen] = useState(false)
+  const [isBlastWhatsAppSheetOpen, setIsBlastWhatsAppSheetOpen] =
+    useState(false)
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
   const [bulkUnassignDialogOpen, setBulkUnassignDialogOpen] = useState(false)
 
@@ -580,6 +584,31 @@ function CampaignDetailPage() {
                       </span>
                     </Button>
                   )}
+
+                  {/* WhatsApp Blast Button - Only show if campaign has WhatsApp service */}
+                  {campaign.campaignServices?.some(
+                    (s) => s.serviceType === ServiceType.WHATSAPP,
+                  ) && (
+                    <Button
+                      size="sm"
+                      onClick={() => setIsBlastWhatsAppSheetOpen(true)}
+                      className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none"
+                      disabled={!campaign._count?.leadAssignments}
+                      title={
+                        !campaign._count?.leadAssignments
+                          ? t(
+                              'campaigns.noLeadsToSendWhatsApp',
+                              'No leads in this campaign',
+                            )
+                          : undefined
+                      }
+                    >
+                      <Send className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">
+                        {t('campaigns.whatsappBlast', 'Whatsapp Blast')}
+                      </span>
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -901,6 +930,13 @@ function CampaignDetailPage() {
           campaignId={campaignId}
           maskingOptions={maskingOptions}
           defaultMaskingId={defaultMaskingId}
+          allLeadAssignments={allLeadAssignments}
+        />
+
+        <BlastWhatsAppSheet
+          open={isBlastWhatsAppSheetOpen}
+          onOpenChange={setIsBlastWhatsAppSheetOpen}
+          campaignId={campaignId}
           allLeadAssignments={allLeadAssignments}
         />
       </div>

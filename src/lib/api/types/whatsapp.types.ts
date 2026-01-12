@@ -110,6 +110,17 @@ export interface SendMessageRequest {
   scheduledAt?: string
 }
 
+export interface BlastWhatsAppRequest {
+  instanceId: string
+  recipients: string[]
+  content: string
+  messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker'
+  scheduledAt?: string
+  mediaUrl?: string
+  mediaMimeType?: string
+  mediaName?: string
+}
+
 export interface WhatsAppChat {
   id: string
   jid: string

@@ -7,6 +7,7 @@ import type {
   UpdateWhatsAppInstanceRequest,
   WhatsAppMessage,
   SendMessageRequest,
+  BlastWhatsAppRequest,
   WhatsAppChat,
 } from '@/lib/api/types/whatsapp.types'
 
@@ -107,6 +108,10 @@ const whatsappApi = {
     return await apiClient
       .post('whatsapp/messages/upload', { body: formData })
       .json<{ filename: string; mediaUrl: string }>()
+  },
+
+  blastWhatsApp: async (data: BlastWhatsAppRequest): Promise<void> => {
+    await apiClient.post('whatsapp/messages/blast', { json: data })
   },
 }
 
@@ -244,5 +249,11 @@ export const useMarkMessageAsRead = () => {
 export const useUploadMedia = () => {
   return useMutation({
     mutationFn: whatsappApi.uploadMedia,
+  })
+}
+
+export const useBlastWhatsApp = () => {
+  return useMutation({
+    mutationFn: whatsappApi.blastWhatsApp,
   })
 }
