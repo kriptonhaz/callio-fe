@@ -6,6 +6,11 @@ export interface WhatsAppInstance {
   status: 'connected' | 'disconnected'
   phoneNumber: string
   autoReplyEnabled: boolean
+  autoReplyMode: 'all' | 'whitelist' | 'blacklist'
+  autoReplyWhitelist: WhatsAppRuleContact[]
+  autoReplyBlacklist: WhatsAppRuleContact[]
+  aiSystemPrompt: string | null
+  aiModelId: string | null
   webhookEnabled: boolean
   createdAt: string
   updatedAt: string
@@ -43,7 +48,17 @@ export interface CreateWhatsAppInstanceRequest {
 export interface UpdateWhatsAppInstanceRequest {
   name?: string
   autoReplyEnabled?: boolean
+  autoReplyMode?: 'all' | 'whitelist' | 'blacklist'
+  autoReplyWhitelist?: WhatsAppRuleContact[]
+  autoReplyBlacklist?: WhatsAppRuleContact[]
+  aiSystemPrompt?: string | null
+  aiModelId?: string | null
   webhookEnabled?: boolean
+}
+
+export interface WhatsAppRuleContact {
+  name: string
+  jid: string
 }
 
 export interface WhatsAppQRResponse {

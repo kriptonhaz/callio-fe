@@ -27,6 +27,11 @@ const whatsappApi = {
       .json<WhatsAppInstancesResponse>()
     return response.data
   },
+  getInstanceById: async (id: string): Promise<WhatsAppInstance> => {
+    return await apiClient
+      .get(`whatsapp/instances/${id}`)
+      .json<WhatsAppInstance>()
+  },
 
   createInstance: async (
     data: CreateWhatsAppInstanceRequest,
@@ -110,6 +115,13 @@ export const useWhatsAppInstances = () =>
     queryKey: whatsappKeys.instances(),
     queryFn: whatsappApi.getInstances,
     staleTime: 30 * 1000,
+  })
+
+export const useWhatsAppInstance = (id: string) =>
+  useQuery({
+    queryKey: [...whatsappKeys.instances(), id],
+    queryFn: () => whatsappApi.getInstanceById(id),
+    enabled: !!id,
   })
 
 export const useCreateWhatsAppInstance = () => {
