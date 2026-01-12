@@ -35,6 +35,8 @@ import { Route as DashboardSettingsDefaultPricingIndexRouteImport } from './rout
 import { Route as DashboardSettingsAiProviderIndexRouteImport } from './routes/dashboard/settings/ai-provider/index'
 import { Route as DashboardClientsClientIdIndexRouteImport } from './routes/dashboard/clients/$clientId/index'
 import { Route as DashboardCampaignsCampaignIdIndexRouteImport } from './routes/dashboard/campaigns/$campaignId/index'
+import { Route as DashboardWhatsappSettingIdRouteImport } from './routes/dashboard/whatsapp/setting.$id'
+import { Route as DashboardWhatsappDetailsInstanceIdRouteImport } from './routes/dashboard/whatsapp/details.$instanceId'
 import { Route as DashboardClientsClientIdEditRouteImport } from './routes/dashboard/clients/$clientId/edit'
 
 const VerifyRoute = VerifyRouteImport.update({
@@ -176,6 +178,18 @@ const DashboardCampaignsCampaignIdIndexRoute =
     path: '/campaigns/$campaignId/',
     getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardWhatsappSettingIdRoute =
+  DashboardWhatsappSettingIdRouteImport.update({
+    id: '/whatsapp/setting/$id',
+    path: '/whatsapp/setting/$id',
+    getParentRoute: () => DashboardRoute,
+  } as any)
+const DashboardWhatsappDetailsInstanceIdRoute =
+  DashboardWhatsappDetailsInstanceIdRouteImport.update({
+    id: '/whatsapp/details/$instanceId',
+    path: '/whatsapp/details/$instanceId',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardClientsClientIdEditRoute =
   DashboardClientsClientIdEditRouteImport.update({
     id: '/clients/$clientId/edit',
@@ -206,6 +220,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/sip-extensions': typeof DashboardSipExtensionsIndexRoute
   '/dashboard/whatsapp': typeof DashboardWhatsappIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
+  '/dashboard/whatsapp/details/$instanceId': typeof DashboardWhatsappDetailsInstanceIdRoute
+  '/dashboard/whatsapp/setting/$id': typeof DashboardWhatsappSettingIdRoute
   '/dashboard/campaigns/$campaignId': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
@@ -233,6 +249,8 @@ export interface FileRoutesByTo {
   '/dashboard/sip-extensions': typeof DashboardSipExtensionsIndexRoute
   '/dashboard/whatsapp': typeof DashboardWhatsappIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
+  '/dashboard/whatsapp/details/$instanceId': typeof DashboardWhatsappDetailsInstanceIdRoute
+  '/dashboard/whatsapp/setting/$id': typeof DashboardWhatsappSettingIdRoute
   '/dashboard/campaigns/$campaignId': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
@@ -263,6 +281,8 @@ export interface FileRoutesById {
   '/dashboard/sip-extensions/': typeof DashboardSipExtensionsIndexRoute
   '/dashboard/whatsapp/': typeof DashboardWhatsappIndexRoute
   '/dashboard/clients/$clientId/edit': typeof DashboardClientsClientIdEditRoute
+  '/dashboard/whatsapp/details/$instanceId': typeof DashboardWhatsappDetailsInstanceIdRoute
+  '/dashboard/whatsapp/setting/$id': typeof DashboardWhatsappSettingIdRoute
   '/dashboard/campaigns/$campaignId/': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId/': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider/': typeof DashboardSettingsAiProviderIndexRoute
@@ -294,6 +314,8 @@ export interface FileRouteTypes {
     | '/dashboard/sip-extensions'
     | '/dashboard/whatsapp'
     | '/dashboard/clients/$clientId/edit'
+    | '/dashboard/whatsapp/details/$instanceId'
+    | '/dashboard/whatsapp/setting/$id'
     | '/dashboard/campaigns/$campaignId'
     | '/dashboard/clients/$clientId'
     | '/dashboard/settings/ai-provider'
@@ -321,6 +343,8 @@ export interface FileRouteTypes {
     | '/dashboard/sip-extensions'
     | '/dashboard/whatsapp'
     | '/dashboard/clients/$clientId/edit'
+    | '/dashboard/whatsapp/details/$instanceId'
+    | '/dashboard/whatsapp/setting/$id'
     | '/dashboard/campaigns/$campaignId'
     | '/dashboard/clients/$clientId'
     | '/dashboard/settings/ai-provider'
@@ -350,6 +374,8 @@ export interface FileRouteTypes {
     | '/dashboard/sip-extensions/'
     | '/dashboard/whatsapp/'
     | '/dashboard/clients/$clientId/edit'
+    | '/dashboard/whatsapp/details/$instanceId'
+    | '/dashboard/whatsapp/setting/$id'
     | '/dashboard/campaigns/$campaignId/'
     | '/dashboard/clients/$clientId/'
     | '/dashboard/settings/ai-provider/'
@@ -549,6 +575,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCampaignsCampaignIdIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/whatsapp/setting/$id': {
+      id: '/dashboard/whatsapp/setting/$id'
+      path: '/whatsapp/setting/$id'
+      fullPath: '/dashboard/whatsapp/setting/$id'
+      preLoaderRoute: typeof DashboardWhatsappSettingIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/whatsapp/details/$instanceId': {
+      id: '/dashboard/whatsapp/details/$instanceId'
+      path: '/whatsapp/details/$instanceId'
+      fullPath: '/dashboard/whatsapp/details/$instanceId'
+      preLoaderRoute: typeof DashboardWhatsappDetailsInstanceIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/clients/$clientId/edit': {
       id: '/dashboard/clients/$clientId/edit'
       path: '/clients/$clientId/edit'
@@ -595,6 +635,8 @@ interface DashboardRouteChildren {
   DashboardSipExtensionsIndexRoute: typeof DashboardSipExtensionsIndexRoute
   DashboardWhatsappIndexRoute: typeof DashboardWhatsappIndexRoute
   DashboardClientsClientIdEditRoute: typeof DashboardClientsClientIdEditRoute
+  DashboardWhatsappDetailsInstanceIdRoute: typeof DashboardWhatsappDetailsInstanceIdRoute
+  DashboardWhatsappSettingIdRoute: typeof DashboardWhatsappSettingIdRoute
   DashboardCampaignsCampaignIdIndexRoute: typeof DashboardCampaignsCampaignIdIndexRoute
   DashboardClientsClientIdIndexRoute: typeof DashboardClientsClientIdIndexRoute
 }
@@ -616,6 +658,9 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSipExtensionsIndexRoute: DashboardSipExtensionsIndexRoute,
   DashboardWhatsappIndexRoute: DashboardWhatsappIndexRoute,
   DashboardClientsClientIdEditRoute: DashboardClientsClientIdEditRoute,
+  DashboardWhatsappDetailsInstanceIdRoute:
+    DashboardWhatsappDetailsInstanceIdRoute,
+  DashboardWhatsappSettingIdRoute: DashboardWhatsappSettingIdRoute,
   DashboardCampaignsCampaignIdIndexRoute:
     DashboardCampaignsCampaignIdIndexRoute,
   DashboardClientsClientIdIndexRoute: DashboardClientsClientIdIndexRoute,
