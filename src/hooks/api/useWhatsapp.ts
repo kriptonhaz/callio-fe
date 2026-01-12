@@ -175,8 +175,11 @@ export const useWhatsAppQR = (id: string | null) =>
     queryFn: () => whatsappApi.getQR(id!),
     enabled: !!id,
     refetchInterval: (query) => {
-      // Stop polling when connected
-      if (query.state.data?.status === 'connected') {
+      // Stop polling when connected or qrCode is null
+      if (
+        query.state.data?.status === 'connected' ||
+        query.state.data?.qrCode === null
+      ) {
         return false
       }
       // Poll every 3 seconds

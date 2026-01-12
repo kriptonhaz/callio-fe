@@ -159,6 +159,23 @@ function WhatsAppManagementPage(): React.ReactElement {
     )
   }
 
+  const handleReconnect = (id: string): void => {
+    setCreatedInstanceId(id)
+    connectInstanceMutation.mutate(id, {
+      onSuccess: () => {
+        setConnectStep(2)
+        setIsConnectOpen(true)
+        toast.info(t('whatsapp.reconnecting', 'Initiating reconnection...'))
+      },
+      onError: () => {
+        toast.error(
+          t('whatsapp.reconnectError', 'Failed to initiate reconnection'),
+        )
+        setCreatedInstanceId(null)
+      },
+    })
+  }
+
   const handleDeleteInstance = (id: string): void => {
     setInstanceToDelete(id)
     setDeleteDialogOpen(true)
@@ -398,9 +415,23 @@ function WhatsAppManagementPage(): React.ReactElement {
                           {t('whatsapp.messages', 'Messages')}
                         </Button>
                       </Link>
-                      {account.status === 'disconnected' ? (
-                        <Button size="sm" variant="outline">
-                          <RefreshCw className="h-4 w-4 mr-1" />
+                      {account.status === 'disconnected' &&
+                      account.providerType === 'baileys' ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleReconnect(account.id)}
+                          disabled={
+                            connectInstanceMutation.isPending &&
+                            createdInstanceId === account.id
+                          }
+                        >
+                          {connectInstanceMutation.isPending &&
+                          createdInstanceId === account.id ? (
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                          )}
                           {t('whatsapp.reconnect', 'Reconnect')}
                         </Button>
                       ) : (
