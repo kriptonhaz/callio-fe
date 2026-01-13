@@ -36,7 +36,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import {
-  Plus,
   Settings,
   Trash2,
   RefreshCw,
