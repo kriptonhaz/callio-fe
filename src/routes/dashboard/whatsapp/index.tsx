@@ -55,6 +55,7 @@ import {
   useDeleteWhatsAppInstance,
   useConnectWhatsAppInstance,
   useWhatsAppQR,
+  useWhatsAppMediaSize,
 } from '@/hooks/api/useWhatsapp'
 import { toast } from 'sonner'
 
@@ -67,6 +68,13 @@ const createInstanceSchema = z.object({
 })
 
 type CreateInstanceFormValues = z.infer<typeof createInstanceSchema>
+
+function MediaSizeDisplay({ instanceId }: { instanceId: string }) {
+  const { data: mediaSize, isLoading } = useWhatsAppMediaSize(instanceId)
+
+  if (isLoading) return <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
+  return <span>{mediaSize?.totalSizeFormatted || '0 B'}</span>
+}
 
 function WhatsAppManagementPage(): React.ReactElement {
   const { t } = useTranslation()
@@ -392,13 +400,10 @@ function WhatsAppManagementPage(): React.ReactElement {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">
-                          {t('whatsapp.client', 'Client')}
+                          {t('whatsapp.storage', 'Storage')}
                         </p>
-                        <p
-                          className="text-sm font-medium truncate"
-                          title={account.client?.name}
-                        >
-                          {account.client?.name || '-'}
+                        <p className="text-sm font-bold">
+                          <MediaSizeDisplay instanceId={account.id} />
                         </p>
                       </div>
                     </div>

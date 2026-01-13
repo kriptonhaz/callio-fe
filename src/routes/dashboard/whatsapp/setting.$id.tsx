@@ -16,7 +16,18 @@ import {
   X,
   Plus,
   Cpu,
+  Settings2,
 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -61,6 +72,8 @@ import { cn } from '@/lib/utils'
 import {
   useWhatsAppInstance,
   useUpdateWhatsAppInstance,
+  useWhatsAppMediaSize,
+  useClearWhatsAppMedia,
 } from '@/hooks/api/useWhatsapp'
 import { useAiModels } from '@/hooks/api/useAiModels'
 import { useAiProviders } from '@/hooks/api/useAiProviders'
@@ -101,12 +114,15 @@ function WhatsAppSettingsPage() {
     'whitelist',
   )
   const [newContact, setNewContact] = useState({ name: '', jid: '' })
+  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false)
 
   const { data: instance, isLoading: isInstanceLoading } =
     useWhatsAppInstance(id)
+  const { data: mediaSize } = useWhatsAppMediaSize(id)
   const { data: aiModelsData } = useAiModels({ limit: 100 })
   const { data: aiProvidersData } = useAiProviders({ limit: 100 })
   const updateMutation = useUpdateWhatsAppInstance()
+  const clearMediaMutation = useClearWhatsAppMedia()
 
   const aiModels = aiModelsData?.data || []
   const aiProviders = aiProvidersData?.data || []
@@ -170,6 +186,18 @@ function WhatsAppSettingsPage() {
       toast.error(
         t('whatsapp.settings.updateError', 'Failed to update settings'),
       )
+    }
+  }
+
+  const handleClearStorage = async () => {
+    try {
+      await clearMediaMutation.mutateAsync(id)
+      toast.success(
+        t('whatsapp.settings.clearSuccess', 'Storage cleared successfully'),
+      )
+      setIsClearDialogOpen(false)
+    } catch (error) {
+      toast.error(t('whatsapp.settings.clearError', 'Failed to clear storage'))
     }
   }
 
@@ -278,7 +306,7 @@ function WhatsAppSettingsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center gap-3 pb-4">
                 <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-                  <Database className="h-6 w-6" />
+                  <Settings2 className="h-6 w-6" />
                 </div>
                 <div className="flex flex-col">
                   <CardTitle className="text-base font-medium">
@@ -681,46 +709,78 @@ function WhatsAppSettingsPage() {
                     </CardDescription>
                   </div>
                 </div>
-                <Button variant="outline" type="button">
-                  <Trash2 className="h-4 w-4 mr-2" />
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsClearDialogOpen(true)}
+                  disabled={clearMediaMutation.isPending}
+                >
+                  {clearMediaMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
                   {t('whatsapp.settings.clearStorage', 'Clear Storage')}
                 </Button>
               </CardHeader>
               <Separator />
               <CardContent className="pt-6 space-y-6">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">
-                      {t('whatsapp.settings.mediaStorage', 'Media Storage')}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-slate-800 text-white text-[10px]">
-                      {t('whatsapp.settings.usageLimit', 'System Managed')}
-                    </span>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium">
+                        {t(
+                          'whatsapp.settings.mediaStorage',
+                          'Media Storage Usage',
+                        )}
+                      </span>
+                      <span className="font-bold text-orange-500">
+                        {mediaSize?.totalSizeFormatted || '0 B'} / 50 MB
+                      </span>
+                    </div>
+                    <Progress
+                      value={
+                        mediaSize
+                          ? Math.min(
+                              100,
+                              (mediaSize.totalSizeBytes / (50 * 1024 * 1024)) *
+                                100,
+                            )
+                          : 0
+                      }
+                      className="h-2 bg-slate-100 [&>div]:bg-orange-500"
+                    />
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground">
+                      <span>0 MB</span>
+                      <span>50 MB {t('whatsapp.settings.limit', 'Limit')}</span>
+                    </div>
                   </div>
-                  <Progress
-                    value={33}
-                    className="h-2 bg-slate-100 [&>div]:bg-orange-500"
-                  />
-                </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-muted/30 rounded-lg p-4 text-center border">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                      {t('whatsapp.settings.images', 'Images')}
-                    </p>
-                    <p className="text-lg font-bold">42 MB</p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-4 text-center border">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                      {t('whatsapp.settings.videos', 'Videos')}
-                    </p>
-                    <p className="text-lg font-bold">78 MB</p>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-4 text-center border">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                      {t('whatsapp.settings.docs', 'Docs')}
-                    </p>
-                    <p className="text-lg font-bold">5 MB</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-muted/30 rounded-lg p-4 border flex flex-col items-center justify-center">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                        {t('whatsapp.settings.sentMedia', 'Sent Media')}
+                      </p>
+                      <p className="text-xl font-bold text-primary">
+                        {mediaSize?.sent?.sizeFormatted || '0 B'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {mediaSize?.sent?.count || 0}{' '}
+                        {t('whatsapp.settings.files', 'files')}
+                      </p>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-4 border flex flex-col items-center justify-center">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+                        {t('whatsapp.settings.receivedMedia', 'Received Media')}
+                      </p>
+                      <p className="text-xl font-bold text-primary">
+                        {mediaSize?.receive?.sizeFormatted || '0 B'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {mediaSize?.receive?.count || 0}{' '}
+                        {t('whatsapp.settings.files', 'files')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -785,6 +845,38 @@ function WhatsAppSettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Clear Storage Confirmation */}
+      <AlertDialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('whatsapp.settings.confirmClearTitle', 'Clear Media Storage?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'whatsapp.settings.confirmClearDesc',
+                'This will permanently delete all media files associated with this instance. This action cannot be undone and will free up space.',
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearMediaMutation.isPending}>
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearStorage}
+              disabled={clearMediaMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {clearMediaMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {t('common.clear', 'Clear Now')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </RoleGuard>
   )
 }

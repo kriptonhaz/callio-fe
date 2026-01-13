@@ -135,3 +135,19 @@ export interface WhatsAppChat {
     type: string
   } | null
 }
+
+export interface WhatsAppMediaSizeResponse {
+  instanceId: string
+  totalSizeBytes: number
+  totalSizeFormatted: string
+  sent: {
+    count: number
+    sizeBytes: number
+    sizeFormatted: string
+  }
+  receive: {
+    count: number
+    sizeBytes: number
+    sizeFormatted: string
+  }
+}

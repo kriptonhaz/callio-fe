@@ -9,6 +9,7 @@ import type {
   SendMessageRequest,
   BlastWhatsAppRequest,
   WhatsAppChat,
+  WhatsAppMediaSizeResponse,
 } from '@/lib/api/types/whatsapp.types'
 
 export const whatsappKeys = {
@@ -113,6 +114,18 @@ const whatsappApi = {
 
   blastWhatsApp: async (data: BlastWhatsAppRequest): Promise<void> => {
     await apiClient.post('whatsapp/messages/blast', { json: data })
+  },
+
+  getMediaSize: async (
+    instanceId: string,
+  ): Promise<WhatsAppMediaSizeResponse> => {
+    return await apiClient
+      .get(`whatsapp/messages/media/size/${instanceId}`)
+      .json<WhatsAppMediaSizeResponse>()
+  },
+
+  clearMedia: async (instanceId: string): Promise<void> => {
+    await apiClient.delete(`whatsapp/messages/media/${instanceId}`)
   },
 }
 
@@ -260,5 +273,25 @@ export const useUploadMedia = () => {
 export const useBlastWhatsApp = () => {
   return useMutation({
     mutationFn: whatsappApi.blastWhatsApp,
+  })
+}
+
+export const useWhatsAppMediaSize = (instanceId: string) =>
+  useQuery({
+    queryKey: [...whatsappKeys.all, 'media-size', instanceId],
+    queryFn: () => whatsappApi.getMediaSize(instanceId),
+    enabled: !!instanceId,
+  })
+
+export const useClearWhatsAppMedia = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (instanceId: string) => whatsappApi.clearMedia(instanceId),
+    onSuccess: (_, instanceId) => {
+      queryClient.invalidateQueries({
+        queryKey: [...whatsappKeys.all, 'media-size', instanceId],
+      })
+    },
   })
 }
