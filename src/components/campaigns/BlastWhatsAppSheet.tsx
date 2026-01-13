@@ -19,6 +19,14 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -40,12 +48,14 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import {
   CalendarIcon,
   Send,
   Loader2,
+  Info,
   Users,
   ChevronDown,
   Check,
@@ -55,13 +65,20 @@ import {
   ImageIcon,
   VideoIcon,
   FileTextIcon,
+  Sparkles,
+  Smile,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
 import {
   useWhatsAppInstances,
   useBlastWhatsApp,
   useUploadMedia,
 } from '@/hooks/api/useWhatsapp'
+import { useCampaign } from '@/hooks/api/useCampaigns'
+import { useAiModels } from '@/hooks/api/useAiModels'
+import { useGenerateSms } from '@/hooks/api/useAiSms'
+import { ServiceType } from '@/lib/api/types/services.types'
 import { toast } from 'sonner'
 import type { LeadOption } from './ComposeSmsSheet'
 
@@ -104,18 +121,58 @@ type FormValues = z.infer<typeof formSchema>
 export function BlastWhatsAppSheet({
   open,
   onOpenChange,
+  campaignId,
   allLeadAssignments,
 }: BlastWhatsAppSheetProps) {
   const { t } = useTranslation()
   const [leadSearchQuery, setLeadSearchQuery] = useState('')
   const [isLeadPopoverOpen, setIsLeadPopoverOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // AI Generation State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [selectedAiModelId, setSelectedAiModelId] = useState('')
+
+  useEffect(() => {
+    if (!selectedFile) {
+      setPreviewUrl(null)
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(selectedFile)
+    setPreviewUrl(objectUrl)
+
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [selectedFile])
+
   const blastMutation = useBlastWhatsApp()
   const uploadMutation = useUploadMedia()
+  const generateSmsMutation = useGenerateSms()
   const { data: instances = [] } = useWhatsAppInstances()
+
+  // Fetch campaign details to check for AI service
+  const { data: campaign } = useCampaign(campaignId)
+  const hasAiService = useMemo(() => {
+    if (!campaign) return false
+    const services = campaign.serviceTypes || []
+    const campaignServices =
+      campaign.campaignServices?.map((s) => s.serviceType) || []
+    return (
+      services.includes(ServiceType.AI) ||
+      campaignServices.includes(ServiceType.AI)
+    )
+  }, [campaign])
+
+  // Fetch AI models
+  const { data: aiModelsData, isLoading: isLoadingAiModels } = useAiModels(
+    { capability: 'chat', limit: 50 },
+    isAiModalOpen,
+  )
+  const aiModels = aiModelsData?.data ?? []
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -464,19 +521,45 @@ export function BlastWhatsAppSheet({
                     </Button>
                   ) : (
                     <div className="flex items-center justify-between w-full p-2 border rounded-md bg-muted/50">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        {getFileIcon()}
-                        <span className="text-sm truncate max-w-[200px]">
-                          {selectedFile.name}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
-                        </span>
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        {selectedFile.type.startsWith('image/') &&
+                        previewUrl ? (
+                          <div className="h-10 w-10 rounded border overflow-hidden shrink-0 bg-white">
+                            <img
+                              src={previewUrl}
+                              alt="preview"
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ) : selectedFile.type.startsWith('video/') &&
+                          previewUrl ? (
+                          <div className="h-10 w-10 rounded border overflow-hidden shrink-0 bg-white relative">
+                            <video
+                              src={previewUrl}
+                              className="h-full w-full object-cover"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                              <VideoIcon className="h-3 w-3 text-white" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="h-10 w-10 rounded border flex items-center justify-center shrink-0 bg-white">
+                            {getFileIcon()}
+                          </div>
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-sm font-medium truncate max-w-[200px]">
+                            {selectedFile.name}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         onClick={removeFile}
                       >
                         <X className="h-4 w-4" />
@@ -494,19 +577,102 @@ export function BlastWhatsAppSheet({
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <FormLabel>{t('common.message', 'Message')}</FormLabel>
-                      <div className="flex gap-2">
-                        {templateVariables.map((v) => (
+                      <div className="flex items-center gap-2">
+                        {hasAiService && (
                           <Button
-                            key={v.key}
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="h-6 text-[10px] bg-muted"
-                            onClick={() => insertTemplateVariable(v.key)}
+                            className="h-6 px-2 text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                            onClick={() => setIsAiModalOpen(true)}
                           >
-                            {v.key}
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            {t('campaigns.generateAi', 'Generate with AI')}
                           </Button>
-                        ))}
+                        )}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                            >
+                              <Info className="h-3 w-3 mr-1" />
+                              {t('campaigns.templateVariables', 'Variables')}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80" align="end">
+                            <div className="space-y-2">
+                              <h4 className="font-medium text-sm">
+                                {t(
+                                  'campaigns.templateVariablesTitle',
+                                  'Personalization Variables',
+                                )}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {t(
+                                  'campaigns.templateVariablesDescription',
+                                  'Click a variable to insert it into your message. Values will be replaced with lead data.',
+                                )}
+                              </p>
+
+                              <ScrollArea className="h-[200px] w-full pr-3">
+                                <div className="flex flex-col gap-1">
+                                  {templateVariables.map((variable) => (
+                                    <button
+                                      key={variable.key}
+                                      type="button"
+                                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted text-left text-sm w-full transition-colors"
+                                      onClick={() =>
+                                        insertTemplateVariable(variable.key)
+                                      }
+                                    >
+                                      <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                                        {variable.key}
+                                      </code>
+                                      <span className="text-muted-foreground text-xs">
+                                        {variable.description}
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-xs"
+                            >
+                              <Smile className="h-3.5 w-3.5 mr-1" />
+                              {t('common.emoji', 'Emoji')}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            side="top"
+                            align="end"
+                            className="w-full p-0 border-none shadow-none bg-transparent"
+                          >
+                            <EmojiPicker
+                              onEmojiClick={(emojiData: EmojiClickData) => {
+                                const current = form.getValues('content')
+                                form.setValue(
+                                  'content',
+                                  current + emojiData.emoji,
+                                )
+                              }}
+                              width={320}
+                              height={400}
+                              previewConfig={{ showPreview: false }}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                     <FormControl>
@@ -620,6 +786,124 @@ export function BlastWhatsAppSheet({
           </form>
         </Form>
       </SheetContent>
+
+      <Dialog open={isAiModalOpen} onOpenChange={setIsAiModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t(
+                'campaigns.generateWhatsAppContent',
+                'Generate WhatsApp Content with AI',
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                'campaigns.aiPromptDescription',
+                'Describe what you want to say, and we will generate the content for you.',
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {t('campaigns.aiModel', 'AI Model')}
+              </label>
+              <Select
+                value={selectedAiModelId}
+                onValueChange={setSelectedAiModelId}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      isLoadingAiModels
+                        ? t('common.loading', 'Loading...')
+                        : t('campaigns.selectAiModel', 'Select AI model')
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiModels.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {t('campaigns.prompt', 'Prompt')}
+              </label>
+              <Textarea
+                placeholder={t(
+                  'campaigns.aiPromptPlaceholder',
+                  'e.g., specific promo for new leads...',
+                )}
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAiModalOpen(false)}
+              disabled={generateSmsMutation.isPending}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                generateSmsMutation.mutate(
+                  {
+                    prompt: aiPrompt,
+                    modelId: selectedAiModelId,
+                    maxLength: 1000,
+                  },
+                  {
+                    onSuccess: (data) => {
+                      form.setValue('content', data.content)
+                      setAiPrompt('')
+                      setSelectedAiModelId('')
+                      setIsAiModalOpen(false)
+                      toast.success(
+                        t(
+                          'campaigns.contentGenerated',
+                          'Content generated successfully',
+                        ),
+                      )
+                    },
+                    onError: () => {
+                      toast.error(
+                        t(
+                          'campaigns.aiGenerationFailed',
+                          'Failed to generate content',
+                        ),
+                      )
+                    },
+                  },
+                )
+              }}
+              disabled={
+                !aiPrompt || !selectedAiModelId || generateSmsMutation.isPending
+              }
+            >
+              {generateSmsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('common.generating', 'Generating...')}
+                </>
+              ) : (
+                t('common.generate', 'Generate')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   )
 }
