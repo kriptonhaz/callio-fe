@@ -98,6 +98,7 @@ export function StandardPagination({
             </span>
           </Button>
         )}
+        {/* Prev Button */}
         <Button
           variant="outline"
           size="icon"
@@ -110,12 +111,23 @@ export function StandardPagination({
             animate={currentPage > 1 ? undefined : false}
           />
         </Button>
+
+        {/* Mobile: Show only current page */}
+        <Button
+          variant="default"
+          size="icon"
+          className="h-8 w-8 sm:hidden bg-primary text-primary-foreground border-primary"
+        >
+          {validCurrentPage}
+        </Button>
+
+        {/* Desktop: Show page numbers */}
         {getPageNumbers().map((page, index) => (
           <Button
             key={index}
             variant={page === validCurrentPage ? 'default' : 'outline'}
             size="icon"
-            className={`h-8 w-8 ${
+            className={`h-8 w-8 hidden sm:inline-flex ${
               page === validCurrentPage
                 ? 'bg-primary text-primary-foreground border-primary'
                 : ''
@@ -126,6 +138,8 @@ export function StandardPagination({
             {page}
           </Button>
         ))}
+
+        {/* Next Button */}
         <Button
           variant="outline"
           size="icon"

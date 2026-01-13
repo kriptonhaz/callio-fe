@@ -112,6 +112,7 @@ export interface SendMessageRequest {
 
 export interface BlastWhatsAppRequest {
   instanceId: string
+  campaignId: string
   recipients: string[]
   content: string
   messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker'
@@ -150,4 +151,69 @@ export interface WhatsAppMediaSizeResponse {
     sizeBytes: number
     sizeFormatted: string
   }
+}
+
+// WhatsApp Report Types
+export type WhatsAppMessageType = 'blast' | 'regular' | 'inbound'
+
+export type WhatsAppReportDirection = 'inbound' | 'outbound'
+
+export type WhatsAppReportStatus =
+  | 'sent'
+  | 'delivered'
+  | 'read'
+  | 'failed'
+  | 'pending'
+  | 'scheduled'
+
+export interface WhatsAppReportQueryParams {
+  page?: number
+  limit?: number
+  messageType?: WhatsAppMessageType
+  campaignId?: string
+  instanceId?: string
+  direction?: WhatsAppReportDirection
+  status?: WhatsAppReportStatus
+  phoneNumber?: string
+  search?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface WhatsAppReportItem {
+  id: string
+  instanceId: string
+  remoteJid: string
+  remoteJidAlias: string | null
+  messageId: string
+  senderJid: string | null
+  senderName: string | null
+  senderPhoneNumber: string
+  direction: WhatsAppReportDirection
+  messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker'
+  content: string
+  mediaUrl: string | null
+  mediaMimeType: string | null
+  mediaName: string | null
+  status: WhatsAppReportStatus
+  isBlast: boolean
+  blastBatchId: string | null
+  campaignId: string | null
+  scheduledAt: string | null
+  sentAt: string | null
+  deliveredAt: string | null
+  readAt: string | null
+  failedAt: string | null
+  errorMessage: string | null
+  createdAt: string
+  instance: {
+    id: string
+    name: string
+    phoneNumber: string
+    clientId: string
+  }
+  campaign: {
+    id: string
+    name: string
+  } | null
 }

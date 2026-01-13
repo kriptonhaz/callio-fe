@@ -8,6 +8,11 @@ import {
   useBulkCancelSms,
   useExportSmsHistory,
 } from '@/hooks/api/useSms'
+import {
+  useWhatsAppInstances,
+  useWhatsAppReport,
+  useExportWhatsAppReport,
+} from '@/hooks/api/useWhatsapp'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useCampaigns } from '@/hooks/api/useCampaigns'
 import { useEnabledServices } from '@/hooks/api/useServices'
@@ -15,6 +20,12 @@ import { useMe } from '@/hooks/api/useAuth'
 import { useAiUsage } from '@/hooks/api/useAiUsage'
 import { UserRole } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
+import type {
+  WhatsAppReportQueryParams,
+  WhatsAppMessageType,
+  WhatsAppReportDirection,
+  WhatsAppReportStatus,
+} from '@/lib/api/types/whatsapp.types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -81,6 +92,7 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api/client'
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon'
 
 interface ReportsSearch {
   page: number
@@ -94,6 +106,11 @@ interface ReportsSearch {
   aiServiceType?: string
   aiStatus?: string
   search?: string
+  // WhatsApp specific
+  waMessageType?: WhatsAppMessageType
+  waInstanceId?: string
+  waDirection?: WhatsAppReportDirection
+  waStatus?: WhatsAppReportStatus
 }
 
 export const Route = createFileRoute('/dashboard/reports')({
@@ -111,6 +128,11 @@ export const Route = createFileRoute('/dashboard/reports')({
       aiServiceType: (search.aiServiceType as string) || undefined,
       aiStatus: (search.aiStatus as string) || undefined,
       search: (search.search as string) || undefined,
+      // WhatsApp specific
+      waMessageType: (search.waMessageType as WhatsAppMessageType) || undefined,
+      waInstanceId: (search.waInstanceId as string) || undefined,
+      waDirection: (search.waDirection as WhatsAppReportDirection) || undefined,
+      waStatus: (search.waStatus as WhatsAppReportStatus) || undefined,
     }
   },
 })
@@ -138,6 +160,11 @@ function ReportsPage(): React.ReactElement {
   // SMS selection state
   const [selectedSmsIds, setSelectedSmsIds] = useState<Set<string>>(new Set())
   const [showCancelConfirmDialog, setShowCancelConfirmDialog] = useState(false)
+
+  // WhatsApp filter state
+  const [waMessageTypeOpen, setWaMessageTypeOpen] = useState(false)
+  const [waInstanceOpen, setWaInstanceOpen] = useState(false)
+  const [waStatusOpen, setWaStatusOpen] = useState(false)
 
   // Auth context
   const { data: me } = useMe()
@@ -272,6 +299,55 @@ function ReportsPage(): React.ReactElement {
   const { data: aiUsageData, isLoading: isLoadingAiUsage } =
     useAiUsage(aiQueryParams)
 
+  // Build WhatsApp query params
+  const whatsappQueryParams: WhatsAppReportQueryParams = useMemo(() => {
+    const params: WhatsAppReportQueryParams = {
+      page: searchParams.page,
+      limit: searchParams.limit,
+    }
+    if (
+      searchParams.waMessageType &&
+      searchParams.waMessageType !== ('all' as WhatsAppMessageType)
+    ) {
+      params.messageType = searchParams.waMessageType
+    }
+    if (searchParams.waInstanceId && searchParams.waInstanceId !== 'all') {
+      params.instanceId = searchParams.waInstanceId
+    }
+    if (
+      searchParams.waDirection &&
+      searchParams.waDirection !== ('all' as WhatsAppReportDirection)
+    ) {
+      params.direction = searchParams.waDirection
+    }
+    if (
+      searchParams.waStatus &&
+      searchParams.waStatus !== ('all' as WhatsAppReportStatus)
+    ) {
+      params.status = searchParams.waStatus
+    }
+    if (searchParams.campaignId && searchParams.campaignId !== 'all') {
+      params.campaignId = searchParams.campaignId
+    }
+    if (searchParams.startDate) {
+      params.startDate = searchParams.startDate
+    }
+    if (searchParams.endDate) {
+      params.endDate = searchParams.endDate
+    }
+    if (searchParams.search) {
+      params.search = searchParams.search
+    }
+    return params
+  }, [searchParams])
+
+  // Fetch WhatsApp instances for filter
+  const { data: waInstances = [] } = useWhatsAppInstances()
+
+  // Fetch WhatsApp report
+  const { data: whatsappReportData, isLoading: isLoadingWhatsappReport } =
+    useWhatsAppReport(whatsappQueryParams)
+
   // Fetch agents for filter (only users with agent role)
   const { data: usersData } = useUsers({
     clientId,
@@ -311,6 +387,7 @@ function ReportsPage(): React.ReactElement {
   // Export mutations
   const exportCallLogs = useExportCallLogs()
   const exportSmsHistory = useExportSmsHistory()
+  const exportWhatsAppReport = useExportWhatsAppReport()
 
   const handleExport = (type: string): void => {
     if (type === 'voip') {
@@ -356,6 +433,37 @@ function ReportsPage(): React.ReactElement {
             const a = document.createElement('a')
             a.href = url
             a.download = `sms-report-${new Date().toISOString().split('T')[0]}.csv`
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+            toast.success(
+              t('reports.exportSuccess', 'Report exported successfully'),
+            )
+          },
+          onError: (error) => {
+            console.error('Export failed:', error)
+            toast.error(t('reports.exportFailed', 'Failed to export report'))
+          },
+        },
+      )
+    } else if (type === 'whatsapp') {
+      exportWhatsAppReport.mutate(
+        {
+          messageType: searchParams.waMessageType,
+          instanceId: searchParams.waInstanceId,
+          status: searchParams.waStatus,
+          campaignId: searchParams.campaignId,
+          startDate: searchParams.startDate,
+          endDate: searchParams.endDate,
+          search: searchParams.search,
+        },
+        {
+          onSuccess: (blob) => {
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `whatsapp-report-${new Date().toISOString().split('T')[0]}.csv`
             document.body.appendChild(a)
             a.click()
             window.URL.revokeObjectURL(url)
@@ -843,7 +951,7 @@ function ReportsPage(): React.ReactElement {
                     onClick={() => setActiveTab('whatsapp')}
                     className="h-8 gap-2"
                   >
-                    <MessageSquare className="h-4 w-4" />
+                    <WhatsAppIcon className="h-4 w-4" />
                     <span className="hidden sm:inline">WhatsApp</span>
                   </Button>
                 )}
@@ -1893,17 +2001,529 @@ function ReportsPage(): React.ReactElement {
               </TabsContent>
             )}
 
-            {/* WhatsApp Reports Tab - Placeholder */}
+            {/* WhatsApp Reports Tab */}
             {hasWhatsappService && (
-              <TabsContent value="whatsapp" className="mt-0">
-                <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                  <MessageSquare className="h-12 w-12 mb-4" />
-                  <h3 className="text-lg font-medium">
-                    {t('reports.whatsappReportsTitle', 'WhatsApp Reports')}
-                  </h3>
-                  <p className="text-sm">
-                    {t('reports.comingSoon', 'Coming soon...')}
-                  </p>
+              <TabsContent value="whatsapp" className="space-y-0 mt-0">
+                {/* Filters Card */}
+                <div className="rounded-t-lg border border-b-0 bg-card p-4">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Search Bar */}
+                      <div className="relative w-full max-w-[160px]">
+                        <Input
+                          placeholder={t(
+                            'reports.searchWhatsapp',
+                            'Search phone or message...',
+                          )}
+                          value={searchParams.search || ''}
+                          onChange={(e) => {
+                            updateParams({
+                              search: e.target.value || undefined,
+                              page: 1,
+                            })
+                          }}
+                          className="pl-3"
+                        />
+                      </div>
+
+                      {/* Start Date Picker */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-[130px] justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? (
+                              format(startDate, 'MM/dd/yyyy')
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {t('reports.startDate', 'Start Date')}
+                              </span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={handleStartDateChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* End Date Picker */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-[130px] justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? (
+                              format(endDate, 'MM/dd/yyyy')
+                            ) : (
+                              <span className="text-muted-foreground">
+                                {t('reports.endDate', 'End Date')}
+                              </span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={endDate}
+                            onSelect={handleEndDateChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Instance Filter */}
+                      <Popover
+                        open={waInstanceOpen}
+                        onOpenChange={setWaInstanceOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={waInstanceOpen}
+                            className="w-[140px] justify-between"
+                          >
+                            {searchParams.waInstanceId &&
+                            searchParams.waInstanceId !== 'all'
+                              ? waInstances.find(
+                                  (i) => i.id === searchParams.waInstanceId,
+                                )?.name
+                              : t('reports.allInstances', 'All Instances')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[180px] p-0">
+                          <Command>
+                            <CommandInput
+                              placeholder={t(
+                                'reports.searchInstance',
+                                'Search instance...',
+                              )}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                {t(
+                                  'reports.noInstanceFound',
+                                  'No instance found.',
+                                )}
+                              </CommandEmpty>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="all"
+                                  onSelect={() => {
+                                    updateParams({
+                                      waInstanceId: undefined,
+                                      page: 1,
+                                    })
+                                    setWaInstanceOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      !searchParams.waInstanceId ||
+                                        searchParams.waInstanceId === 'all'
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                    )}
+                                  />
+                                  {t('reports.allInstances', 'All Instances')}
+                                </CommandItem>
+                                {waInstances.map((instance) => (
+                                  <CommandItem
+                                    key={instance.id}
+                                    value={instance.name}
+                                    onSelect={() => {
+                                      updateParams({
+                                        waInstanceId: instance.id,
+                                        page: 1,
+                                      })
+                                      setWaInstanceOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        searchParams.waInstanceId ===
+                                          instance.id
+                                          ? 'opacity-100'
+                                          : 'opacity-0',
+                                      )}
+                                    />
+                                    {instance.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Message Type Filter */}
+                      <Popover
+                        open={waMessageTypeOpen}
+                        onOpenChange={setWaMessageTypeOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={waMessageTypeOpen}
+                            className="w-[120px] justify-between"
+                          >
+                            {searchParams.waMessageType &&
+                            searchParams.waMessageType !==
+                              ('all' as WhatsAppMessageType)
+                              ? t(
+                                  `reports.wa${searchParams.waMessageType.charAt(0).toUpperCase() + searchParams.waMessageType.slice(1)}`,
+                                  searchParams.waMessageType
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    searchParams.waMessageType.slice(1),
+                                )
+                              : t('reports.allTypes', 'All Types')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[130px] p-0">
+                          <Command>
+                            <CommandList>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="all"
+                                  onSelect={() => {
+                                    updateParams({
+                                      waMessageType: undefined,
+                                      page: 1,
+                                    })
+                                    setWaMessageTypeOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      !searchParams.waMessageType
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                    )}
+                                  />
+                                  {t('reports.allTypes', 'All Types')}
+                                </CommandItem>
+                                {(['blast', 'regular', 'inbound'] as const).map(
+                                  (type) => (
+                                    <CommandItem
+                                      key={type}
+                                      value={type}
+                                      onSelect={() => {
+                                        updateParams({
+                                          waMessageType: type,
+                                          page: 1,
+                                        })
+                                        setWaMessageTypeOpen(false)
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          'mr-2 h-4 w-4',
+                                          searchParams.waMessageType === type
+                                            ? 'opacity-100'
+                                            : 'opacity-0',
+                                        )}
+                                      />
+                                      {t(
+                                        `reports.wa${type.charAt(0).toUpperCase() + type.slice(1)}`,
+                                        type.charAt(0).toUpperCase() +
+                                          type.slice(1),
+                                      )}
+                                    </CommandItem>
+                                  ),
+                                )}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+
+                      {/* Status Filter */}
+                      <Popover
+                        open={waStatusOpen}
+                        onOpenChange={setWaStatusOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={waStatusOpen}
+                            className="w-[120px] justify-between"
+                          >
+                            {searchParams.waStatus &&
+                            searchParams.waStatus !==
+                              ('all' as WhatsAppReportStatus)
+                              ? t(
+                                  `reports.${searchParams.waStatus}`,
+                                  searchParams.waStatus
+                                    .charAt(0)
+                                    .toUpperCase() +
+                                    searchParams.waStatus.slice(1),
+                                )
+                              : t('reports.allStatuses', 'All Statuses')}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[130px] p-0">
+                          <Command>
+                            <CommandList>
+                              <CommandGroup>
+                                <CommandItem
+                                  value="all"
+                                  onSelect={() => {
+                                    updateParams({
+                                      waStatus: undefined,
+                                      page: 1,
+                                    })
+                                    setWaStatusOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      'mr-2 h-4 w-4',
+                                      !searchParams.waStatus
+                                        ? 'opacity-100'
+                                        : 'opacity-0',
+                                    )}
+                                  />
+                                  {t('reports.allStatuses', 'All Statuses')}
+                                </CommandItem>
+                                {(
+                                  [
+                                    'pending',
+                                    'sent',
+                                    'delivered',
+                                    'read',
+                                    'failed',
+                                  ] as const
+                                ).map((status) => (
+                                  <CommandItem
+                                    key={status}
+                                    value={status}
+                                    onSelect={() => {
+                                      updateParams({
+                                        waStatus: status,
+                                        page: 1,
+                                      })
+                                      setWaStatusOpen(false)
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        'mr-2 h-4 w-4',
+                                        searchParams.waStatus === status
+                                          ? 'opacity-100'
+                                          : 'opacity-0',
+                                      )}
+                                    />
+                                    {t(
+                                      `reports.${status}`,
+                                      status.charAt(0).toUpperCase() +
+                                        status.slice(1),
+                                    )}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table with footer pagination */}
+                <div className="rounded-b-lg border bg-card overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.dateTime', 'DATE & TIME')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.instance', 'INSTANCE')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.phone', 'PHONE NUMBER')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.type', 'TYPE')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.direction', 'DIRECTION')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.message', 'MESSAGE')}
+                        </TableHead>
+                        <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          {t('reports.status', 'STATUS')}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoadingWhatsappReport ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              {t('common.loading', 'Loading...')}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : whatsappReportData?.data.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                              <MessageSquare className="h-8 w-8" />
+                              <p>
+                                {t(
+                                  'reports.noWhatsappHistory',
+                                  'No WhatsApp history found',
+                                )}
+                              </p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        whatsappReportData?.data.map((msg) => {
+                          const { date, time } = formatDateTime(msg.createdAt)
+
+                          return (
+                            <TableRow
+                              key={msg.id}
+                              className="hover:bg-muted/30"
+                            >
+                              {/* Date & Time */}
+                              <TableCell className="w-[140px]">
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{date}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {time}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              {/* Instance */}
+                              <TableCell>
+                                <span className="font-medium">
+                                  {msg.instance?.name || '-'}
+                                </span>
+                              </TableCell>
+                              {/* Phone Number */}
+                              <TableCell>
+                                <span className="text-muted-foreground whitespace-nowrap">
+                                  {formatPhoneNumber(msg.senderPhoneNumber)}
+                                </span>
+                              </TableCell>
+                              {/* Type */}
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    'capitalize',
+                                    msg.isBlast
+                                      ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 border-purple-200'
+                                      : 'bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 border-gray-200',
+                                  )}
+                                >
+                                  {msg.isBlast
+                                    ? t('reports.waBlast', 'Blast')
+                                    : msg.direction === 'inbound'
+                                      ? t('reports.waInbound', 'Inbound')
+                                      : t('reports.waRegular', 'Regular')}
+                                </Badge>
+                              </TableCell>
+                              {/* Direction */}
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    msg.direction === 'inbound'
+                                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200'
+                                      : 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200',
+                                  )}
+                                >
+                                  {msg.direction === 'inbound'
+                                    ? t('reports.inbound', 'Inbound')
+                                    : t('reports.outbound', 'Outbound')}
+                                </Badge>
+                              </TableCell>
+                              {/* Message */}
+                              <TableCell className="min-w-[200px] max-w-[400px]">
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed line-clamp-2">
+                                  {msg.content ||
+                                    (msg.mediaUrl
+                                      ? `[${msg.messageType}]`
+                                      : '-')}
+                                </p>
+                              </TableCell>
+                              {/* Status */}
+                              <TableCell className="w-[100px]">
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    'gap-1.5',
+                                    msg.status === 'delivered' ||
+                                      msg.status === 'read'
+                                      ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200'
+                                      : msg.status === 'sent'
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200'
+                                        : msg.status === 'pending' ||
+                                            msg.status === 'scheduled'
+                                          ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400 border-yellow-200'
+                                          : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border-red-200',
+                                  )}
+                                >
+                                  <span
+                                    className={cn(
+                                      'h-1.5 w-1.5 rounded-full',
+                                      msg.status === 'delivered' ||
+                                        msg.status === 'read'
+                                        ? 'bg-green-500'
+                                        : msg.status === 'sent'
+                                          ? 'bg-blue-500'
+                                          : msg.status === 'pending' ||
+                                              msg.status === 'scheduled'
+                                            ? 'bg-yellow-500'
+                                            : 'bg-red-500',
+                                    )}
+                                  />
+                                  {t(
+                                    `reports.${msg.status}`,
+                                    msg.status.charAt(0).toUpperCase() +
+                                      msg.status.slice(1),
+                                  )}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                  {/* Pagination */}
+                  <StandardPagination
+                    currentPage={searchParams.page}
+                    totalPages={whatsappReportData?.meta.totalPages || 1}
+                    itemsPerPage={searchParams.limit}
+                    totalItems={whatsappReportData?.meta.total || 0}
+                    onPageChange={handlePageChange}
+                    onExport={() => handleExport('whatsapp')}
+                    exportLabel={t('reports.exportReport', 'Export Report')}
+                    isExporting={exportWhatsAppReport.isPending}
+                  />
                 </div>
               </TabsContent>
             )}

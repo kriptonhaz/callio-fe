@@ -262,6 +262,7 @@ export function BlastWhatsAppSheet({
 
       await blastMutation.mutateAsync({
         instanceId: data.instanceId,
+        campaignId,
         recipients,
         content: data.content,
         messageType: data.messageType,

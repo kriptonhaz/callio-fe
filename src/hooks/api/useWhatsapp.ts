@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api/client'
+import { apiClient, buildQueryString } from '@/lib/api/client'
+import { PaginatedResponse } from '@/lib/api/types'
 import type {
   WhatsAppInstance,
   WhatsAppInstancesResponse,
@@ -10,6 +11,8 @@ import type {
   BlastWhatsAppRequest,
   WhatsAppChat,
   WhatsAppMediaSizeResponse,
+  WhatsAppReportQueryParams,
+  WhatsAppReportItem,
 } from '@/lib/api/types/whatsapp.types'
 
 export const whatsappKeys = {
@@ -20,6 +23,8 @@ export const whatsappKeys = {
     [...whatsappKeys.all, 'chats', instanceId] as const,
   messages: (instanceId: string, remoteJid?: string) =>
     [...whatsappKeys.all, 'messages', instanceId, remoteJid] as const,
+  report: (params: WhatsAppReportQueryParams) =>
+    [...whatsappKeys.all, 'report', params] as const,
 }
 
 const whatsappApi = {
@@ -126,6 +131,22 @@ const whatsappApi = {
 
   clearMedia: async (instanceId: string): Promise<void> => {
     await apiClient.delete(`whatsapp/messages/media/${instanceId}`)
+  },
+
+  getReport: async (
+    params: WhatsAppReportQueryParams,
+  ): Promise<PaginatedResponse<WhatsAppReportItem>> => {
+    const queryString = buildQueryString(params)
+    return await apiClient
+      .get(`whatsapp/report${queryString}`)
+      .json<PaginatedResponse<WhatsAppReportItem>>()
+  },
+
+  exportReport: async (
+    params: Omit<WhatsAppReportQueryParams, 'page' | 'limit'>,
+  ): Promise<Blob> => {
+    const queryString = buildQueryString(params)
+    return await apiClient.get(`whatsapp/report/export${queryString}`).blob()
   },
 }
 
@@ -295,3 +316,16 @@ export const useClearWhatsAppMedia = () => {
     },
   })
 }
+
+export const useWhatsAppReport = (params: WhatsAppReportQueryParams) =>
+  useQuery({
+    queryKey: whatsappKeys.report(params),
+    queryFn: () => whatsappApi.getReport(params),
+    placeholderData: (prev) => prev,
+  })
+
+export const useExportWhatsAppReport = () =>
+  useMutation({
+    mutationFn: (params: Omit<WhatsAppReportQueryParams, 'page' | 'limit'>) =>
+      whatsappApi.exportReport(params),
+  })
