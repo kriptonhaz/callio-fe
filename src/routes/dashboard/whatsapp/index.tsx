@@ -233,17 +233,6 @@ function WhatsAppManagementPage(): React.ReactElement {
               )}
             </p>
           </div>
-          {hasInstances && (
-            <Button className="w-full sm:w-auto" onClick={handleOpenConnect}>
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">
-                {t('whatsapp.connectNew', 'Connect New Account')}
-              </span>
-              <span className="sm:hidden">
-                {t('whatsapp.connectNewShort', 'Connect')}
-              </span>
-            </Button>
-          )}
         </div>
 
         {/* Stats Cards */}
@@ -462,27 +451,6 @@ function WhatsAppManagementPage(): React.ReactElement {
                   </CardContent>
                 </Card>
               ))}
-
-              {/* Connect Another Account Card */}
-              <Card
-                className="border-dashed hover:border-primary/50 transition-colors cursor-pointer"
-                onClick={handleOpenConnect}
-              >
-                <CardContent className="p-4 flex flex-col items-center justify-center h-full min-h-[200px] text-center">
-                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                    <Plus className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <h3 className="font-semibold">
-                    {t('whatsapp.connectAnother', 'Connect Another Account')}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {t(
-                      'whatsapp.connectAnotherDesc',
-                      'Scale your business communication',
-                    )}
-                  </p>
-                </CardContent>
-              </Card>
             </div>
           </div>
         )}
