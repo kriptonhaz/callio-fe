@@ -45,6 +45,7 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  BrainCircuit,
 } from 'lucide-react'
 import {
   SipExtension,
@@ -108,7 +109,7 @@ const formSchema = z.object({
     .string()
     .min(1, 'Extension ID is required')
     .regex(/^\d+$/, 'Extension ID must be numeric'),
-  type: z.enum(['user', 'goip']),
+  type: z.enum(['user', 'goip', 'ai']),
   password: z.string().min(1, 'Password is required'),
 })
 
@@ -116,7 +117,7 @@ const bulkFormSchema = z
   .object({
     rangeStart: z.number().int().min(1, 'Range start must be at least 1'),
     rangeEnd: z.number().int().min(1, 'Range end must be at least 1'),
-    type: z.enum(['user', 'goip']),
+    type: z.enum(['user', 'goip', 'ai']),
   })
   .refine((data) => data.rangeEnd >= data.rangeStart, {
     message: 'Range end must be greater than or equal to range start',
@@ -246,6 +247,12 @@ function SipExtensionsPage() {
         label: t('sipExtensions.type.goip'),
         icon: Router,
         variant: 'secondary' as const,
+      }
+    } else if (extensionType === 'ai') {
+      return {
+        label: t('sipExtensions.type.ai', 'AI'),
+        icon: BrainCircuit,
+        variant: 'default' as const, // primary orange color
       }
     }
     return {
@@ -485,6 +492,9 @@ function SipExtensionsPage() {
                 <SelectItem value={SipExtensionType.GOIP}>
                   {t('sipExtensions.typeGoip', 'GoIP')}
                 </SelectItem>
+                <SelectItem value={SipExtensionType.AI}>
+                  {t('sipExtensions.typeAi', 'AI')}
+                </SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -651,6 +661,9 @@ function SipExtensionsPage() {
                         <SelectItem value="goip">
                           {t('sipExtensions.type.goip')}
                         </SelectItem>
+                        <SelectItem value="ai">
+                          {t('sipExtensions.type.ai', 'AI')}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -797,6 +810,9 @@ function SipExtensionsPage() {
                         </SelectItem>
                         <SelectItem value="goip">
                           {t('sipExtensions.type.goip')}
+                        </SelectItem>
+                        <SelectItem value="ai">
+                          {t('sipExtensions.type.ai', 'AI')}
                         </SelectItem>
                       </SelectContent>
                     </Select>

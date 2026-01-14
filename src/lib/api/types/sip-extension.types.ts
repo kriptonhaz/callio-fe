@@ -3,6 +3,7 @@ import { PaginationParams } from '../types'
 export enum SipExtensionType {
   USER = 'user',
   GOIP = 'goip',
+  AI = 'ai',
 }
 
 export interface SipExtension {
@@ -69,7 +70,7 @@ export interface SipExtensionsQueryParams extends PaginationParams {
 
 export interface CreateSipExtensionRequest {
   id: string
-  type: 'user' | 'goip'
+  type: 'user' | 'goip' | 'ai'
   password: string
   clientId?: string | null
 }
@@ -77,7 +78,7 @@ export interface CreateSipExtensionRequest {
 export interface BulkCreateSipExtensionRequest {
   rangeStart: number
   rangeEnd: number
-  type: 'user' | 'goip'
+  type: 'user' | 'goip' | 'ai'
 }
 
 export interface DeleteSipExtensionRequest {
