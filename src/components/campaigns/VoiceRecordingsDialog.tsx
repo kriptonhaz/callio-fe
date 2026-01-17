@@ -31,12 +31,22 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Upload, Trash2, Music, Loader2, FileAudio, Check } from 'lucide-react'
+import {
+  Upload,
+  Trash2,
+  Music,
+  Loader2,
+  FileAudio,
+  Check,
+  Phone,
+} from 'lucide-react'
 
 interface VoiceRecordingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSelect: (recording: VoiceRecording | null) => void
+  onCall?: (recording: VoiceRecording) => void
+  isDialing?: boolean
   selectedRecordingId?: string
 }
 
@@ -44,6 +54,8 @@ export function VoiceRecordingsDialog({
   open,
   onOpenChange,
   onSelect,
+  onCall,
+  isDialing = false,
   selectedRecordingId,
 }: VoiceRecordingsDialogProps): React.ReactElement {
   const { t } = useTranslation()
@@ -129,7 +141,7 @@ export function VoiceRecordingsDialog({
 
   const handleSelectRecording = (recording: VoiceRecording) => {
     onSelect(recording)
-    onOpenChange(false)
+    // Don't close dialog - let user click Call button
   }
 
   const formatDuration = (seconds?: number): string => {
@@ -304,15 +316,38 @@ export function VoiceRecordingsDialog({
               </ScrollArea>
 
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    onSelect(null)
-                    onOpenChange(false)
-                  }}
-                >
-                  {t('voiceRecordings.useLiveVoice', 'Use Live Voice')}
-                </Button>
+                {selectedRecordingId && onCall ? (
+                  <Button
+                    variant="default"
+                    className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                    disabled={isDialing}
+                    onClick={() => {
+                      const recording = recordings?.data?.find(
+                        (r) => r.id === selectedRecordingId,
+                      )
+                      if (recording) {
+                        onCall(recording)
+                      }
+                    }}
+                  >
+                    {isDialing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Phone className="h-4 w-4" />
+                    )}
+                    {t('leads.call', 'Call')}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      onSelect(null)
+                      onOpenChange(false)
+                    }}
+                  >
+                    {t('voiceRecordings.useLiveVoice', 'Use Live Voice')}
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   onClick={() => setShowUploadForm(true)}
