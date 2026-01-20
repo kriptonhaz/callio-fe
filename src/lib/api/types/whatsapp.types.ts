@@ -120,6 +120,7 @@ export interface BlastWhatsAppRequest {
   mediaUrl?: string
   mediaMimeType?: string
   mediaName?: string
+  delaySeconds?: number
 }
 
 export interface WhatsAppChat {

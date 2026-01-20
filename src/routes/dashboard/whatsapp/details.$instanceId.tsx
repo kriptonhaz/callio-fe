@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +46,7 @@ import {
   useWhatsAppInstances,
   useMarkMessageAsRead,
   useUploadMedia,
+  useUpdateWhatsAppInstance,
 } from '@/hooks/api/useWhatsapp'
 import { toast } from 'sonner'
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
@@ -98,6 +101,27 @@ function WhatsAppDetailsPage(): React.ReactElement {
   const sendMessageMutation = useSendMessage()
   const markAsReadMutation = useMarkMessageAsRead()
   const uploadMediaMutation = useUploadMedia()
+  const updateInstanceMutation = useUpdateWhatsAppInstance()
+
+  const handleAutoReplyToggle = async (checked: boolean) => {
+    if (!currentInstance) return
+
+    try {
+      await updateInstanceMutation.mutateAsync({
+        id: instanceId,
+        data: {
+          autoReplyEnabled: checked,
+        },
+      })
+      toast.success(
+        checked
+          ? t('whatsapp.autoReplyEnabled', 'Auto-reply enabled')
+          : t('whatsapp.autoReplyDisabled', 'Auto-reply disabled'),
+      )
+    } catch (error) {
+      toast.error(t('whatsapp.updateError', 'Failed to update settings'))
+    }
+  }
 
   const selectedChatData = filteredChats?.find((c) => c.jid === selectedChat)
 
@@ -234,6 +258,22 @@ function WhatsAppDetailsPage(): React.ReactElement {
               {currentInstance?.name || instanceId}
             </p>
           </div>
+          {currentInstance && (
+            <div className="ml-auto flex items-center gap-2 border rounded-full px-3 py-1.5 bg-muted/50">
+              <Switch
+                id="auto-reply-mode"
+                checked={currentInstance.autoReplyEnabled}
+                onCheckedChange={handleAutoReplyToggle}
+                disabled={updateInstanceMutation.isPending}
+              />
+              <Label
+                htmlFor="auto-reply-mode"
+                className="text-sm font-medium cursor-pointer"
+              >
+                {t('whatsapp.settings.enableAutoReply', 'AI Auto-Reply')}
+              </Label>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}

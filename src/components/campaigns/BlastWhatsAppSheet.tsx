@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Calendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -114,6 +115,7 @@ const formSchema = z.object({
   mediaUrl: z.string().optional(),
   mediaMimeType: z.string().optional(),
   mediaName: z.string().optional(),
+  delaySeconds: z.number().min(1).max(6000).default(20),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -183,11 +185,25 @@ export function BlastWhatsAppSheet({
       messageType: 'text',
       scheduleType: 'now',
       scheduledDate: undefined,
+      delaySeconds: 20,
     },
   })
 
   const scheduleType = form.watch('scheduleType')
   const selectedLeadIds = form.watch('selectedLeadIds')
+  const watchedInstanceId = form.watch('instanceId')
+
+  // Update delaySeconds based on selected instance's providerType
+  useEffect(() => {
+    if (watchedInstanceId) {
+      const selectedInstance = instances.find((i) => i.id === watchedInstanceId)
+      if (selectedInstance) {
+        const defaultDelay =
+          selectedInstance.providerType === 'official' ? 1 : 20
+        form.setValue('delaySeconds', defaultDelay)
+      }
+    }
+  }, [watchedInstanceId, instances, form])
 
   useEffect(() => {
     if (
@@ -273,6 +289,7 @@ export function BlastWhatsAppSheet({
         mediaUrl,
         mediaMimeType,
         mediaName,
+        delaySeconds: data.delaySeconds,
       })
 
       toast.success(
@@ -684,6 +701,29 @@ export function BlastWhatsAppSheet({
                         )}
                         className="min-h-[150px]"
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="delaySeconds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {t('campaigns.delaySeconds', 'Delay (Seconds)')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={6000}
+                        placeholder={t('campaigns.delayPlaceholder', 'e.g. 20')}
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
