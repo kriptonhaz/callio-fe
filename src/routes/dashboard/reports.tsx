@@ -128,8 +128,8 @@ export const Route = createFileRoute('/dashboard/reports')({
       aiServiceType: (search.aiServiceType as string) || undefined,
       aiStatus: (search.aiStatus as string) || undefined,
       search: (search.search as string) || undefined,
-      // WhatsApp specific
-      waMessageType: (search.waMessageType as WhatsAppMessageType) || undefined,
+      // WhatsApp specific - default to 'blast'
+      waMessageType: (search.waMessageType as WhatsAppMessageType) || 'blast',
       waInstanceId: (search.waInstanceId as string) || undefined,
       waDirection: (search.waDirection as WhatsAppReportDirection) || undefined,
       waStatus: (search.waStatus as WhatsAppReportStatus) || undefined,
@@ -2424,7 +2424,11 @@ function ReportsPage(): React.ReactElement {
                               {/* Phone Number */}
                               <TableCell>
                                 <span className="text-muted-foreground whitespace-nowrap">
-                                  {formatPhoneNumber(msg.senderPhoneNumber)}
+                                  {formatPhoneNumber(
+                                    msg.senderPhoneNumber ||
+                                      msg.remoteJid?.replace(/@.*$/, '') ||
+                                      undefined,
+                                  )}
                                 </span>
                               </TableCell>
                               {/* Type */}
