@@ -97,17 +97,16 @@ export function Sidebar({
   const role = user?.role || jwtRole
 
   const menuItems = useMemo(() => {
-    const commonItems = [
-      {
-        icon: LayoutDashboard,
-        label: t('dashboard.menu.dashboard'),
-        href: '/dashboard',
-      },
-    ]
+    // Dashboard is only for superadmin, admin, supervisor - NOT for agents
+    const dashboardItem = {
+      icon: LayoutDashboard,
+      label: t('dashboard.menu.dashboard'),
+      href: '/dashboard',
+    }
 
     if (role === 'superadmin') {
       return [
-        ...commonItems,
+        dashboardItem,
         {
           icon: PhoneCall,
           label: t('dashboard.menu.sipExtensions', 'SIP Extensions'),
@@ -161,7 +160,7 @@ export function Sidebar({
 
     if (role === 'admin' || role === 'supervisor') {
       const items = [
-        ...commonItems,
+        dashboardItem,
         {
           icon: Calendar,
           label: t('dashboard.menu.campaign', 'Campaign'),
@@ -212,8 +211,8 @@ export function Sidebar({
     }
 
     if (role === 'agent') {
+      // Agents do NOT have access to Dashboard - Campaign is their home
       return [
-        ...commonItems,
         {
           icon: Calendar,
           label: t('dashboard.menu.campaign', 'Campaign'),
@@ -227,9 +226,9 @@ export function Sidebar({
       ]
     }
 
-    // Default fallback
+    // Default fallback - includes dashboard for unknown roles
     return [
-      ...commonItems,
+      dashboardItem,
       ...(hasVoipService
         ? [
             {
@@ -273,7 +272,7 @@ export function Sidebar({
       {
         icon: Settings,
         label: t('dashboard.menu.settings', 'Settings'),
-        id: 'settings', // Add ID for state management
+        id: 'settings',
         href: '/dashboard/settings',
         children: [
           {
