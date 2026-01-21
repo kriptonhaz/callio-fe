@@ -3,7 +3,7 @@ import { RoleGuard } from '@/lib/auth-guard'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 
-import { useActivePricings, useDeletePricing } from '@/hooks/api/usePricing'
+import { useActivePricings } from '@/hooks/api/usePricing'
 import { useDebounce } from '@/hooks/useDebounce'
 import {
   ColumnDef,
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, MoreHorizontal, Edit, Trash } from 'lucide-react'
+import { Search, MoreHorizontal, Edit } from 'lucide-react'
 import type { DefaultPricing } from '@/lib/api/types/pricing.types'
 import { StandardPagination } from '@/components/common/StandardPagination'
 import { Badge } from '@/components/ui/badge'
@@ -33,17 +33,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { toast } from 'sonner'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 
 export const Route = createFileRoute('/dashboard/settings/default-pricing/')({
   component: DefaultPricingPage,
@@ -52,38 +41,11 @@ export const Route = createFileRoute('/dashboard/settings/default-pricing/')({
 function DefaultPricingPage() {
   const { t } = useTranslation()
   const [searchValue, setSearchValue] = useState('')
-  const [deletingPricing, setDeletingPricing] = useState<DefaultPricing | null>(
-    null,
-  )
   const debouncedSearch = useDebounce(searchValue, 500)
-  const { mutate: deletePricing } = useDeletePricing()
   const [page, setPage] = useState(1)
   const itemsPerPage = 10
 
   const { data, isLoading, error } = useActivePricings()
-
-  const handleDelete = (pricing: DefaultPricing) => {
-    setDeletingPricing(pricing)
-  }
-
-  const confirmDelete = () => {
-    if (deletingPricing) {
-      deletePricing(deletingPricing.id, {
-        onSuccess: () => {
-          toast.success(
-            t('pricing.deleteSuccess', 'Pricing deleted successfully'),
-          )
-          setDeletingPricing(null)
-        },
-        onError: (error: any) => {
-          toast.error(
-            error?.message ||
-              t('pricing.deleteError', 'Failed to delete pricing'),
-          )
-        },
-      })
-    }
-  }
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-'
@@ -180,13 +142,6 @@ function DefaultPricingPage() {
               >
                 <Edit className="mr-2 h-4 w-4" />
                 {t('common.edit', 'Edit')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleDelete(row.original)}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                {t('common.delete', 'Delete')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -326,36 +281,6 @@ function DefaultPricingPage() {
           </div>
         )}
       </div>
-
-      <AlertDialog
-        open={!!deletingPricing}
-        onOpenChange={(open) => !open && setDeletingPricing(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('pricing.deleteTitle', 'Delete Default Pricing')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(
-                'pricing.deleteDescription',
-                'Are you sure you want to delete this pricing configuration? This action cannot be undone.',
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t('common.cancel', 'Cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('common.delete', 'Delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </RoleGuard>
   )
 }
