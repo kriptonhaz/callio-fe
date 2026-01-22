@@ -702,7 +702,7 @@ Get lead history details.
 
 ### Status Values
 
-**Client Status:** `active`, `inactive`, `suspended`
+**Client Status:** `active`, `inactive`
 **User Status:** `active`, `inactive`
 **Campaign Status:** `active`, `paused`, `completed`
 **Lead Status:** `new`, `attempted`, `hot`, `warm`, `cold`, `closed`

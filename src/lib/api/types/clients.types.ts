@@ -3,7 +3,6 @@ import { UpdateClientServiceRequest } from './services.types'
 export enum ClientStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
-  SUSPENDED = 'suspended',
 }
 
 // Client entity

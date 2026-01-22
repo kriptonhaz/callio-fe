@@ -94,8 +94,6 @@ function InternalUserPage() {
         return 'default'
       case 'inactive':
         return 'secondary'
-      case 'suspended':
-        return 'destructive'
       default:
         return 'outline'
     }
