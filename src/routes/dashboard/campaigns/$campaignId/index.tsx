@@ -490,8 +490,8 @@ function CampaignDetailPage() {
               <div className="hidden md:flex items-center gap-2">
                 <Button variant="outline" size="sm" asChild>
                   <Link
-                    to="/dashboard/reports"
-                    search={{ page: 1, limit: 10, campaignId }}
+                    to="/dashboard/campaigns/$campaignId/analytic"
+                    params={{ campaignId }}
                     className="flex items-center gap-2"
                   >
                     <BarChart3 className="h-4 w-4 text-orange-500" />
@@ -517,8 +517,8 @@ function CampaignDetailPage() {
                 asChild
               >
                 <Link
-                  to="/dashboard/reports"
-                  search={{ page: 1, limit: 10, campaignId }}
+                  to="/dashboard/campaigns/$campaignId/analytic"
+                  params={{ campaignId }}
                   className="flex items-center justify-center gap-2"
                 >
                   <BarChart3 className="h-5 w-5 text-orange-500" />
