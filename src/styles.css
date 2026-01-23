@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "tailwindcss-animate";
 
@@ -43,9 +43,9 @@
 .dark {
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
+  --card: 224.2 34.5% 10.8%;
   --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
+  --popover: 224.2 34.5% 10.8%;
   --popover-foreground: 210 40% 98%;
   --primary: 25 100% 50%; /* Orange #FF6A00 */
   --primary-foreground: 210 40% 98%;

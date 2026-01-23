@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { RoleGuard } from '@/lib/auth-guard'
@@ -6,6 +6,7 @@ import { useCampaign, useUpdateCampaign } from '@/hooks/api/useCampaigns'
 import { useMe } from '@/hooks/api/useAuth'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useBulkImportLeads } from '@/hooks/api/useLeads'
+import { useHeaderStore } from '@/store/useHeaderStore'
 import {
   useLeadAssignments,
   useBulkUnassignLeads,
@@ -67,6 +68,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   ArrowLeft,
   Calendar,
   Users,
@@ -78,6 +85,9 @@ import {
   UserPlus,
   MessageSquare,
   Send,
+  BarChart3,
+  Folder,
+  ChevronDown,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -159,6 +169,9 @@ function CampaignDetailPage() {
       name: la.lead?.leadName || 'Unknown',
       phone: la.lead?.phone || '',
     })) || []
+
+  const setCustomContent = useHeaderStore((state) => state.setCustomContent)
+  const resetCustomContent = useHeaderStore((state) => state.resetCustomContent)
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddLeadSheetOpen, setIsAddLeadSheetOpen] = useState(false)
@@ -401,6 +414,30 @@ function CampaignDetailPage() {
     )
   }
 
+  // Update header content
+  useEffect(() => {
+    if (campaign) {
+      setCustomContent(
+        <div className="flex items-center gap-3 w-full">
+          <Button variant="ghost" size="icon" asChild className="shrink-0">
+            <Link to="/dashboard/campaigns" search={{ page: 1, limit: 10 }}>
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div className="flex flex-wrap items-center gap-3 overflow-hidden">
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate max-w-[200px] md:max-w-none">
+              {campaign.name}
+            </h1>
+          </div>
+        </div>,
+      )
+    }
+
+    return () => {
+      resetCustomContent()
+    }
+  }, [campaign, setCustomContent, resetCustomContent])
+
   if (isLoading) {
     return (
       <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
@@ -437,42 +474,71 @@ function CampaignDetailPage() {
   return (
     <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
       <div className="space-y-4 md:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild>
-              <Link to="/dashboard/campaigns" search={{ page: 1, limit: 10 }}>
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-            </Button>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                {campaign.name}
-              </h1>
-              {getStatusBadge(campaign.status)}
-            </div>
-          </div>
-          {isAdmin && (
-            <Button
-              variant="outline"
-              onClick={openEditDialog}
-              className="w-full sm:w-auto"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              {t('common.edit', 'Edit')}
-            </Button>
-          )}
-        </div>
+        {/* Header content moved to global Header */}
 
-        {/* Campaign Details Card - Full Width */}
+        {/* Campaign Details Card - Redesigned */}
+
+        {/* Campaign Details Card - Redesigned */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              {t('campaigns.details', 'Campaign Details')}
-            </CardTitle>
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                {t('campaigns.details', 'Campaign Details')}
+              </CardTitle>
+              {/* Desktop Actions */}
+              <div className="hidden md:flex items-center gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    to="/dashboard/reports"
+                    search={{ page: 1, limit: 10, campaignId }}
+                    className="flex items-center gap-2"
+                  >
+                    <BarChart3 className="h-4 w-4 text-orange-500" />
+                    {t('campaigns.viewAnalytics', 'Analytics')}
+                  </Link>
+                </Button>
+                {isAdmin && (
+                  <Button variant="outline" size="sm" onClick={openEditDialog}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    {t('common.edit', 'Edit')}
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
+            {/* Action Buttons */}
+            {/* Action Buttons - Only visible on mobile */}
+            <div className="flex gap-4 md:hidden">
+              <Button
+                variant="outline"
+                className="flex-1 h-12 text-base"
+                asChild
+              >
+                <Link
+                  to="/dashboard/reports"
+                  search={{ page: 1, limit: 10, campaignId }}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <BarChart3 className="h-5 w-5 text-orange-500" />
+                  {t('campaigns.viewAnalytics', 'Analytics')}
+                </Link>
+              </Button>
+              {isAdmin && (
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12 text-base"
+                  onClick={openEditDialog}
+                >
+                  <Edit className="h-5 w-5 mr-2" />
+                  {t('common.edit', 'Edit')}
+                </Button>
+              )}
+            </div>
+
+            <div className="h-px bg-border md:hidden" />
+
             {/* Description */}
             {campaign.description && (
               <div>
@@ -483,34 +549,50 @@ function CampaignDetailPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Dates Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
               <div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-1">
                   {t('campaigns.startDate', 'Start Date')}
                 </p>
-                <p className="font-medium">{formatDate(campaign.startDate)}</p>
+                <p className="font-semibold text-lg">
+                  {formatDate(campaign.startDate)}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-1">
                   {t('campaigns.endDate', 'End Date')}
                 </p>
-                <p className="font-medium">{formatDate(campaign.endDate)}</p>
+                <p className="font-semibold text-lg">
+                  {formatDate(campaign.endDate)}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-1">
                   {t('common.createdAt', 'Created At')}
                 </p>
-                <p className="font-medium">{formatDate(campaign.createdAt)}</p>
+                <p className="font-semibold text-lg">
+                  {formatDate(campaign.createdAt)}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-1">
                   {t('common.updatedAt', 'Updated At')}
                 </p>
-                <p className="font-medium">{formatDate(campaign.updatedAt)}</p>
+                <p className="font-semibold text-lg">
+                  {formatDate(campaign.updatedAt)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">
+                  {t('common.status', 'Status')}
+                </p>
+                <div>{getStatusBadge(campaign.status)}</div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+            {/* Services and Creator */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t">
               <div>
                 <p className="text-sm text-muted-foreground mb-2">
                   {t('campaigns.services', 'Services')}
@@ -528,10 +610,10 @@ function CampaignDetailPage() {
               </div>
               {campaign.creator && (
                 <div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-1">
                     {t('campaigns.createdBy', 'Created By')}
                   </p>
-                  <p className="font-medium">{campaign.creator.name}</p>
+                  <p className="font-semibold">{campaign.creator.name}</p>
                   {campaign.creator.email && (
                     <p className="text-sm text-muted-foreground">
                       {campaign.creator.email}
@@ -546,7 +628,7 @@ function CampaignDetailPage() {
         {/* Leads Section - Full Width */}
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
@@ -609,17 +691,47 @@ function CampaignDetailPage() {
                       </span>
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDownloadSample}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <Download className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">
-                      {t('campaigns.downloadSample', 'Download Sample')}
-                    </span>
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Folder className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">
+                          {t('campaigns.bulkActions', 'Bulk Actions')}
+                        </span>
+                        <ChevronDown className="h-4 w-4 ml-2" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleDownloadSample}>
+                        <Download className="h-4 w-4 mr-2" />
+                        {t('campaigns.downloadSample', 'Download Sample')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          document.getElementById('csv-upload')?.click()
+                        }
+                        disabled={isImporting}
+                      >
+                        {isImporting ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4 mr-2" />
+                        )}
+                        {t('campaigns.import', 'Import')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setIsAddExistingDialogOpen(true)}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        {t('campaigns.addExisting', 'Add from Existing')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   <input
                     type="file"
                     accept=".csv"
@@ -627,35 +739,7 @@ function CampaignDetailPage() {
                     style={{ display: 'none' }}
                     id="csv-upload"
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      document.getElementById('csv-upload')?.click()
-                    }
-                    disabled={isImporting}
-                    className="flex-1 sm:flex-none"
-                  >
-                    {isImporting ? (
-                      <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4 sm:mr-2" />
-                    )}
-                    <span className="hidden sm:inline">
-                      {t('campaigns.import', 'Import')}
-                    </span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsAddExistingDialogOpen(true)}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <UserPlus className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">
-                      {t('campaigns.addExisting', 'Add from Existing')}
-                    </span>
-                  </Button>
+
                   <Button
                     size="sm"
                     onClick={() => setIsAddLeadSheetOpen(true)}
