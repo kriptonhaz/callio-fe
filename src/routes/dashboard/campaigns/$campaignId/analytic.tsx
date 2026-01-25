@@ -9,6 +9,8 @@ import {
   useStartWhatsAppAnalytics,
   useWhatsAppTimeline,
 } from '@/hooks/api/useWhatsappAnalytics'
+import { useVoipAnalytics } from '@/hooks/api/useVoipAnalytics'
+import { useSmsAnalytics } from '@/hooks/api/useSmsAnalytics'
 import {
   ArrowLeft,
   Calendar,
@@ -394,16 +396,12 @@ function CampaignAnalyticsPage() {
             )}
           </div>
 
-          <TabsContent value="voip">
-            <div className="h-48 flex items-center justify-center text-muted-foreground">
-              VoIP Analytics Placeholder
-            </div>
+          <TabsContent value="voip" className="space-y-6">
+            <VoipAnalyticsDashboard campaignId={campaignId} />
           </TabsContent>
 
-          <TabsContent value="sms">
-            <div className="h-48 flex items-center justify-center text-muted-foreground">
-              SMS Analytics Placeholder
-            </div>
+          <TabsContent value="sms" className="space-y-6">
+            <SmsAnalyticsDashboard campaignId={campaignId} />
           </TabsContent>
 
           <TabsContent value="whatsapp" className="space-y-6">
@@ -911,6 +909,597 @@ function WhatsAppAnalyticsDashboard({
                   ))}
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// VoIP Analytics Dashboard Component
+function VoipAnalyticsDashboard({ campaignId }: { campaignId: string }) {
+  const { t } = useTranslation()
+  const { data: analytics, isLoading } = useVoipAnalytics(campaignId)
+
+  // Transform disposition data for pie chart
+  const dispositionData = useMemo(() => {
+    if (!analytics?.dispositionBreakdown) return []
+    const colors: Record<string, string> = {
+      answered: '#22C55E',
+      no_answer: '#EAB308',
+      busy: '#F97316',
+      voicemail: '#3B82F6',
+      failed: '#EF4444',
+    }
+    return Object.entries(analytics.dispositionBreakdown).map(
+      ([key, value]) => ({
+        name: key.replace('_', ' '),
+        value: value as number,
+        color: colors[key] || '#6B7280',
+      }),
+    )
+  }, [analytics])
+
+  // Transform hourly volume data
+  const hourlyData = useMemo(() => {
+    if (!analytics?.hourlyVolume) return []
+    return analytics.hourlyVolume.map((item) => ({
+      time: `${item.hour}:00`,
+      answered: item.answered,
+      unanswered: item.unanswered,
+      total: item.total,
+    }))
+  }, [analytics])
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">
+          {t('common.loading', 'Loading...')}
+        </p>
+      </div>
+    )
+  }
+
+  if (!analytics) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="p-6 bg-muted rounded-full mb-6 ring-8 ring-muted/50">
+          <Phone className="h-12 w-12 text-orange-500" />
+        </div>
+        <h3 className="text-2xl font-bold mb-3">
+          {t('analytics.noVoipData', 'No VoIP Analytics Available')}
+        </h3>
+        <p className="text-muted-foreground max-w-md">
+          {t(
+            'analytics.noVoipDataDescription',
+            'There is no VoIP call data for this campaign yet.',
+          )}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-card/50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Phone className="h-5 w-5 text-blue-500" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('analytics.totalCalls', 'Total Calls')}
+            </p>
+            <h3 className="text-3xl font-bold">
+              {analytics.summary.totalCalls.toLocaleString()}
+            </h3>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <Phone className="h-5 w-5 text-green-500" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('analytics.answeredCalls', 'Answered Calls')}
+            </p>
+            <h3 className="text-3xl font-bold">
+              {analytics.summary.answeredCalls.toLocaleString()}
+            </h3>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <span className="font-bold text-orange-500 text-lg">%</span>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('analytics.answerRate', 'Answer Rate')}
+            </p>
+            <h3 className="text-3xl font-bold">
+              {analytics.summary.answerRate.toFixed(2)}%
+            </h3>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <Clock className="h-5 w-5 text-purple-500" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('analytics.avgCallDuration', 'Avg Call Duration')}
+            </p>
+            <h3 className="text-3xl font-bold">
+              {Math.floor(analytics.summary.avgCallDurationSeconds / 60)}m{' '}
+              {analytics.summary.avgCallDurationSeconds % 60}s
+            </h3>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Call Volume Timeline */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>{t('analytics.callVolume', 'Call Volume')}</CardTitle>
+            <CardDescription>
+              {t('analytics.hourlyCallVolume', 'Hourly call volume breakdown')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={hourlyData}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="time"
+                    tick={{
+                      fill: 'hsl(var(--muted-foreground))',
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{
+                      fill: 'hsl(var(--muted-foreground))',
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: 'calc(var(--radius) - 2px)',
+                      color: 'hsl(var(--foreground))',
+                    }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Bar
+                    dataKey="answered"
+                    stackId="a"
+                    fill="#22C55E"
+                    radius={[0, 0, 0, 0]}
+                    name="Answered"
+                  />
+                  <Bar
+                    dataKey="unanswered"
+                    stackId="a"
+                    fill="#EF4444"
+                    radius={[4, 4, 0, 0]}
+                    name="Unanswered"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Disposition Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {t('analytics.dispositionBreakdown', 'Disposition Breakdown')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[200px] w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dispositionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {dispositionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold">
+                  {analytics.summary.totalCalls}
+                </span>
+                <span className="text-xs text-muted-foreground">Total</span>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              {dispositionData.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="capitalize">{item.name}</span>
+                  </div>
+                  <span className="font-medium">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top Agents */}
+      {analytics.topAgents && analytics.topAgents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('analytics.topAgents', 'Top Agents')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {analytics.topAgents.slice(0, 6).map((agent, index) => (
+                <div key={agent.agentId} className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500/10 text-orange-500 font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    <span className="font-medium">{agent.agentName}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Calls</p>
+                      <p className="font-medium">{agent.totalCalls}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Answer Rate</p>
+                      <p className="font-medium">
+                        {agent.answerRate.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// SMS Analytics Dashboard Component
+function SmsAnalyticsDashboard({ campaignId }: { campaignId: string }) {
+  const { t } = useTranslation()
+  const { data: analytics, isLoading } = useSmsAnalytics(campaignId)
+
+  // Transform status data for pie chart
+  const statusData = useMemo(() => {
+    if (!analytics?.byStatus) return []
+    const colors: Record<string, string> = {
+      sent: '#22C55E',
+      delivered: '#3B82F6',
+      failed: '#EF4444',
+      pending: '#EAB308',
+    }
+    return analytics.byStatus.map((item) => ({
+      name: item.status,
+      value: item.count,
+      percentage: item.percentage,
+      color: colors[item.status.toLowerCase()] || '#6B7280',
+    }))
+  }, [analytics])
+
+  // Transform hourly volume data
+  const hourlyData = useMemo(() => {
+    if (!analytics?.hourlyVolume) return []
+    return analytics.hourlyVolume.map((item) => ({
+      time: `${item.hour}:00`,
+      sent: item.sent,
+      failed: item.failed,
+      total: item.total,
+    }))
+  }, [analytics])
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">
+          {t('common.loading', 'Loading...')}
+        </p>
+      </div>
+    )
+  }
+
+  if (!analytics) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="p-6 bg-muted rounded-full mb-6 ring-8 ring-muted/50">
+          <MessageSquare className="h-12 w-12 text-orange-500" />
+        </div>
+        <h3 className="text-2xl font-bold mb-3">
+          {t('analytics.noSmsData', 'No SMS Analytics Available')}
+        </h3>
+        <p className="text-muted-foreground max-w-md">
+          {t(
+            'analytics.noSmsDataDescription',
+            'There is no SMS data for this campaign yet.',
+          )}
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-card/50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <MessageSquare className="h-5 w-5 text-blue-500" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('analytics.totalMessages', 'Total Messages')}
+            </p>
+            <h3 className="text-3xl font-bold">
+              {analytics.summary.totalMessages.toLocaleString()}
+            </h3>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <MessageSquare className="h-5 w-5 text-green-500" />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('analytics.totalDelivered', 'Total Delivered')}
+            </p>
+            <h3 className="text-3xl font-bold">
+              {analytics.summary.totalDelivered.toLocaleString()}
+            </h3>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <span className="font-bold text-orange-500 text-lg">%</span>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('analytics.deliveryRate', 'Delivery Rate')}
+            </p>
+            <h3 className="text-3xl font-bold">
+              {analytics.summary.deliveryRate.toFixed(2)}%
+            </h3>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50">
+          <CardContent className="p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <span className="font-bold text-purple-500 text-lg">$</span>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">
+              {t('analytics.totalCost', 'Total Cost')}
+            </p>
+            <h3 className="text-3xl font-bold">
+              {analytics.summary.totalCost.toLocaleString()}
+            </h3>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Message Volume Timeline */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>
+              {t('analytics.messageVolume', 'Message Volume')}
+            </CardTitle>
+            <CardDescription>
+              {t(
+                'analytics.hourlyMessageVolume',
+                'Hourly message volume breakdown',
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={hourlyData}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="colorSent" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22C55E" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="time"
+                    tick={{
+                      fill: 'hsl(var(--muted-foreground))',
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{
+                      fill: 'hsl(var(--muted-foreground))',
+                      fontSize: 12,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: 'calc(var(--radius) - 2px)',
+                      color: 'hsl(var(--foreground))',
+                    }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sent"
+                    stroke="#22C55E"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorSent)"
+                    name="Sent"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Status Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {t('analytics.statusBreakdown', 'Status Breakdown')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[200px] w-full relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold">
+                  {analytics.summary.totalMessages}
+                </span>
+                <span className="text-xs text-muted-foreground">Total</span>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              {statusData.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="capitalize">{item.name}</span>
+                  </div>
+                  <span className="font-medium">
+                    {item.percentage.toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Masking Breakdown */}
+      {analytics.byMasking && analytics.byMasking.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {t('analytics.maskingBreakdown', 'By Masking')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {analytics.byMasking.map((masking) => (
+                <div
+                  key={masking.maskingId}
+                  className="p-4 bg-muted/50 rounded-lg"
+                >
+                  <p className="font-medium mb-1">{masking.maskingName}</p>
+                  <p className="text-2xl font-bold">
+                    {masking.count.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {masking.percentage.toFixed(1)}%
+                  </p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
