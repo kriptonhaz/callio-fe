@@ -593,32 +593,37 @@ function WhatsAppAnalyticsDashboard({
   // Transform API data for charts - using snake_case keys from API
   const sentimentData = useMemo(() => {
     const { sentimentSummary } = analytics
-    const total =
-      (sentimentSummary.positive_count || 0) +
-      (sentimentSummary.negative_count || 0) +
-      (sentimentSummary.neutral_count || 0)
+    // Handle potential casing differences (snake_case vs camelCase)
+    const positive =
+      sentimentSummary.positive_count ??
+      (sentimentSummary as any).positiveCount ??
+      0
+    const negative =
+      sentimentSummary.negative_count ??
+      (sentimentSummary as any).negativeCount ??
+      0
+    const neutral =
+      sentimentSummary.neutral_count ??
+      (sentimentSummary as any).neutralCount ??
+      0
+
+    const total = positive + negative + neutral
     if (total === 0) return []
 
     return [
       {
         name: 'Positive',
-        value: Math.round(
-          ((sentimentSummary.positive_count || 0) / total) * 100,
-        ),
+        value: Math.round((positive / total) * 100),
         color: '#22C55E',
       },
       {
         name: 'Neutral',
-        value: Math.round(
-          ((sentimentSummary.neutral_count || 0) / total) * 100,
-        ),
+        value: Math.round((neutral / total) * 100),
         color: '#EAB308',
       },
       {
         name: 'Negative',
-        value: Math.round(
-          ((sentimentSummary.negative_count || 0) / total) * 100,
-        ),
+        value: Math.round((negative / total) * 100),
         color: '#EF4444',
       },
     ]
