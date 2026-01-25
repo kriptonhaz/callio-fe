@@ -10,10 +10,11 @@ export const voipAnalyticsKeys = {
 
 export const useVoipAnalytics = (
   campaignId: string,
+  options?: { enabled?: boolean },
 ): UseQueryResult<VoipAnalytics | null, Error> => {
   return useQuery({
     queryKey: voipAnalyticsKeys.detail(campaignId),
     queryFn: () => voipAnalyticsApi.get(campaignId),
-    enabled: !!campaignId,
+    enabled: !!campaignId && (options?.enabled ?? true),
   })
 }

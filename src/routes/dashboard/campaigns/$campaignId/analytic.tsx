@@ -11,6 +11,7 @@ import {
 } from '@/hooks/api/useWhatsappAnalytics'
 import { useVoipAnalytics } from '@/hooks/api/useVoipAnalytics'
 import { useSmsAnalytics } from '@/hooks/api/useSmsAnalytics'
+import { ServiceType } from '@/lib/api/types/services.types'
 import {
   ArrowLeft,
   Calendar,
@@ -89,6 +90,32 @@ function CampaignAnalyticsPage() {
   const [selectedAiModelId, setSelectedAiModelId] = useState('')
   const [pollingEnabled, setPollingEnabled] = useState(false)
 
+  // Determine enabled services
+  const enabledServices = useMemo(() => {
+    if (!campaign?.campaignServices) return []
+    return campaign.campaignServices.map((s) => s.serviceType)
+  }, [campaign])
+
+  const isVoipEnabled = enabledServices.includes(ServiceType.VOICE)
+  const isSmsEnabled = enabledServices.includes(ServiceType.SMS)
+  const isWhatsappEnabled = enabledServices.includes(ServiceType.WHATSAPP)
+
+  // Set initial tab based on enabled services
+  // We'll use a state for the active tab to control switching
+  const [activeTab, setActiveTab] = useState<string>('')
+
+  useEffect(() => {
+    if (activeTab) return // Don't override user selection if already set
+
+    if (isVoipEnabled) {
+      setActiveTab('voip')
+    } else if (isSmsEnabled) {
+      setActiveTab('sms')
+    } else if (isWhatsappEnabled) {
+      setActiveTab('whatsapp')
+    }
+  }, [isWhatsappEnabled, isSmsEnabled, isVoipEnabled, activeTab])
+
   // Fetch AI models
   const { data: aiModelsData, isLoading: isLoadingAiModels } = useAiModels(
     { capability: 'chat', limit: 50 },
@@ -100,7 +127,7 @@ function CampaignAnalyticsPage() {
   const { data: analyticsData, isLoading: isLoadingAnalytics } =
     useWhatsAppAnalytics(campaignId, {
       refetchInterval: pollingEnabled ? 5000 : false,
-      enabled: true,
+      enabled: isWhatsappEnabled,
     })
 
   // Start analytics mutation
@@ -355,59 +382,77 @@ function CampaignAnalyticsPage() {
         </Card>
 
         {/* Navigation Tabs */}
-        <Tabs defaultValue="whatsapp" className="w-full space-y-4">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger
-                value="voip"
-                className="flex items-center gap-2 data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground"
-              >
-                <Phone className="h-4 w-4" />
-                {t('services.voip', 'VoIP')}
-              </TabsTrigger>
-              <TabsTrigger
-                value="sms"
-                className="flex items-center gap-2 data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground"
-              >
-                <MessageSquare className="h-4 w-4" />
-                {t('services.sms', 'SMS')}
-              </TabsTrigger>
-              <TabsTrigger
-                value="whatsapp"
-                className="flex items-center gap-2 data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground"
-              >
-                <MessageCircle className="h-4 w-4" />
-                {t('services.whatsapp', 'WhatsApp')}
-              </TabsTrigger>
-            </TabsList>
-            {/* Re-Analyze Button - outside TabsList on the right */}
-            {analyticsData && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={() => setIsAiModalOpen(true)}
-                disabled={isProcessing}
-              >
-                {isProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
-                <Sparkles className="h-4 w-4" />
-                {t('analytics.reAnalyze', 'Re-Analyze')}
-              </Button>
+        {activeTab && (
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <TabsList>
+                {isVoipEnabled && (
+                  <TabsTrigger
+                    value="voip"
+                    className="flex items-center gap-2 data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground"
+                  >
+                    <Phone className="h-4 w-4" />
+                    {t('services.voip', 'VoIP')}
+                  </TabsTrigger>
+                )}
+                {isSmsEnabled && (
+                  <TabsTrigger
+                    value="sms"
+                    className="flex items-center gap-2 data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    {t('services.sms', 'SMS')}
+                  </TabsTrigger>
+                )}
+                {isWhatsappEnabled && (
+                  <TabsTrigger
+                    value="whatsapp"
+                    className="flex items-center gap-2 data-[state=active]:!bg-primary data-[state=active]:!text-primary-foreground"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    {t('services.whatsapp', 'WhatsApp')}
+                  </TabsTrigger>
+                )}
+              </TabsList>
+              {/* Re-Analyze Button - outside TabsList on the right */}
+              {activeTab === 'whatsapp' && analyticsData && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsAiModalOpen(true)}
+                  disabled={isProcessing}
+                >
+                  {isProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <Sparkles className="h-4 w-4" />
+                  {t('analytics.reAnalyze', 'Re-Analyze')}
+                </Button>
+              )}
+            </div>
+
+            {isVoipEnabled && (
+              <TabsContent value="voip" className="space-y-6">
+                <VoipAnalyticsDashboard campaignId={campaignId} />
+              </TabsContent>
             )}
-          </div>
 
-          <TabsContent value="voip" className="space-y-6">
-            <VoipAnalyticsDashboard campaignId={campaignId} />
-          </TabsContent>
+            {isSmsEnabled && (
+              <TabsContent value="sms" className="space-y-6">
+                <SmsAnalyticsDashboard campaignId={campaignId} />
+              </TabsContent>
+            )}
 
-          <TabsContent value="sms" className="space-y-6">
-            <SmsAnalyticsDashboard campaignId={campaignId} />
-          </TabsContent>
-
-          <TabsContent value="whatsapp" className="space-y-6">
-            {renderWhatsAppAnalyticsContent()}
-          </TabsContent>
-        </Tabs>
+            {isWhatsappEnabled && (
+              <TabsContent value="whatsapp" className="space-y-6">
+                {renderWhatsAppAnalyticsContent()}
+              </TabsContent>
+            )}
+          </Tabs>
+        )}
       </div>
 
       {/* AI Model Selection Modal */}
@@ -920,6 +965,7 @@ function WhatsAppAnalyticsDashboard({
 // VoIP Analytics Dashboard Component
 function VoipAnalyticsDashboard({ campaignId }: { campaignId: string }) {
   const { t } = useTranslation()
+  // We can assume enabled here because the component is only rendered if active tab is voip
   const { data: analytics, isLoading } = useVoipAnalytics(campaignId)
 
   // Transform disposition data for pie chart
@@ -1216,6 +1262,7 @@ function VoipAnalyticsDashboard({ campaignId }: { campaignId: string }) {
 // SMS Analytics Dashboard Component
 function SmsAnalyticsDashboard({ campaignId }: { campaignId: string }) {
   const { t } = useTranslation()
+  // We can assume enabled here because the component is only rendered if active tab is sms
   const { data: analytics, isLoading } = useSmsAnalytics(campaignId)
 
   // Transform status data for pie chart

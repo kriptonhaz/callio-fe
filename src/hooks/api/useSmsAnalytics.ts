@@ -10,10 +10,11 @@ export const smsAnalyticsKeys = {
 
 export const useSmsAnalytics = (
   campaignId: string,
+  options?: { enabled?: boolean },
 ): UseQueryResult<SmsAnalytics | null, Error> => {
   return useQuery({
     queryKey: smsAnalyticsKeys.detail(campaignId),
     queryFn: () => smsAnalyticsApi.get(campaignId),
-    enabled: !!campaignId,
+    enabled: !!campaignId && (options?.enabled ?? true),
   })
 }
