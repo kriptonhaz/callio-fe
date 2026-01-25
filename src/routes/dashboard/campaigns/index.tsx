@@ -6,7 +6,6 @@ import {
   useCampaigns,
   useCreateCampaign,
   useUpdateCampaign,
-  useDeleteCampaign,
 } from '@/hooks/api/useCampaigns'
 import { useMe } from '@/hooks/api/useAuth'
 import { useEnabledServices } from '@/hooks/api/useServices'
@@ -29,13 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+
 import {
   Dialog,
   DialogContent,
@@ -59,16 +52,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Search,
-  MoreHorizontal,
-  Plus,
-  Eye,
-  Edit,
-  Trash,
-  Loader2,
-  Calendar,
-} from 'lucide-react'
+import { Search, Plus, Loader2, Calendar } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -147,7 +131,6 @@ function CampaignsPage() {
 
   const { mutate: createCampaign, isPending: isCreating } = useCreateCampaign()
   const { mutate: updateCampaign, isPending: isUpdating } = useUpdateCampaign()
-  const { mutate: deleteCampaign, isPending: isDeleting } = useDeleteCampaign()
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignFormSchema),
@@ -203,36 +186,6 @@ function CampaignsPage() {
     })
   }
 
-  const openEditDialog = (campaign: Campaign) => {
-    setSelectedCampaign(campaign)
-    setCurrentAction('edit')
-    // Extract service types from campaignServices array
-    const serviceTypes =
-      campaign.campaignServices?.map((s) => s.serviceType) || []
-    // Format dates for HTML date input (YYYY-MM-DD)
-    const formatDateForInput = (dateStr?: string) => {
-      if (!dateStr) return ''
-      try {
-        return new Date(dateStr).toISOString().split('T')[0]
-      } catch {
-        return ''
-      }
-    }
-    form.reset({
-      name: campaign.name,
-      description: campaign.description || '',
-      status: campaign.status,
-      startDate: formatDateForInput(campaign.startDate),
-      endDate: formatDateForInput(campaign.endDate),
-      serviceTypes,
-    })
-  }
-
-  const openDeleteDialog = (campaign: Campaign) => {
-    setSelectedCampaign(campaign)
-    setCurrentAction('delete')
-  }
-
   const onSubmit = (data: CampaignFormValues) => {
     if (currentAction === 'create') {
       const payload: CreateCampaignRequest = {
@@ -271,20 +224,6 @@ function CampaignsPage() {
           },
         },
       )
-    }
-  }
-
-  const handleConfirmDelete = () => {
-    if (selectedCampaign) {
-      deleteCampaign(selectedCampaign.id, {
-        onSuccess: () => {
-          toast.success(t('campaigns.deleted', 'Campaign deleted successfully'))
-          closeDialog()
-        },
-        onError: () => {
-          toast.error(t('campaigns.deleteFailed', 'Failed to delete campaign'))
-        },
-      })
     }
   }
 
@@ -444,15 +383,12 @@ function CampaignsPage() {
                     <TableHead className="font-semibold text-primary">
                       {t('campaigns.endDate', 'End Date')}
                     </TableHead>
-                    <TableHead className="text-right font-semibold text-primary">
-                      {t('common.actions', 'Actions')}
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell colSpan={5} className="h-24 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           {t('common.loading', 'Loading...')}
@@ -461,13 +397,22 @@ function CampaignsPage() {
                     </TableRow>
                   ) : campaignsData?.data.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell colSpan={5} className="h-24 text-center">
                         {t('campaigns.noCampaigns', 'No campaigns found')}
                       </TableCell>
                     </TableRow>
                   ) : (
                     campaignsData?.data.map((campaign) => (
-                      <TableRow key={campaign.id}>
+                      <TableRow
+                        key={campaign.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() =>
+                          navigate({
+                            to: `/dashboard/campaigns/$campaignId`,
+                            params: { campaignId: campaign.id },
+                          })
+                        }
+                      >
                         <TableCell className="font-medium">
                           {campaign.name}
                         </TableCell>
@@ -488,47 +433,6 @@ function CampaignsPage() {
                         <TableCell>{getStatusBadge(campaign.status)}</TableCell>
                         <TableCell>{formatDate(campaign.startDate)}</TableCell>
                         <TableCell>{formatDate(campaign.endDate)}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>
-                                {t('common.actions', 'Actions')}
-                              </DropdownMenuLabel>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  navigate({
-                                    to: `/dashboard/campaigns/${campaign.id}` as any,
-                                  })
-                                }
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                {t('common.view', 'View')}
-                              </DropdownMenuItem>
-                              {isAdmin && (
-                                <>
-                                  <DropdownMenuItem
-                                    onClick={() => openEditDialog(campaign)}
-                                  >
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    {t('common.edit', 'Edit')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => openDeleteDialog(campaign)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash className="mr-2 h-4 w-4" />
-                                    {t('common.delete', 'Delete')}
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -799,43 +703,6 @@ function CampaignsPage() {
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={currentAction === 'delete'}
-          onOpenChange={(open) => !open && closeDialog()}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {t('common.confirmDelete', 'Confirm Delete')}
-              </DialogTitle>
-              <DialogDescription>
-                {t(
-                  'campaigns.deleteConfirmation',
-                  'Are you sure you want to delete this campaign? This action cannot be undone.',
-                )}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="destructive"
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {t('common.delete', 'Delete')}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={closeDialog}
-                disabled={isDeleting}
-              >
-                {t('common.cancel', 'Cancel')}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </RoleGuard>
   )

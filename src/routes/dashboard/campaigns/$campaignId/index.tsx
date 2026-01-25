@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { RoleGuard } from '@/lib/auth-guard'
-import { useCampaign, useUpdateCampaign } from '@/hooks/api/useCampaigns'
+import {
+  useCampaign,
+  useUpdateCampaign,
+  useDeleteCampaign,
+} from '@/hooks/api/useCampaigns'
 import { useMe } from '@/hooks/api/useAuth'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useBulkImportLeads } from '@/hooks/api/useLeads'
@@ -80,6 +84,7 @@ import {
   Plus,
   Upload,
   Edit,
+  Trash,
   Loader2,
   Download,
   UserPlus,
@@ -115,6 +120,7 @@ export const Route = createFileRoute('/dashboard/campaigns/$campaignId/')({
 
 function CampaignDetailPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { campaignId } = Route.useParams()
 
   const { data: me } = useMe()
@@ -130,6 +136,7 @@ function CampaignDetailPage() {
   const { mutate: bulkImport, isPending: isImporting } = useBulkImportLeads()
   const { mutate: bulkUnassignLeads, isPending: isBulkUnassigning } =
     useBulkUnassignLeads()
+  const { mutate: deleteCampaign, isPending: isDeleting } = useDeleteCampaign()
 
   // Fetch SMS masking - only for admin or superadmin
   const canAccessSmsMasking = isSuperadmin || isAdmin
@@ -181,6 +188,7 @@ function CampaignDetailPage() {
     useState(false)
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
   const [bulkUnassignDialogOpen, setBulkUnassignDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const form = useForm<CampaignFormValues>({
     resolver: zodResolver(campaignFormSchema),
@@ -313,6 +321,24 @@ function CampaignDetailPage() {
         },
       },
     )
+  }
+
+  const handleConfirmDelete = () => {
+    if (campaign) {
+      deleteCampaign(campaign.id, {
+        onSuccess: () => {
+          toast.success(t('campaigns.deleted', 'Campaign deleted successfully'))
+          setIsDeleteDialogOpen(false)
+          navigate({
+            to: '/dashboard/campaigns',
+            search: { page: 1, limit: 10 },
+          })
+        },
+        onError: () => {
+          toast.error(t('campaigns.deleteFailed', 'Failed to delete campaign'))
+        },
+      })
+    }
   }
 
   const handleDownloadSample = () => {
@@ -499,10 +525,25 @@ function CampaignDetailPage() {
                   </Link>
                 </Button>
                 {isAdmin && (
-                  <Button variant="outline" size="sm" onClick={openEditDialog}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    {t('common.edit', 'Edit')}
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openEditDialog}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      {t('common.edit', 'Edit')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200 dark:border-red-800"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      <Trash className="h-4 w-4 mr-2" />
+                      {t('common.delete', 'Delete')}
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -526,14 +567,24 @@ function CampaignDetailPage() {
                 </Link>
               </Button>
               {isAdmin && (
-                <Button
-                  variant="outline"
-                  className="flex-1 h-12 text-base"
-                  onClick={openEditDialog}
-                >
-                  <Edit className="h-5 w-5 mr-2" />
-                  {t('common.edit', 'Edit')}
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 text-base"
+                    onClick={openEditDialog}
+                  >
+                    <Edit className="h-5 w-5 mr-2" />
+                    {t('common.edit', 'Edit')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 text-base text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200 dark:border-red-800"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    <Trash className="h-5 w-5 mr-2" />
+                    {t('common.delete', 'Delete')}
+                  </Button>
+                </>
               )}
             </div>
 
@@ -1059,6 +1110,42 @@ function CampaignDetailPage() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               {t('campaigns.unassign', 'Unassign')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('common.confirmDelete', 'Confirm Delete')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'campaigns.deleteConfirmation',
+                'Are you sure you want to delete this campaign? This action cannot be undone.',
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              {t('common.cancel', 'Cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-500 hover:bg-red-600"
+              onClick={(e) => {
+                e.preventDefault()
+                handleConfirmDelete()
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t('common.delete', 'Delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
