@@ -2,7 +2,10 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect, useMemo } from 'react'
 import { RoleGuard } from '@/lib/auth-guard'
-import { useCampaign } from '@/hooks/api/useCampaigns'
+import {
+  useCampaign,
+  useExportCampaignAnalytics,
+} from '@/hooks/api/useCampaigns'
 import { useAiModels } from '@/hooks/api/useAiModels'
 import {
   useWhatsAppAnalytics,
@@ -173,9 +176,36 @@ function CampaignAnalyticsPage() {
     )
   }
 
+  // Export analytics
+  const { mutate: exportAnalytics, isPending: isExporting } =
+    useExportCampaignAnalytics()
+
+  const handleExport = () => {
+    exportAnalytics(campaignId, {
+      onSuccess: (data) => {
+        const url = window.URL.createObjectURL(new Blob([data]))
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute(
+          'download',
+          `campaign_analytics_${campaignId}_${format(new Date(), 'yyyyMMdd')}.xlsx`,
+        )
+        document.body.appendChild(link)
+        link.click()
+        link.parentNode?.removeChild(link)
+        toast.success(
+          t('analytics.exportSuccess', 'Analytics exported successfully'),
+        )
+      },
+      onError: () => {
+        toast.error(t('analytics.exportFailed', 'Failed to export analytics'))
+      },
+    })
+  }
+
   // Check if buttons should be disabled (processing state)
   const isProcessing =
-    analyticsData?.status === 'processing' || isStartingAnalytics
+    isStartingAnalytics || pollingEnabled || isLoadingAnalytics || isExporting
 
   // Update header content
   useEffect(() => {
@@ -372,8 +402,16 @@ function CampaignAnalyticsPage() {
                   </div>
                 </div>
 
-                <Button className="bg-orange-500 hover:bg-orange-600 gap-2 h-10 px-6">
-                  <ArrowDownRight className="h-4 w-4" />
+                <Button
+                  className="bg-orange-500 hover:bg-orange-600 gap-2 h-10 px-6"
+                  onClick={handleExport}
+                  disabled={isProcessing}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowDownRight className="h-4 w-4" />
+                  )}
                   {t('analytics.downloadAnalytics', 'Download Analytics')}
                 </Button>
               </div>

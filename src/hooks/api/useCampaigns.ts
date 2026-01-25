@@ -53,6 +53,10 @@ const campaignsApi = {
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`campaigns/${id}`)
   },
+
+  exportAnalytics: async (id: string): Promise<Blob> => {
+    return await apiClient.get(`campaigns/${id}/analytics/export`).blob()
+  },
 }
 
 export const useCampaigns = (
@@ -113,5 +117,15 @@ export const useDeleteCampaign = (): UseMutationResult<void, Error, string> => {
       queryClient.invalidateQueries({ queryKey: campaignsKeys.lists() })
       queryClient.removeQueries({ queryKey: campaignsKeys.detail(id) })
     },
+  })
+}
+
+export const useExportCampaignAnalytics = (): UseMutationResult<
+  Blob,
+  Error,
+  string
+> => {
+  return useMutation({
+    mutationFn: campaignsApi.exportAnalytics,
   })
 }
