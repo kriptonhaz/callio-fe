@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   MemoryStick,
   Network,
+  Terminal,
 } from 'lucide-react'
 import {
   Cell,
@@ -24,7 +25,7 @@ import {
   YAxis,
 } from 'recharts'
 import { useTranslation } from 'react-i18next'
-import { formatBytes } from '@/lib/utils'
+import { formatBytes, formatDuration } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export function SuperAdminDashboard() {
@@ -327,6 +328,75 @@ export function SuperAdminDashboard() {
             </ScrollArea>
           </CardContent>
         </Card>
+
+        {/* PM2 Processes - COL 12 */}
+        <Card className="col-span-full">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Terminal className="h-4 w-4 text-slate-500" />
+              Process Manager (PM2)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="text-left p-3 font-medium">Name</th>
+                    <th className="text-left p-3 font-medium">ID</th>
+                    <th className="text-left p-3 font-medium">Status</th>
+                    <th className="text-left p-3 font-medium">CPU</th>
+                    <th className="text-left p-3 font-medium">Memory</th>
+                    <th className="text-left p-3 font-medium">Uptime</th>
+                    <th className="text-left p-3 font-medium">Restarts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sys.pm2?.map((proc) => (
+                    <tr
+                      key={proc.pm_id}
+                      className="border-b last:border-0 hover:bg-muted/30"
+                    >
+                      <td className="p-3 font-semibold">{proc.name}</td>
+                      <td className="p-3 font-mono text-muted-foreground">
+                        {proc.pm_id}
+                      </td>
+                      <td className="p-3">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium uppercase ${
+                            proc.status === 'online'
+                              ? 'bg-green-500/10 text-green-500'
+                              : 'bg-red-500/10 text-red-500'
+                          }`}
+                        >
+                          {proc.status}
+                        </span>
+                      </td>
+                      <td className="p-3 font-mono">{proc.cpu}%</td>
+                      <td className="p-3 font-mono">
+                        {formatBytes(proc.memory)}
+                      </td>
+                      <td className="p-3 font-mono text-xs">
+                        {formatDuration(proc.uptime / 1000)}
+                      </td>
+                      <td className="p-3 font-mono">{proc.restart_time}</td>
+                    </tr>
+                  ))}
+                  {(!sys.pm2 || sys.pm2.length === 0) && (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="p-4 text-center text-muted-foreground"
+                      >
+                        No PM2 processes found or monitoring disabled.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
@@ -342,6 +412,7 @@ function DashboardSkeleton() {
         <Skeleton className="col-span-4 h-[250px]" />
         <Skeleton className="col-span-6 h-[300px]" />
         <Skeleton className="col-span-6 h-[300px]" />
+        <Skeleton className="col-span-12 h-[200px]" />
       </div>
     </div>
   )

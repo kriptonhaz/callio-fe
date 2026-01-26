@@ -59,6 +59,19 @@ export interface ConnectionInfo {
   state: string
 }
 
+export interface Pm2Info {
+  name: string
+  pid: number
+  pm_id: number
+  status: string
+  restart_time: number
+  uptime: number
+  memory: number
+  cpu: number
+  instances?: number
+  unstable_restarts: number
+}
+
 export interface SystemInfoResponse {
   cpu: CpuInfo
   memory: MemoryInfo
@@ -72,4 +85,5 @@ export interface SystemInfoResponse {
     count: number
     active: number
   }
+  pm2: Pm2Info[]
 }
