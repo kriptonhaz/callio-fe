@@ -3,10 +3,9 @@ import { RoleGuard } from '@/lib/auth-guard'
 import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 
-import { useUsers, useDeleteUser } from '@/hooks/api/useUsers'
+import { useUsers } from '@/hooks/api/useUsers'
 import { useDebounce } from '@/hooks/useDebounce'
-import { InternalUserForm } from '@/components/internal-user/CreateInternalUserForm'
-import { DeleteUserDialog } from '@/components/internal-user/DeleteUserDialog'
+import { InternalUserSheet } from '@/components/internal-user/InternalUserSheet'
 import {
   ColumnDef,
   flexRender,
@@ -25,25 +24,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 import { StandardPagination } from '@/components/common/StandardPagination'
-import {
-  Plus,
-  Search,
-  Users as UsersIcon,
-  MoreHorizontal,
-  Edit,
-  Trash,
-} from 'lucide-react'
+import { Plus, Search, Users as UsersIcon } from 'lucide-react'
 import { User } from '@/lib/api/types/users.types'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { toast } from 'sonner'
 
 type InternalUserSearch = {
   page: number
@@ -67,13 +51,14 @@ function InternalUserPage() {
   const navigate = useNavigate()
   const searchParams = Route.useSearch()
   const [searchValue, setSearchValue] = useState(searchParams.search || '')
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [deletingUser, setDeletingUser] = useState<User | null>(null)
-  const debouncedSearch = useDebounce(searchValue, 500)
-  const { mutate: deleteUser } = useDeleteUser()
 
-  const { data, isLoading, error } = useUsers({
+  // Sheet state
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+
+  const debouncedSearch = useDebounce(searchValue, 500)
+
+  const { data, isLoading, error, refetch } = useUsers({
     page: searchParams.page,
     limit: searchParams.limit,
     search: debouncedSearch,
@@ -99,31 +84,14 @@ function InternalUserPage() {
     }
   }
 
+  const handleCreate = () => {
+    setSelectedUser(null) // Clear selection for create mode
+    setSheetOpen(true)
+  }
+
   const handleEdit = (user: User) => {
-    setEditingUser(user)
-  }
-
-  const handleDelete = (user: User) => {
-    setDeletingUser(user)
-  }
-
-  const confirmDelete = () => {
-    if (deletingUser) {
-      deleteUser(deletingUser.id, {
-        onSuccess: () => {
-          toast.success(
-            t('internalUser.deleteSuccess', 'User deleted successfully'),
-          )
-          setDeletingUser(null)
-        },
-        onError: (error: any) => {
-          toast.error(
-            error?.message ||
-              t('internalUser.deleteError', 'Failed to delete user'),
-          )
-        },
-      })
-    }
+    setSelectedUser(user)
+    setSheetOpen(true)
   }
 
   const columns: ColumnDef<User>[] = [
@@ -167,40 +135,6 @@ function InternalUserPage() {
         </Badge>
       ),
     },
-    {
-      id: 'actions',
-      header: () => (
-        <div className="text-right">{t('common.actions', 'Actions')}</div>
-      ),
-      cell: ({ row }) => (
-        <div className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                {t('common.actions', 'Actions')}
-              </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleEdit(row.original)}>
-                <Edit className="mr-2 h-4 w-4" />
-                {t('common.edit', 'Edit')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleDelete(row.original)}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                {t('common.delete', 'Delete')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      ),
-    },
   ]
 
   const table = useReactTable({
@@ -242,10 +176,7 @@ function InternalUserPage() {
               className="pl-8"
             />
           </div>
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => setCreateDialogOpen(true)}
-          >
+          <Button className="w-full sm:w-auto" onClick={handleCreate}>
             <Plus className="mr-2 h-4 w-4" />
             {t('internalUser.create', 'Add User')}
           </Button>
@@ -272,11 +203,7 @@ function InternalUserPage() {
                 'Get started by adding your first internal user to the system.',
               )}
             </p>
-            <Button
-              onClick={() => {
-                console.log('Add user clicked')
-              }}
-            >
+            <Button onClick={handleCreate}>
               <Plus className="mr-2 h-4 w-4" />
               {t('internalUser.create', 'Add User')}
             </Button>
@@ -311,7 +238,8 @@ function InternalUserPage() {
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && 'selected'}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleEdit(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -339,22 +267,14 @@ function InternalUserPage() {
         )}
       </div>
 
-      <InternalUserForm
-        open={createDialogOpen || !!editingUser}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateDialogOpen(false)
-            setEditingUser(null)
-          }
+      <InternalUserSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        initialValues={selectedUser}
+        onSuccess={() => {
+          refetch()
+          setSheetOpen(false)
         }}
-        initialValues={editingUser || undefined}
-      />
-
-      <DeleteUserDialog
-        open={!!deletingUser}
-        onOpenChange={(open) => !open && setDeletingUser(null)}
-        onConfirm={confirmDelete}
-        userName={deletingUser?.name || ''}
       />
     </RoleGuard>
   )
