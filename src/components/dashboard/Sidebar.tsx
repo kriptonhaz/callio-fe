@@ -25,6 +25,7 @@ import { Activity } from '@/components/animate-ui/icons/activity'
 import { ChartLine } from '@/components/animate-ui/icons/chart-line'
 import { GalleryThumbnails } from '@/components/animate-ui/icons/gallery-thumbnails'
 import { MessageCircleMore } from '@/components/animate-ui/icons/message-circle-more'
+import { Radio } from '@/components/animate-ui/icons/radio'
 import { useTranslation } from 'react-i18next'
 import { decodeJwt } from '@/lib/jwt'
 import { getAccessToken } from '@/lib/api/client'
@@ -104,9 +105,16 @@ export function Sidebar({
       href: '/dashboard',
     }
 
+    // ... existing imports
+
     if (role === 'superadmin') {
       return [
         dashboardItem,
+        {
+          icon: Radio,
+          label: t('dashboard.menu.broadcast', 'Broadcast'),
+          href: '/dashboard/broadcast',
+        },
         {
           icon: PhoneCall,
           label: t('dashboard.menu.sipExtensions', 'SIP Extensions'),

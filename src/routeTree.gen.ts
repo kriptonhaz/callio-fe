@@ -18,8 +18,10 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardUsersRouteImport } from './routes/dashboard/users'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
 import { Route as DashboardReportsRouteImport } from './routes/dashboard/reports'
+import { Route as DashboardNotificationsRouteImport } from './routes/dashboard/notifications'
 import { Route as DashboardMonitoringRouteImport } from './routes/dashboard/monitoring'
 import { Route as DashboardLogsRouteImport } from './routes/dashboard/logs'
+import { Route as DashboardBroadcastRouteImport } from './routes/dashboard/broadcast'
 import { Route as DashboardWhatsappIndexRouteImport } from './routes/dashboard/whatsapp/index'
 import { Route as DashboardSipExtensionsIndexRouteImport } from './routes/dashboard/sip-extensions/index'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
@@ -85,6 +87,11 @@ const DashboardReportsRoute = DashboardReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardNotificationsRoute = DashboardNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardMonitoringRoute = DashboardMonitoringRouteImport.update({
   id: '/monitoring',
   path: '/monitoring',
@@ -93,6 +100,11 @@ const DashboardMonitoringRoute = DashboardMonitoringRouteImport.update({
 const DashboardLogsRoute = DashboardLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardBroadcastRoute = DashboardBroadcastRouteImport.update({
+  id: '/broadcast',
+  path: '/broadcast',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardWhatsappIndexRoute = DashboardWhatsappIndexRouteImport.update({
@@ -210,8 +222,10 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify': typeof VerifyRoute
+  '/dashboard/broadcast': typeof DashboardBroadcastRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
+  '/dashboard/notifications': typeof DashboardNotificationsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
@@ -241,8 +255,10 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify': typeof VerifyRoute
+  '/dashboard/broadcast': typeof DashboardBroadcastRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
+  '/dashboard/notifications': typeof DashboardNotificationsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/users': typeof DashboardUsersRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -273,8 +289,10 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify': typeof VerifyRoute
+  '/dashboard/broadcast': typeof DashboardBroadcastRoute
   '/dashboard/logs': typeof DashboardLogsRoute
   '/dashboard/monitoring': typeof DashboardMonitoringRoute
+  '/dashboard/notifications': typeof DashboardNotificationsRoute
   '/dashboard/reports': typeof DashboardReportsRoute
   '/dashboard/settings': typeof DashboardSettingsRouteWithChildren
   '/dashboard/users': typeof DashboardUsersRoute
@@ -307,8 +325,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/verify'
+    | '/dashboard/broadcast'
     | '/dashboard/logs'
     | '/dashboard/monitoring'
+    | '/dashboard/notifications'
     | '/dashboard/reports'
     | '/dashboard/settings'
     | '/dashboard/users'
@@ -338,8 +358,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/verify'
+    | '/dashboard/broadcast'
     | '/dashboard/logs'
     | '/dashboard/monitoring'
+    | '/dashboard/notifications'
     | '/dashboard/reports'
     | '/dashboard/users'
     | '/dashboard'
@@ -369,8 +391,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/verify'
+    | '/dashboard/broadcast'
     | '/dashboard/logs'
     | '/dashboard/monitoring'
+    | '/dashboard/notifications'
     | '/dashboard/reports'
     | '/dashboard/settings'
     | '/dashboard/users'
@@ -469,6 +493,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardReportsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/notifications': {
+      id: '/dashboard/notifications'
+      path: '/notifications'
+      fullPath: '/dashboard/notifications'
+      preLoaderRoute: typeof DashboardNotificationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/monitoring': {
       id: '/dashboard/monitoring'
       path: '/monitoring'
@@ -481,6 +512,13 @@ declare module '@tanstack/react-router' {
       path: '/logs'
       fullPath: '/dashboard/logs'
       preLoaderRoute: typeof DashboardLogsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/broadcast': {
+      id: '/dashboard/broadcast'
+      path: '/broadcast'
+      fullPath: '/dashboard/broadcast'
+      preLoaderRoute: typeof DashboardBroadcastRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/whatsapp/': {
@@ -639,8 +677,10 @@ const DashboardSettingsRouteWithChildren =
   DashboardSettingsRoute._addFileChildren(DashboardSettingsRouteChildren)
 
 interface DashboardRouteChildren {
+  DashboardBroadcastRoute: typeof DashboardBroadcastRoute
   DashboardLogsRoute: typeof DashboardLogsRoute
   DashboardMonitoringRoute: typeof DashboardMonitoringRoute
+  DashboardNotificationsRoute: typeof DashboardNotificationsRoute
   DashboardReportsRoute: typeof DashboardReportsRoute
   DashboardSettingsRoute: typeof DashboardSettingsRouteWithChildren
   DashboardUsersRoute: typeof DashboardUsersRoute
@@ -663,8 +703,10 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardBroadcastRoute: DashboardBroadcastRoute,
   DashboardLogsRoute: DashboardLogsRoute,
   DashboardMonitoringRoute: DashboardMonitoringRoute,
+  DashboardNotificationsRoute: DashboardNotificationsRoute,
   DashboardReportsRoute: DashboardReportsRoute,
   DashboardSettingsRoute: DashboardSettingsRouteWithChildren,
   DashboardUsersRoute: DashboardUsersRoute,

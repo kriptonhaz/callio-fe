@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { Bell } from '@/components/animate-ui/icons/bell'
 import { Moon } from '@/components/animate-ui/icons/moon'
+import { NotificationsPopover } from './NotificationsPopover'
 import { Sun } from '@/components/animate-ui/icons/sun'
 import { Globe } from '@/components/animate-ui/icons/globe'
 import { AnimateIcon } from '@/components/animate-ui/icons/icon'
@@ -111,11 +111,7 @@ export function Header(): React.ReactElement {
           </Button>
         </AnimateIcon>
 
-        <AnimateIcon animateOnHover asChild>
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5 text-muted-foreground" />
-          </Button>
-        </AnimateIcon>
+        <NotificationsPopover />
       </div>
     </header>
   )
