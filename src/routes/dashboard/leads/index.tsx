@@ -7,7 +7,9 @@ import {
   useBulkImportLeads,
   useDeleteLead,
   useBulkDeleteLeads,
+  useBulkCheckLeadWhatsApp,
 } from '@/hooks/api/useLeads'
+import { useWhatsAppInstances } from '@/hooks/api/useWhatsapp'
 import { useMe } from '@/hooks/api/useAuth'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
 import type { Lead } from '@/lib/api/types/leads.types'
@@ -55,6 +57,10 @@ import {
   Upload,
   MoreHorizontal,
   Trash2,
+  MessageSquare,
+  CheckCircle,
+  XCircle,
+  HelpCircle,
 } from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { AddLeadSheet } from '@/components/campaigns/AddLeadSheet'
@@ -63,6 +69,7 @@ import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { LeadStatus } from '@/lib/api/types'
 import { toast } from 'sonner'
 import { StandardPagination } from '@/components/common/StandardPagination'
+import { WhatsAppInstanceSelector } from '@/components/leads/WhatsAppInstanceSelector'
 
 interface LeadsSearch {
   page: number
@@ -100,6 +107,7 @@ function LeadsPage() {
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null)
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
+  const [instanceSelectorOpen, setInstanceSelectorOpen] = useState(false)
   const debouncedSearch = useDebounce(searchValue, 500)
 
   // Auth context
@@ -123,6 +131,12 @@ function LeadsPage() {
   const { mutate: deleteLead, isPending: isDeleting } = useDeleteLead()
   const { mutate: bulkDeleteLeads, isPending: isBulkDeleting } =
     useBulkDeleteLeads()
+  const { mutate: bulkCheckWhatsApp, isPending: isBulkChecking } =
+    useBulkCheckLeadWhatsApp()
+  const { data: whatsappInstances } = useWhatsAppInstances()
+  const connectedBaileysInstances = (whatsappInstances ?? []).filter(
+    (i) => i.providerType === 'baileys' && i.status === 'connected',
+  )
 
   // Navigation helpers
   const updateParams = (updates: Partial<LeadsSearch>) => {
@@ -220,6 +234,53 @@ function LeadsPage() {
         toast.error(t('leads.bulkDeleteFailed', 'Failed to delete leads'))
       },
     })
+  }
+
+  const handleBulkCheckWhatsApp = (instanceId: string) => {
+    setInstanceSelectorOpen(false)
+    const uncheckedIds = selectedLeadIds.filter((id) => {
+      const lead = leadsData?.data.find((l) => l.id === id)
+      return lead?.hasWhatsapp == null
+    })
+    if (uncheckedIds.length === 0) {
+      toast.info(
+        t('leads.allAlreadyChecked', 'All selected leads have already been checked'),
+      )
+      return
+    }
+    const leadIds = uncheckedIds.slice(0, 500)
+    bulkCheckWhatsApp(
+      { instanceId, leadIds },
+      {
+        onSuccess: (data) => {
+          toast.success(
+            t(
+              'leads.whatsappCheckComplete',
+              `Checked {{total}} leads: {{hasWhatsapp}} have WhatsApp, {{noWhatsapp}} don't`,
+              {
+                total: data.summary.total,
+                hasWhatsapp: data.summary.hasWhatsapp,
+                noWhatsapp: data.summary.noWhatsapp,
+              },
+            ),
+          )
+          setSelectedLeadIds([])
+        },
+        onError: () => {
+          toast.error(
+            t('leads.whatsappCheckFailed', 'Failed to check WhatsApp numbers'),
+          )
+        },
+      },
+    )
+  }
+
+  const handleCheckWhatsAppClick = () => {
+    if (connectedBaileysInstances.length === 1) {
+      handleBulkCheckWhatsApp(connectedBaileysInstances[0].id)
+    } else {
+      setInstanceSelectorOpen(true)
+    }
   }
 
   const toggleLeadSelection = (leadId: string) => {
@@ -333,19 +394,54 @@ function LeadsPage() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             {t('leads.title', 'Leads')}
           </h1>
-          {isAdmin && (
-            <div className="flex flex-wrap items-center gap-2">
-              {selectedLeadIds.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedLeadIds.length > 0 && (
+              <>
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
-                  onClick={() => setBulkDeleteDialogOpen(true)}
+                  onClick={handleCheckWhatsAppClick}
+                  disabled={
+                    connectedBaileysInstances.length === 0 || isBulkChecking
+                  }
+                  title={
+                    connectedBaileysInstances.length === 0
+                      ? t(
+                          'leads.noWhatsappInstance',
+                          'No connected WhatsApp instance available',
+                        )
+                      : undefined
+                  }
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('leads.deleteSelected', 'Delete')} (
-                  {selectedLeadIds.length})
+                  {isBulkChecking ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                  )}
+                  {t('leads.checkWhatsapp', 'Check WhatsApp')} (
+                  {(() => {
+                    const unchecked = selectedLeadIds.filter((id) => {
+                      const lead = leadsData?.data.find((l) => l.id === id)
+                      return lead?.hasWhatsapp == null
+                    }).length
+                    return unchecked > 500 ? 500 : unchecked
+                  })()})
                 </Button>
-              )}
+                {isAdmin && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setBulkDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('leads.deleteSelected', 'Delete')} (
+                    {selectedLeadIds.length})
+                  </Button>
+                )}
+              </>
+            )}
+            {isAdmin && (
+              <>
               <Button
                 variant="outline"
                 size="sm"
@@ -385,8 +481,9 @@ function LeadsPage() {
                 <Plus className="h-4 w-4" />
                 {t('leads.addLead', 'Add Lead')}
               </Button>
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
 
         <Card>
@@ -455,6 +552,9 @@ function LeadsPage() {
                     <TableHead className="font-semibold text-primary">
                       {t('leads.phone', 'Phone')}
                     </TableHead>
+                    <TableHead className="font-semibold text-primary text-center w-20">
+                      {t('leads.whatsapp', 'WA')}
+                    </TableHead>
                     <TableHead className="font-semibold text-primary">
                       {t('leads.email', 'Email')}
                     </TableHead>
@@ -475,7 +575,7 @@ function LeadsPage() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={9} className="h-24 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           {t('common.loading', 'Loading...')}
@@ -484,7 +584,7 @@ function LeadsPage() {
                     </TableRow>
                   ) : leadsData?.data.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-32 text-center">
+                      <TableCell colSpan={9} className="h-32 text-center">
                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                           <UsersIcon className="h-8 w-8" />
                           <p>{t('leads.noLeadsFound', 'No leads found')}</p>
@@ -510,6 +610,15 @@ function LeadsPage() {
                           {lead.leadName}
                         </TableCell>
                         <TableCell>{lead.phone}</TableCell>
+                        <TableCell className="text-center">
+                          {lead.hasWhatsapp === true ? (
+                            <CheckCircle className="h-4 w-4 text-green-500 inline-block" />
+                          ) : lead.hasWhatsapp === false ? (
+                            <XCircle className="h-4 w-4 text-red-500 inline-block" />
+                          ) : (
+                            <HelpCircle className="h-4 w-4 text-muted-foreground inline-block" />
+                          )}
+                        </TableCell>
                         <TableCell>
                           {lead.email || (
                             <span className="text-muted-foreground text-sm">
@@ -668,6 +777,15 @@ function LeadsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* WhatsApp Instance Selector Dialog */}
+        <WhatsAppInstanceSelector
+          open={instanceSelectorOpen}
+          onOpenChange={setInstanceSelectorOpen}
+          instances={connectedBaileysInstances}
+          onSelect={handleBulkCheckWhatsApp}
+          isLoading={isBulkChecking}
+        />
       </div>
     </RoleGuard>
   )

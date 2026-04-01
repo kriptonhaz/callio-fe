@@ -251,7 +251,7 @@ function WhatsAppSettingsPage() {
   }
 
   return (
-    <RoleGuard allowedRoles={['admin', 'supervisor']}>
+    <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}

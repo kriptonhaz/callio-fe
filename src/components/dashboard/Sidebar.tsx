@@ -227,6 +227,11 @@ export function Sidebar({
           href: '/dashboard/campaigns',
         },
         {
+          icon: MessageCircleMore,
+          label: t('dashboard.menu.whatsapp', 'WhatsApp'),
+          href: '/dashboard/whatsapp',
+        },
+        {
           icon: Settings,
           label: t('dashboard.menu.settings'),
           href: '/dashboard/settings',

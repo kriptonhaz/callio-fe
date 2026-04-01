@@ -20,6 +20,7 @@ export interface Lead {
   customFields?: Record<string, string> | null
   tags?: string | null
   notes?: string | null
+  hasWhatsapp?: boolean | null
   status: LeadStatus
   clientId: string
   campaignIds?: string[] | null

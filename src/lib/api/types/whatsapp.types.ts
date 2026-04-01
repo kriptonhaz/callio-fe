@@ -155,7 +155,7 @@ export interface WhatsAppMediaSizeResponse {
 }
 
 // WhatsApp Report Types
-export type WhatsAppMessageType = 'blast' | 'regular' | 'inbound'
+export type WhatsAppMessageType = 'blast' | 'checker'
 
 export type WhatsAppReportDirection = 'inbound' | 'outbound'
 
@@ -191,7 +191,7 @@ export interface WhatsAppReportItem {
   senderName: string | null
   senderPhoneNumber: string
   direction: WhatsAppReportDirection
-  messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker'
+  messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker' | 'checker'
   content: string
   mediaUrl: string | null
   mediaMimeType: string | null

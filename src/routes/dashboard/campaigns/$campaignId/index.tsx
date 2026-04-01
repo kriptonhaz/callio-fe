@@ -691,34 +691,34 @@ function CampaignDetailPage() {
                   })}
                 </CardDescription>
               </div>
-              {isAdmin && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Compose SMS Button - Only show if campaign has SMS service */}
-                  {campaign.campaignServices?.some(
-                    (s) => s.serviceType === ServiceType.SMS,
-                  ) && (
-                    <Button
-                      size="sm"
-                      onClick={() => setIsComposeSmsSheetOpen(true)}
-                      className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
-                      disabled={!campaign._count?.leadAssignments}
-                      title={
-                        !campaign._count?.leadAssignments
-                          ? t(
-                              'campaigns.noLeadsToSendSms',
-                              'No leads in this campaign',
-                            )
-                          : undefined
-                      }
-                    >
-                      <MessageSquare className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">
-                        {t('campaigns.composeSms', 'Compose SMS')}
-                      </span>
-                    </Button>
-                  )}
+              <div className="flex flex-wrap items-center gap-2">
+                  {/* Compose SMS Button - Admin only, only show if campaign has SMS service */}
+                  {isAdmin &&
+                    campaign.campaignServices?.some(
+                      (s) => s.serviceType === ServiceType.SMS,
+                    ) && (
+                      <Button
+                        size="sm"
+                        onClick={() => setIsComposeSmsSheetOpen(true)}
+                        className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
+                        disabled={!campaign._count?.leadAssignments}
+                        title={
+                          !campaign._count?.leadAssignments
+                            ? t(
+                                'campaigns.noLeadsToSendSms',
+                                'No leads in this campaign',
+                              )
+                            : undefined
+                        }
+                      >
+                        <MessageSquare className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">
+                          {t('campaigns.composeSms', 'Compose SMS')}
+                        </span>
+                      </Button>
+                    )}
 
-                  {/* WhatsApp Blast Button - Only show if campaign has WhatsApp service */}
+                  {/* WhatsApp Blast Button - All roles, only show if campaign has WhatsApp service */}
                   {campaign.campaignServices?.some(
                     (s) => s.serviceType === ServiceType.WHATSAPP,
                   ) && (
@@ -742,67 +742,70 @@ function CampaignDetailPage() {
                       </span>
                     </Button>
                   )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 sm:flex-none"
+                          >
+                            <Folder className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">
+                              {t('campaigns.bulkActions', 'Bulk Actions')}
+                            </span>
+                            <ChevronDown className="h-4 w-4 ml-2" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={handleDownloadSample}>
+                            <Download className="h-4 w-4 mr-2" />
+                            {t('campaigns.downloadSample', 'Download Sample')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              document.getElementById('csv-upload')?.click()
+                            }
+                            disabled={isImporting}
+                          >
+                            {isImporting ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4 mr-2" />
+                            )}
+                            {t('campaigns.import', 'Import')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setIsAddExistingDialogOpen(true)}
+                          >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            {t('campaigns.addExisting', 'Add from Existing')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <input
+                        type="file"
+                        accept=".csv"
+                        onChange={handleFileSelect}
+                        style={{ display: 'none' }}
+                        id="csv-upload"
+                      />
+
                       <Button
-                        variant="outline"
                         size="sm"
+                        onClick={() => setIsAddLeadSheetOpen(true)}
                         className="flex-1 sm:flex-none"
                       >
-                        <Folder className="h-4 w-4 sm:mr-2" />
+                        <Plus className="h-4 w-4 sm:mr-2" />
                         <span className="hidden sm:inline">
-                          {t('campaigns.bulkActions', 'Bulk Actions')}
+                          {t('campaigns.addLead', 'Add Lead')}
                         </span>
-                        <ChevronDown className="h-4 w-4 ml-2" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleDownloadSample}>
-                        <Download className="h-4 w-4 mr-2" />
-                        {t('campaigns.downloadSample', 'Download Sample')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          document.getElementById('csv-upload')?.click()
-                        }
-                        disabled={isImporting}
-                      >
-                        {isImporting ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4 mr-2" />
-                        )}
-                        {t('campaigns.import', 'Import')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setIsAddExistingDialogOpen(true)}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        {t('campaigns.addExisting', 'Add from Existing')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileSelect}
-                    style={{ display: 'none' }}
-                    id="csv-upload"
-                  />
-
-                  <Button
-                    size="sm"
-                    onClick={() => setIsAddLeadSheetOpen(true)}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <Plus className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">
-                      {t('campaigns.addLead', 'Add Lead')}
-                    </span>
-                  </Button>
+                    </>
+                  )}
                 </div>
-              )}
             </div>
           </CardHeader>
           <CardContent>

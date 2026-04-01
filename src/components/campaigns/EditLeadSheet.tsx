@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from 'sonner'
-import { useUpdateLead } from '@/hooks/api/useLeads'
+import { useUpdateLead, useCheckLeadWhatsApp } from '@/hooks/api/useLeads'
+import { useWhatsAppInstances } from '@/hooks/api/useWhatsapp'
 import {
   useUpdateLeadAssignment,
   useLeadAssignment,
@@ -70,9 +71,14 @@ import {
   Music,
   BrainCircuit,
   User,
+  MessageSquare,
+  CheckCircle,
+  XCircle,
+  HelpCircle,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { VoiceRecordingsDialog } from './VoiceRecordingsDialog'
+import { WhatsAppInstanceSelector } from '@/components/leads/WhatsAppInstanceSelector'
 import type { VoiceRecording } from '@/hooks/api/useVoiceRecordings'
 
 interface CustomField {
@@ -140,6 +146,14 @@ export function EditLeadSheet({
   const { mutate: updateAssignment, isPending: isUpdatingAssignment } =
     useUpdateLeadAssignment()
   const { data: currentUser } = useMe()
+  const { mutate: checkWhatsApp, isPending: isCheckingWhatsApp } =
+    useCheckLeadWhatsApp()
+  const { data: whatsappInstances } = useWhatsAppInstances()
+  const connectedBaileysInstances = (whatsappInstances ?? []).filter(
+    (i) => i.providerType === 'baileys' && i.status === 'connected',
+  )
+  const [whatsAppStatus, setWhatsAppStatus] = useState<boolean | null | undefined>(undefined)
+  const [instancePickerOpen, setInstancePickerOpen] = useState(false)
   const { mutate: initiateSession, isPending: isInitiatingSession } =
     useInitiateCallSession()
   const makeCall = useSipStore((state) => state.makeCall)
@@ -310,8 +324,40 @@ export function EditLeadSheet({
       } else {
         setCustomFields([])
       }
+      setWhatsAppStatus(lead.hasWhatsapp)
     }
   }, [assignment, form])
+
+  const handleSingleCheckWhatsApp = (instanceId: string) => {
+    if (!assignment?.lead?.id) return
+    setInstancePickerOpen(false)
+    checkWhatsApp(
+      { id: assignment.lead.id, instanceId },
+      {
+        onSuccess: (data) => {
+          setWhatsAppStatus(data.hasWhatsapp)
+          toast.success(
+            data.hasWhatsapp
+              ? t('leads.hasWhatsapp', 'This number has WhatsApp')
+              : t('leads.noWhatsapp', "This number doesn't have WhatsApp"),
+          )
+        },
+        onError: () => {
+          toast.error(
+            t('leads.whatsappCheckFailed', 'Failed to check WhatsApp number'),
+          )
+        },
+      },
+    )
+  }
+
+  const handleCheckWhatsAppClick = () => {
+    if (connectedBaileysInstances.length === 1) {
+      handleSingleCheckWhatsApp(connectedBaileysInstances[0].id)
+    } else if (connectedBaileysInstances.length > 1) {
+      setInstancePickerOpen(true)
+    }
+  }
 
   const handleClose = () => {
     form.reset()
@@ -808,6 +854,56 @@ export function EditLeadSheet({
                     </FormItem>
                   )}
                 />
+
+                {/* WhatsApp Check */}
+                <div className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      {t('leads.whatsappStatus', 'WhatsApp')}:
+                    </span>
+                    {whatsAppStatus === true ? (
+                      <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
+                        <CheckCircle className="h-4 w-4" />
+                        {t('leads.whatsappActive', 'Active')}
+                      </span>
+                    ) : whatsAppStatus === false ? (
+                      <span className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400">
+                        <XCircle className="h-4 w-4" />
+                        {t('leads.whatsappInactive', 'Not found')}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <HelpCircle className="h-4 w-4" />
+                        {t('leads.whatsappNotChecked', 'Not checked')}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCheckWhatsAppClick}
+                    disabled={
+                      connectedBaileysInstances.length === 0 ||
+                      isCheckingWhatsApp
+                    }
+                    title={
+                      connectedBaileysInstances.length === 0
+                        ? t(
+                            'leads.noWhatsappInstance',
+                            'No connected WhatsApp instance available',
+                          )
+                        : undefined
+                    }
+                  >
+                    {isCheckingWhatsApp ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      t('leads.checkBtn', 'Check')
+                    )}
+                  </Button>
+                </div>
 
                 <FormField
                   control={form.control}
@@ -1681,6 +1777,15 @@ export function EditLeadSheet({
           </form>
         </Form>
       </SheetContent>
+
+      {/* WhatsApp Instance Selector for single check */}
+      <WhatsAppInstanceSelector
+        open={instancePickerOpen}
+        onOpenChange={setInstancePickerOpen}
+        instances={connectedBaileysInstances}
+        onSelect={handleSingleCheckWhatsApp}
+        isLoading={isCheckingWhatsApp}
+      />
     </Sheet>
   )
 }

@@ -74,6 +74,24 @@ const leadsApi = {
   downloadSampleCsv: async (): Promise<Blob> => {
     return await apiClient.get('leads/sample-csv').blob()
   },
+
+  checkWhatsApp: async (
+    id: string,
+    instanceId: string,
+  ): Promise<CheckWhatsAppResult> => {
+    return await apiClient
+      .post(`leads/${id}/check-whatsapp`, { json: { instanceId } })
+      .json<CheckWhatsAppResult>()
+  },
+
+  bulkCheckWhatsApp: async (
+    instanceId: string,
+    leadIds: string[],
+  ): Promise<BulkCheckWhatsAppResult> => {
+    return await apiClient
+      .post('leads/check-whatsapp', { json: { instanceId, leadIds } })
+      .json<BulkCheckWhatsAppResult>()
+  },
 }
 
 export const useLeads = (
@@ -194,5 +212,51 @@ export const useBulkImportLeads = (): UseMutationResult<
 export const useDownloadSampleCsv = () => {
   return useMutation({
     mutationFn: leadsApi.downloadSampleCsv,
+  })
+}
+
+export interface CheckWhatsAppResult {
+  leadId: string
+  phone: string
+  hasWhatsapp: boolean
+  jid: string | null
+}
+
+export interface BulkCheckWhatsAppResult {
+  results: CheckWhatsAppResult[]
+  summary: {
+    total: number
+    hasWhatsapp: number
+    noWhatsapp: number
+  }
+}
+
+export const useCheckLeadWhatsApp = (): UseMutationResult<
+  CheckWhatsAppResult,
+  Error,
+  { id: string; instanceId: string }
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, instanceId }) =>
+      leadsApi.checkWhatsApp(id, instanceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
+    },
+  })
+}
+
+export const useBulkCheckLeadWhatsApp = (): UseMutationResult<
+  BulkCheckWhatsAppResult,
+  Error,
+  { instanceId: string; leadIds: string[] }
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ instanceId, leadIds }) =>
+      leadsApi.bulkCheckWhatsApp(instanceId, leadIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
+    },
   })
 }

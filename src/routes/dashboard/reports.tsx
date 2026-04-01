@@ -128,8 +128,8 @@ export const Route = createFileRoute('/dashboard/reports')({
       aiServiceType: (search.aiServiceType as string) || undefined,
       aiStatus: (search.aiStatus as string) || undefined,
       search: (search.search as string) || undefined,
-      // WhatsApp specific - default to 'blast'
-      waMessageType: (search.waMessageType as WhatsAppMessageType) || 'blast',
+      // WhatsApp specific
+      waMessageType: (search.waMessageType as WhatsAppMessageType) || undefined,
       waInstanceId: (search.waInstanceId as string) || undefined,
       waDirection: (search.waDirection as WhatsAppReportDirection) || undefined,
       waStatus: (search.waStatus as WhatsAppReportStatus) || undefined,
@@ -2216,7 +2216,7 @@ function ReportsPage(): React.ReactElement {
                                   />
                                   {t('reports.allTypes', 'All Types')}
                                 </CommandItem>
-                                {(['blast', 'regular', 'inbound'] as const).map(
+                                {(['blast', 'checker'] as const).map(
                                   (type) => (
                                     <CommandItem
                                       key={type}
@@ -2439,13 +2439,15 @@ function ReportsPage(): React.ReactElement {
                                     'capitalize',
                                     msg.isBlast
                                       ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 border-purple-200'
-                                      : 'bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 border-gray-200',
+                                      : msg.messageType === 'checker'
+                                        ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border-amber-200'
+                                        : 'bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400 border-gray-200',
                                   )}
                                 >
                                   {msg.isBlast
                                     ? t('reports.waBlast', 'Blast')
-                                    : msg.direction === 'inbound'
-                                      ? t('reports.waInbound', 'Inbound')
+                                    : msg.messageType === 'checker'
+                                      ? t('reports.waChecker', 'Checker')
                                       : t('reports.waRegular', 'Regular')}
                                 </Badge>
                               </TableCell>

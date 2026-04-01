@@ -10,6 +10,7 @@ import {
   Activity,
   Menu,
   ClipboardList,
+  MessageSquare,
   X,
 } from 'lucide-react'
 import { GalleryThumbnails } from '@/components/animate-ui/icons/gallery-thumbnails'
@@ -113,6 +114,11 @@ export function MobileBottomNav({
           icon: ClipboardList,
           label: t('dashboard.menu.leads', 'Leads'),
           href: '/dashboard/leads',
+        },
+        {
+          icon: MessageSquare,
+          label: t('dashboard.menu.whatsapp', 'WhatsApp'),
+          href: '/dashboard/whatsapp',
         },
       ]
     }

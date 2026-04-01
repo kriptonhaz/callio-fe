@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -47,7 +47,11 @@ import {
   Check,
   Loader2,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { RoleGuard } from '@/lib/auth-guard'
+import { decodeJwt } from '@/lib/jwt'
+import { getAccessToken } from '@/lib/api/client'
+import { useUser } from '@/hooks/api/useUsers'
 import {
   useWhatsAppInstances,
   useCreateWhatsAppInstance,
@@ -92,6 +96,12 @@ function WhatsAppManagementPage(): React.ReactElement {
   const connectInstanceMutation = useConnectWhatsAppInstance()
   const deleteInstanceMutation = useDeleteWhatsAppInstance()
   const queryClient = useQueryClient()
+
+  const token = getAccessToken()
+  const decodedToken = useMemo(() => (token ? decodeJwt(token) : null), [token])
+  const { data: currentUser } = useUser(decodedToken?.sub || '')
+  const role = currentUser?.role || decodedToken?.role
+  const isAgent = role === 'agent'
 
   const form = useForm<CreateInstanceFormValues>({
     resolver: zodResolver(createInstanceSchema),
@@ -208,7 +218,7 @@ function WhatsAppManagementPage(): React.ReactElement {
 
   if (isLoading) {
     return (
-      <RoleGuard allowedRoles={['admin', 'supervisor']}>
+      <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -217,7 +227,7 @@ function WhatsAppManagementPage(): React.ReactElement {
   }
 
   return (
-    <RoleGuard allowedRoles={['admin', 'supervisor']}>
+    <RoleGuard allowedRoles={['admin', 'supervisor', 'agent']}>
       <div className="space-y-4 md:space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -437,15 +447,17 @@ function WhatsAppManagementPage(): React.ReactElement {
                           </Button>
                         </Link>
                       )}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={() => handleDeleteInstance(account.id)}
-                        disabled={deleteInstanceMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!isAgent && (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          onClick={() => handleDeleteInstance(account.id)}
+                          disabled={deleteInstanceMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -469,8 +481,9 @@ function WhatsAppManagementPage(): React.ReactElement {
               </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Official API Option */}
+            <div className={cn('grid gap-4', !isAgent && 'md:grid-cols-2')}>
+              {/* Official API Option - Admin/Supervisor only */}
+              {!isAgent && (
               <Card className="bg-muted/30">
                 <CardContent className="p-4 md:p-6">
                   <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-4">
@@ -516,6 +529,7 @@ function WhatsAppManagementPage(): React.ReactElement {
                   </Button>
                 </CardContent>
               </Card>
+              )}
 
               {/* QR Code Option */}
               <Card className="bg-muted/30">
