@@ -57,6 +57,15 @@ const campaignsApi = {
   exportAnalytics: async (id: string): Promise<Blob> => {
     return await apiClient.get(`campaigns/${id}/analytics/export`).blob()
   },
+
+  autoAssign: async (
+    id: string,
+    data: AutoAssignRequest,
+  ): Promise<AutoAssignResponse> => {
+    return await apiClient
+      .post(`campaigns/${id}/auto-assign`, { json: data })
+      .json<AutoAssignResponse>()
+  },
 }
 
 export const useCampaigns = (
@@ -127,5 +136,40 @@ export const useExportCampaignAnalytics = (): UseMutationResult<
 > => {
   return useMutation({
     mutationFn: campaignsApi.exportAnalytics,
+  })
+}
+
+export interface AutoAssignRequest {
+  distributionOrder: 'sequential' | 'random'
+  agentIds?: string[]
+}
+
+export interface AutoAssignResponse {
+  distributed: number
+  agentCount: number
+  distribution: Array<{
+    agentId: string
+    agentName: string
+    leadsAssigned: number
+  }>
+  errors: string[]
+}
+
+export const useAutoAssignLeads = (): UseMutationResult<
+  AutoAssignResponse,
+  Error,
+  { campaignId: string; data: AutoAssignRequest }
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ campaignId, data }) =>
+      campaignsApi.autoAssign(campaignId, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: campaignsKeys.detail(variables.campaignId),
+      })
+      queryClient.invalidateQueries({ queryKey: campaignsKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
+    },
   })
 }

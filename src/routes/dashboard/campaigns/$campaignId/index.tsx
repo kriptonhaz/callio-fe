@@ -24,6 +24,7 @@ import { CampaignLeadsTable } from '@/components/campaigns/CampaignLeadsTable'
 import { AddExistingLeadsDialog } from '@/components/campaigns/AddExistingLeadsDialog'
 import { ComposeSmsSheet } from '@/components/campaigns/ComposeSmsSheet'
 import { BlastWhatsAppSheet } from '@/components/campaigns/BlastWhatsAppSheet'
+import { AutoDistributeDialog } from '@/components/campaigns/AutoDistributeDialog'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
 import {
   Card,
@@ -93,6 +94,7 @@ import {
   BarChart3,
   Folder,
   ChevronDown,
+  Shuffle,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -186,6 +188,7 @@ function CampaignDetailPage() {
   const [isComposeSmsSheetOpen, setIsComposeSmsSheetOpen] = useState(false)
   const [isBlastWhatsAppSheetOpen, setIsBlastWhatsAppSheetOpen] =
     useState(false)
+  const [isAutoDistributeOpen, setIsAutoDistributeOpen] = useState(false)
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
   const [bulkUnassignDialogOpen, setBulkUnassignDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -795,6 +798,27 @@ function CampaignDetailPage() {
 
                       <Button
                         size="sm"
+                        variant="outline"
+                        onClick={() => setIsAutoDistributeOpen(true)}
+                        className="flex-1 sm:flex-none"
+                        disabled={!campaign._count?.leadAssignments}
+                        title={
+                          !campaign._count?.leadAssignments
+                            ? t(
+                                'campaigns.noLeadsToDistribute',
+                                'No leads in this campaign',
+                              )
+                            : undefined
+                        }
+                      >
+                        <Shuffle className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">
+                          {t('campaigns.autoDistribute', 'Auto Distribute')}
+                        </span>
+                      </Button>
+
+                      <Button
+                        size="sm"
                         onClick={() => setIsAddLeadSheetOpen(true)}
                         className="flex-1 sm:flex-none"
                       >
@@ -1076,6 +1100,13 @@ function CampaignDetailPage() {
           onOpenChange={setIsBlastWhatsAppSheetOpen}
           campaignId={campaignId}
           allLeadAssignments={allLeadAssignments}
+        />
+
+        <AutoDistributeDialog
+          open={isAutoDistributeOpen}
+          onOpenChange={setIsAutoDistributeOpen}
+          campaignId={campaignId}
+          clientId={clientId || ''}
         />
       </div>
 
