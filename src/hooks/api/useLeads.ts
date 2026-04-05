@@ -65,10 +65,10 @@ const leadsApi = {
 
   bulkImport: async (
     formData: FormData,
-  ): Promise<{ imported: number; skipped: number }> => {
+  ): Promise<BulkImportResponse> => {
     return await apiClient
       .post('leads/bulk-import', { body: formData })
-      .json<{ imported: number; skipped: number }>()
+      .json<BulkImportResponse>()
   },
 
   downloadSampleCsv: async (): Promise<Blob> => {
@@ -191,8 +191,16 @@ export const useBulkDeleteLeads = (): UseMutationResult<
   })
 }
 
+export interface BulkImportResponse {
+  created: number
+  reused: number
+  skipped: number
+  errors: string[]
+  leads: Array<{ id: string; leadName: string; phone: string; isNew: boolean }>
+}
+
 export const useBulkImportLeads = (): UseMutationResult<
-  { imported: number; skipped: number },
+  BulkImportResponse,
   Error,
   FormData
 > => {

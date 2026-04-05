@@ -264,6 +264,7 @@ const resources = {
           warm: 'Warm',
           cold: 'Cold',
           closed: 'Closed',
+          missed: 'Missed',
         },
         callStatus: {
           answered: 'Answered',
@@ -310,6 +311,13 @@ const resources = {
           paused: 'Paused',
           completed: 'Completed',
         },
+        listView: 'List',
+        workMode: 'Work Mode',
+        batchDate: 'Batch Date',
+        processedToday: 'Processed {{processed}}/{{total}} today',
+        preferSameAgent: 'Prefer same agent',
+        preferSameAgentTooltip:
+          'When enabled, leads that were handled by a specific agent before will be assigned to the same agent for continuity.',
       },
       common: {
         logout: 'Logout',
@@ -725,6 +733,7 @@ const resources = {
           warm: 'Hangat',
           cold: 'Dingin',
           closed: 'Ditutup',
+          missed: 'Terlewat',
         },
         callStatus: {
           answered: 'Dijawab',
@@ -771,6 +780,13 @@ const resources = {
           paused: 'Ditunda',
           completed: 'Selesai',
         },
+        listView: 'Daftar',
+        workMode: 'Mode Kerja',
+        batchDate: 'Tanggal Batch',
+        processedToday: 'Diproses {{processed}}/{{total}} hari ini',
+        preferSameAgent: 'Utamakan agen yang sama',
+        preferSameAgentTooltip:
+          'Jika diaktifkan, prospek yang sebelumnya ditangani oleh agen tertentu akan ditugaskan ke agen yang sama untuk kesinambungan.',
       },
       common: {
         logout: 'Keluar',

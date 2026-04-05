@@ -353,7 +353,7 @@ function LeadsPage() {
         toast.success(
           t(
             'leads.importSuccess',
-            `Successfully imported ${data.imported} leads. ${data.skipped > 0 ? `${data.skipped} duplicates skipped.` : ''}`,
+            `Imported ${data.created + data.reused} leads: ${data.created} new, ${data.reused} existing.`,
           ),
         )
         event.target.value = ''

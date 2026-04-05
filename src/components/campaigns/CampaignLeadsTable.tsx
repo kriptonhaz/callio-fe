@@ -68,6 +68,9 @@ export function CampaignLeadsTable({
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
+  const [batchDate, setBatchDate] = useState(
+    new Date().toISOString().split('T')[0],
+  )
   const [page, setPage] = useState(1)
   const [selectedAssignment, setSelectedAssignment] =
     useState<LeadAssignment | null>(null)
@@ -84,6 +87,7 @@ export function CampaignLeadsTable({
     campaignId,
     search: debouncedSearch || undefined,
     status: statusFilter === 'all' ? undefined : statusFilter,
+    batchDate: batchDate || undefined,
     page,
     limit,
   })
@@ -156,6 +160,11 @@ export function CampaignLeadsTable({
           'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
         label: t('leads.status.closed', 'Closed'),
       },
+      [LeadStatus.MISSED]: {
+        className:
+          'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border border-dashed border-orange-400',
+        label: t('leads.status.missed', 'Missed'),
+      },
     }
 
     const config = statusConfig[status] || statusConfig[LeadStatus.NEW]
@@ -225,6 +234,16 @@ export function CampaignLeadsTable({
           />
         </div>
 
+        <Input
+          type="date"
+          value={batchDate}
+          onChange={(e) => {
+            setBatchDate(e.target.value)
+            setPage(1)
+          }}
+          className="w-full sm:w-40"
+        />
+
         <Select
           value={statusFilter}
           onValueChange={(value) => {
@@ -256,6 +275,9 @@ export function CampaignLeadsTable({
             </SelectItem>
             <SelectItem value={LeadStatus.CLOSED}>
               {t('leads.status.closed', 'Closed')}
+            </SelectItem>
+            <SelectItem value={LeadStatus.MISSED}>
+              {t('leads.status.missed', 'Missed')}
             </SelectItem>
           </SelectContent>
         </Select>

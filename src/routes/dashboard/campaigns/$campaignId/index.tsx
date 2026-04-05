@@ -25,6 +25,7 @@ import { AddExistingLeadsDialog } from '@/components/campaigns/AddExistingLeadsD
 import { ComposeSmsSheet } from '@/components/campaigns/ComposeSmsSheet'
 import { BlastWhatsAppSheet } from '@/components/campaigns/BlastWhatsAppSheet'
 import { AutoDistributeDialog } from '@/components/campaigns/AutoDistributeDialog'
+import { WorkMode } from '@/components/campaigns/WorkMode'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
 import {
   Card,
@@ -91,10 +92,11 @@ import {
   UserPlus,
   MessageSquare,
   Send,
-  BarChart3,
   Folder,
   ChevronDown,
   Shuffle,
+  List,
+  UserCheck,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -139,6 +141,25 @@ function CampaignDetailPage() {
   const { mutate: bulkUnassignLeads, isPending: isBulkUnassigning } =
     useBulkUnassignLeads()
   const { mutate: deleteCampaign, isPending: isDeleting } = useDeleteCampaign()
+
+  // Daily progress tracking
+  const today = new Date().toISOString().split('T')[0]
+  const { data: todayBatchData } = useLeadAssignments({
+    campaignId,
+    batchDate: today,
+    page: 1,
+    limit: 1,
+  })
+  const { data: todayNewData } = useLeadAssignments({
+    campaignId,
+    batchDate: today,
+    status: 'new' as any,
+    page: 1,
+    limit: 1,
+  })
+  const todayTotal = todayBatchData?.meta?.total ?? 0
+  const todayNew = todayNewData?.meta?.total ?? 0
+  const todayProcessed = todayTotal - todayNew
 
   // Fetch SMS masking - only for admin or superadmin
   const canAccessSmsMasking = isSuperadmin || isAdmin
@@ -189,6 +210,19 @@ function CampaignDetailPage() {
   const [isBlastWhatsAppSheetOpen, setIsBlastWhatsAppSheetOpen] =
     useState(false)
   const [isAutoDistributeOpen, setIsAutoDistributeOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'work'>('list')
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(true)
+  const [hasSetDefaults, setHasSetDefaults] = useState(false)
+
+  useEffect(() => {
+    if (userRole && !hasSetDefaults) {
+      if (userRole === 'agent') {
+        setViewMode('work')
+        setIsDetailsExpanded(false)
+      }
+      setHasSetDefaults(true)
+    }
+  }, [userRole, hasSetDefaults])
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
   const [bulkUnassignDialogOpen, setBulkUnassignDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -395,7 +429,7 @@ function CampaignDetailPage() {
         toast.success(
           t(
             'campaigns.importSuccess',
-            `Successfully imported ${data.imported} leads. ${data.skipped > 0 ? `${data.skipped} duplicates skipped.` : ''}`,
+            `Imported ${data.created + data.reused} leads: ${data.created} new, ${data.reused} existing. All assigned to campaign.`,
           ),
         )
         event.target.value = ''
@@ -514,19 +548,21 @@ function CampaignDetailPage() {
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 {t('campaigns.details', 'Campaign Details')}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 ml-1"
+                  onClick={() => setIsDetailsExpanded((prev) => !prev)}
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isDetailsExpanded ? '' : '-rotate-90'
+                    }`}
+                  />
+                </Button>
               </CardTitle>
               {/* Desktop Actions */}
               <div className="hidden md:flex items-center gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link
-                    to="/dashboard/campaigns/$campaignId/analytic"
-                    params={{ campaignId }}
-                    className="flex items-center gap-2"
-                  >
-                    <BarChart3 className="h-4 w-4 text-orange-500" />
-                    {t('campaigns.viewAnalytics', 'Analytics')}
-                  </Link>
-                </Button>
                 {isAdmin && (
                   <>
                     <Button
@@ -551,24 +587,10 @@ function CampaignDetailPage() {
               </div>
             </div>
           </CardHeader>
+          {isDetailsExpanded && (
           <CardContent className="space-y-6">
-            {/* Action Buttons */}
             {/* Action Buttons - Only visible on mobile */}
             <div className="flex gap-4 md:hidden">
-              <Button
-                variant="outline"
-                className="flex-1 h-12 text-base"
-                asChild
-              >
-                <Link
-                  to="/dashboard/campaigns/$campaignId/analytic"
-                  params={{ campaignId }}
-                  className="flex items-center justify-center gap-2"
-                >
-                  <BarChart3 className="h-5 w-5 text-orange-500" />
-                  {t('campaigns.viewAnalytics', 'Analytics')}
-                </Link>
-              </Button>
               {isAdmin && (
                 <>
                   <Button
@@ -677,6 +699,7 @@ function CampaignDetailPage() {
               )}
             </div>
           </CardContent>
+          )}
         </Card>
 
         {/* Leads Section - Full Width */}
@@ -688,10 +711,38 @@ function CampaignDetailPage() {
                   <Users className="h-5 w-5" />
                   {t('campaigns.leads', 'Leads')}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="flex items-center gap-3">
                   {t('campaigns.leadsCount', '{{count}} leads assigned', {
                     count: campaign._count?.leadAssignments || 0,
                   })}
+                  {todayTotal > 0 && (
+                    <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                      {t('campaigns.processedToday', 'Processed {{processed}}/{{total}} today', {
+                        processed: todayProcessed,
+                        total: todayTotal,
+                      })}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center rounded-lg bg-muted p-1 gap-0.5">
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2.5 text-xs"
+                      onClick={() => setViewMode('list')}
+                    >
+                      <List className="h-3.5 w-3.5 mr-1" />
+                      {t('campaigns.listView', 'List')}
+                    </Button>
+                    <Button
+                      variant={viewMode === 'work' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-7 px-2.5 text-xs"
+                      onClick={() => setViewMode('work')}
+                    >
+                      <UserCheck className="h-3.5 w-3.5 mr-1" />
+                      {t('campaigns.workMode', 'Work Mode')}
+                    </Button>
+                  </span>
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -833,14 +884,22 @@ function CampaignDetailPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <CampaignLeadsTable
-              campaignId={campaignId}
-              clientId={clientId || ''}
-              campaignServices={campaign.campaignServices}
-              selectedLeadIds={selectedLeadIds}
-              onSelectedLeadsChange={setSelectedLeadIds}
-              onBulkUnassignClick={() => setBulkUnassignDialogOpen(true)}
-            />
+            {viewMode === 'list' ? (
+              <CampaignLeadsTable
+                campaignId={campaignId}
+                clientId={clientId || ''}
+                campaignServices={campaign.campaignServices}
+                selectedLeadIds={selectedLeadIds}
+                onSelectedLeadsChange={setSelectedLeadIds}
+                onBulkUnassignClick={() => setBulkUnassignDialogOpen(true)}
+              />
+            ) : (
+              <WorkMode
+                campaignId={campaignId}
+                clientId={clientId || ''}
+                campaignServices={campaign.campaignServices}
+              />
+            )}
           </CardContent>
         </Card>
 

@@ -39,6 +39,7 @@ export function AutoDistributeDialog({
   const [distributionOrder, setDistributionOrder] = useState<
     'sequential' | 'random'
   >('sequential')
+  const [preferSameAgent, setPreferSameAgent] = useState(false)
   const [selectedAgentIds, setSelectedAgentIds] = useState<string[]>([])
 
   const { data: agentsData, isLoading: isLoadingAgents } = useUsers(
@@ -62,6 +63,7 @@ export function AutoDistributeDialog({
   useEffect(() => {
     if (!open) {
       setDistributionOrder('sequential')
+      setPreferSameAgent(false)
       setSelectedAgentIds([])
       hasInitialized.current = false
     }
@@ -96,6 +98,7 @@ export function AutoDistributeDialog({
         campaignId,
         data: {
           distributionOrder,
+          preferSameAgent: preferSameAgent || undefined,
           agentIds:
             selectedAgentIds.length === agents.length
               ? undefined
@@ -105,7 +108,10 @@ export function AutoDistributeDialog({
       {
         onSuccess: (data) => {
           const summary = data.distribution
-            .map((d) => `${d.agentName}: ${d.leadsAssigned}`)
+            .map((d) => {
+              const prev = d.fromPreviousBatch ? ` (${d.fromPreviousBatch} returning)` : ''
+              return `${d.agentName}: ${d.leadsAssigned}${prev}`
+            })
             .join(', ')
           toast.success(
             t(
@@ -172,6 +178,27 @@ export function AutoDistributeDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Prefer Same Agent */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={preferSameAgent}
+              onChange={(e) => setPreferSameAgent(e.target.checked)}
+              className="h-4 w-4 mt-0.5 rounded border-gray-300 cursor-pointer"
+            />
+            <div>
+              <span className="text-sm font-medium">
+                {t('campaigns.preferSameAgent', 'Prefer same agent')}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                {t(
+                  'campaigns.preferSameAgentTooltip',
+                  'When enabled, leads that were handled by a specific agent before will be assigned to the same agent for continuity.',
+                )}
+              </p>
+            </div>
+          </label>
 
           {/* Agent Selection */}
           <div className="space-y-2">

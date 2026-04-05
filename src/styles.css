@@ -122,3 +122,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix native date input calendar icon color in dark mode */
+.dark input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

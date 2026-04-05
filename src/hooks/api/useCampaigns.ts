@@ -142,15 +142,18 @@ export const useExportCampaignAnalytics = (): UseMutationResult<
 export interface AutoAssignRequest {
   distributionOrder: 'sequential' | 'random'
   agentIds?: string[]
+  preferSameAgent?: boolean
 }
 
 export interface AutoAssignResponse {
   distributed: number
   agentCount: number
+  batchDate?: string
   distribution: Array<{
     agentId: string
     agentName: string
     leadsAssigned: number
+    fromPreviousBatch?: number
   }>
   errors: string[]
 }

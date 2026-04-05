@@ -62,6 +62,7 @@ export enum LeadStatus {
   WARM = 'warm',
   COLD = 'cold',
   CLOSED = 'closed',
+  MISSED = 'missed',
 }
 
 export enum AppointmentStatus {

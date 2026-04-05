@@ -49,6 +49,7 @@ export interface LeadAssignment {
     email?: string
   }
   activeCall?: ActiveCall | null
+  batchDate?: string | null
 }
 
 export interface UpdateLeadAssignmentRequest {
@@ -68,4 +69,5 @@ export interface LeadAssignmentsQueryParams extends PaginationParams {
   search?: string
   status?: LeadStatus
   agentId?: string
+  batchDate?: string
 }
