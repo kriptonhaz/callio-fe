@@ -4,6 +4,7 @@ import {
   useLeadAssignments,
   useDeleteLeadAssignment,
 } from '@/hooks/api/useLeadAssignments'
+import { useMe } from '@/hooks/api/useAuth'
 import { useDebounce } from '@/hooks/useDebounce'
 import { LeadStatus } from '@/lib/api/types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
@@ -53,7 +54,9 @@ interface CampaignLeadsTableProps {
   selectedLeadIds?: string[]
   onSelectedLeadsChange?: (leadIds: string[]) => void
   onBulkUnassignClick?: () => void
-  campaignServices?: { serviceType: string }[] // Campaign services to pass to EditLeadSheet
+  campaignServices?: { serviceType: string }[]
+  batchDate?: string
+  onBatchDateChange?: (date: string) => void
 }
 
 export function CampaignLeadsTable({
@@ -63,14 +66,23 @@ export function CampaignLeadsTable({
   onSelectedLeadsChange,
   onBulkUnassignClick,
   campaignServices,
+  batchDate: externalBatchDate,
+  onBatchDateChange,
 }: CampaignLeadsTableProps) {
   const { t } = useTranslation()
+  const { data: me } = useMe()
+  const isAgent = me?.role === 'agent'
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
-  const [batchDate, setBatchDate] = useState(
+  const [internalBatchDate, setInternalBatchDate] = useState(
     new Date().toISOString().split('T')[0],
   )
+  const batchDate = externalBatchDate ?? internalBatchDate
+  const setBatchDate = (date: string) => {
+    setInternalBatchDate(date)
+    onBatchDateChange?.(date)
+  }
   const [page, setPage] = useState(1)
   const [selectedAssignment, setSelectedAssignment] =
     useState<LeadAssignment | null>(null)
@@ -87,7 +99,7 @@ export function CampaignLeadsTable({
     campaignId,
     search: debouncedSearch || undefined,
     status: statusFilter === 'all' ? undefined : statusFilter,
-    batchDate: batchDate || undefined,
+    batchDate: !isAgent && batchDate ? batchDate : undefined,
     page,
     limit,
   })
@@ -234,15 +246,17 @@ export function CampaignLeadsTable({
           />
         </div>
 
-        <Input
-          type="date"
-          value={batchDate}
-          onChange={(e) => {
-            setBatchDate(e.target.value)
-            setPage(1)
-          }}
-          className="w-full sm:w-40"
-        />
+        {!isAgent && (
+          <Input
+            type="date"
+            value={batchDate}
+            onChange={(e) => {
+              setBatchDate(e.target.value)
+              setPage(1)
+            }}
+            className="w-full sm:w-40"
+          />
+        )}
 
         <Select
           value={statusFilter}

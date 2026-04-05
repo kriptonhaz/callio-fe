@@ -142,25 +142,6 @@ function CampaignDetailPage() {
     useBulkUnassignLeads()
   const { mutate: deleteCampaign, isPending: isDeleting } = useDeleteCampaign()
 
-  // Daily progress tracking
-  const today = new Date().toISOString().split('T')[0]
-  const { data: todayBatchData } = useLeadAssignments({
-    campaignId,
-    batchDate: today,
-    page: 1,
-    limit: 1,
-  })
-  const { data: todayNewData } = useLeadAssignments({
-    campaignId,
-    batchDate: today,
-    status: 'new' as any,
-    page: 1,
-    limit: 1,
-  })
-  const todayTotal = todayBatchData?.meta?.total ?? 0
-  const todayNew = todayNewData?.meta?.total ?? 0
-  const todayProcessed = todayTotal - todayNew
-
   // Fetch SMS masking - only for admin or superadmin
   const canAccessSmsMasking = isSuperadmin || isAdmin
   const { data: smsMaskingData } = useSmsMasking(
@@ -211,6 +192,21 @@ function CampaignDetailPage() {
     useState(false)
   const [isAutoDistributeOpen, setIsAutoDistributeOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'work'>('list')
+  const [workModeIndex, setWorkModeIndex] = useState(1)
+  const isAgent = userRole === 'agent'
+  const [batchDate, setBatchDate] = useState(
+    new Date().toISOString().split('T')[0],
+  )
+
+  // Fetch actual leads count visible to current user (matching active batch date filter)
+  const { data: visibleLeadsData } = useLeadAssignments({
+    campaignId,
+    batchDate: !isAgent && batchDate ? batchDate : undefined,
+    page: 1,
+    limit: 1,
+  })
+  const visibleLeadsCount = visibleLeadsData?.meta?.total ?? 0
+
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(true)
   const [hasSetDefaults, setHasSetDefaults] = useState(false)
 
@@ -713,16 +709,8 @@ function CampaignDetailPage() {
                 </CardTitle>
                 <CardDescription className="flex items-center gap-3">
                   {t('campaigns.leadsCount', '{{count}} leads assigned', {
-                    count: campaign._count?.leadAssignments || 0,
+                    count: visibleLeadsCount,
                   })}
-                  {todayTotal > 0 && (
-                    <span className="text-xs ml-2 px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                      {t('campaigns.processedToday', 'Processed {{processed}}/{{total}} today', {
-                        processed: todayProcessed,
-                        total: todayTotal,
-                      })}
-                    </span>
-                  )}
                   <span className="inline-flex items-center rounded-lg bg-muted p-1 gap-0.5">
                     <Button
                       variant={viewMode === 'list' ? 'default' : 'ghost'}
@@ -892,12 +880,17 @@ function CampaignDetailPage() {
                 selectedLeadIds={selectedLeadIds}
                 onSelectedLeadsChange={setSelectedLeadIds}
                 onBulkUnassignClick={() => setBulkUnassignDialogOpen(true)}
+                batchDate={batchDate}
+                onBatchDateChange={setBatchDate}
               />
             ) : (
               <WorkMode
                 campaignId={campaignId}
                 clientId={clientId || ''}
                 campaignServices={campaign.campaignServices}
+                currentIndex={workModeIndex}
+                onIndexChange={setWorkModeIndex}
+                batchDate={!isAgent ? batchDate : undefined}
               />
             )}
           </CardContent>

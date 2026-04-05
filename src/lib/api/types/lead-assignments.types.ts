@@ -50,6 +50,24 @@ export interface LeadAssignment {
   }
   activeCall?: ActiveCall | null
   batchDate?: string | null
+  previousAssignments?: PreviousAssignment[]
+}
+
+export interface PreviousAssignment {
+  id: string
+  batchDate: string
+  status: LeadStatus
+  lastCallStatus?: LastCallStatus | null
+  leadProgressNotes?: string | null
+  followupCount?: number | null
+  assignedAgent?: {
+    id: string
+    name: string
+  }
+  assignedSupervisor?: {
+    id: string
+    name: string
+  }
 }
 
 export interface UpdateLeadAssignmentRequest {
