@@ -219,8 +219,8 @@ export function Sidebar({
     }
 
     if (role === 'agent') {
-      // Agents do NOT have access to Dashboard - Campaign is their home
       return [
+        dashboardItem,
         {
           icon: Calendar,
           label: t('dashboard.menu.campaign', 'Campaign'),

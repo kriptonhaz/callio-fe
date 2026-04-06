@@ -39,12 +39,14 @@ export function useDateRange(): DateRangeContextValue {
 
 interface DateRangeProviderProps {
   children: React.ReactNode
+  defaultType?: DateRangeType
 }
 
 export function DateRangeProvider({
   children,
+  defaultType = 'month',
 }: DateRangeProviderProps): React.ReactElement {
-  const [dateRangeType, setDateRangeType] = useState<DateRangeType>('month')
+  const [dateRangeType, setDateRangeType] = useState<DateRangeType>(defaultType)
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>()
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>()
 

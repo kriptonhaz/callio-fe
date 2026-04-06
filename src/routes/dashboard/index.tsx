@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { createFileRoute } from '@tanstack/react-router'
 import { VoipAnalyticsDashboard } from '@/components/dashboard/VoipAnalyticsDashboard'
 import { SmsAnalyticsDashboard } from '@/components/dashboard/SmsAnalyticsDashboard'
 import { SuperAdminDashboard } from '@/components/dashboard/superadmin/SuperAdminDashboard'
+import { AgentDashboard } from '@/components/dashboard/AgentDashboard'
 import {
   DateRangeProvider,
   DateRangeFilter,
@@ -25,14 +26,6 @@ function DashboardIndex() {
   const { t } = useTranslation()
   const { data: me, isLoading: isMeLoading } = useMe()
   const clientId = me?.clientId
-  const navigate = useNavigate()
-
-  // Redirect agents to campaigns page - they don't have dashboard access
-  useEffect(() => {
-    if (!isMeLoading && me?.role === 'agent') {
-      navigate({ to: '/dashboard/campaigns', search: { page: 1, limit: 10 } })
-    }
-  }, [me?.role, isMeLoading, navigate])
 
   // Check which services are enabled
   const { data: enabledServices } = useEnabledServices(clientId)
@@ -51,9 +44,25 @@ function DashboardIndex() {
       : 'voip'
   const [activeTab, setActiveTab] = useState<ServiceTab>(defaultTab)
 
-  // Show nothing while loading or if agent (will redirect)
-  if (isMeLoading || me?.role === 'agent') {
+  if (isMeLoading) {
     return null
+  }
+
+  // Agent dashboard
+  if (me?.role === 'agent') {
+    return (
+      <DateRangeProvider defaultType="today">
+        <div className="space-y-6 animate-in fade-in duration-500">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h2 className="text-3xl font-bold tracking-tight text-primary">
+              {t('dashboard.title')}
+            </h2>
+            <DateRangeFilter />
+          </div>
+          <AgentDashboard />
+        </div>
+      </DateRangeProvider>
+    )
   }
 
   return (

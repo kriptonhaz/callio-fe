@@ -13,6 +13,10 @@ import type {
   LeadAssignmentsQueryParams,
   UpdateLeadAssignmentRequest,
 } from '@/lib/api/types/lead-assignments.types'
+import type {
+  LeadAssignmentAnalyticsParams,
+  LeadAssignmentAnalyticsResponse,
+} from '@/lib/api/types/lead-assignment-analytics.types'
 
 export const leadAssignmentsKeys = {
   all: ['lead-assignments'] as const,
@@ -21,6 +25,8 @@ export const leadAssignmentsKeys = {
     [...leadAssignmentsKeys.lists(), params] as const,
   details: () => [...leadAssignmentsKeys.all, 'detail'] as const,
   detail: (id: string) => [...leadAssignmentsKeys.details(), id] as const,
+  analytics: (params: LeadAssignmentAnalyticsParams) =>
+    [...leadAssignmentsKeys.all, 'analytics', params] as const,
 }
 
 const getAll = async (
@@ -81,6 +87,15 @@ const bulkUnassignLeads = async (data: {
     .json()
 }
 
+const getAnalytics = async (
+  params: LeadAssignmentAnalyticsParams,
+): Promise<LeadAssignmentAnalyticsResponse> => {
+  const queryString = buildQueryString(params)
+  return await apiClient
+    .get(`lead-assignments/analytics${queryString}`)
+    .json<LeadAssignmentAnalyticsResponse>()
+}
+
 export const leadAssignmentsApi = {
   getAll,
   getById,
@@ -88,6 +103,7 @@ export const leadAssignmentsApi = {
   delete: deleteLead,
   bulkAssign: bulkAssignLeads,
   bulkUnassign: bulkUnassignLeads,
+  getAnalytics,
 }
 
 export const useLeadAssignments = (
@@ -181,5 +197,17 @@ export const useBulkUnassignLeads = (): UseMutationResult<
       // Invalidate campaigns to refresh lead counts
       queryClient.invalidateQueries({ queryKey: campaignsKeys.all })
     },
+  })
+}
+
+export const useLeadAssignmentAnalytics = (
+  params: LeadAssignmentAnalyticsParams,
+  enabled = true,
+): UseQueryResult<LeadAssignmentAnalyticsResponse, Error> => {
+  return useQuery({
+    queryKey: leadAssignmentsKeys.analytics(params),
+    queryFn: () => leadAssignmentsApi.getAnalytics(params),
+    enabled,
+    staleTime: 5 * 60 * 1000,
   })
 }
