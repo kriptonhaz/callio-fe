@@ -23,7 +23,6 @@ import { useMe } from '@/hooks/api/useAuth'
 import { useSipStore } from '@/store/useSipStore'
 import { LeadStatus, UserRole } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
-import { LastCallStatus } from '@/lib/api/types/lead-assignments.types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import type { UpdateLeadRequest } from '@/lib/api/types/leads.types'
 import {
@@ -60,6 +59,7 @@ import {
 } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Loader2,
@@ -113,7 +113,6 @@ const leadFormSchema = z.object({
   status: z.nativeEnum(LeadStatus),
   assignedSupervisorId: z.string().optional(),
   assignedAgentId: z.string().optional(),
-  lastCallStatus: z.nativeEnum(LastCallStatus).optional(),
   leadProgressNotes: z.string().optional(),
   followupCount: z.string().optional(),
 })
@@ -276,7 +275,6 @@ export function EditLeadSheet({
       status: LeadStatus.NEW,
       assignedSupervisorId: '',
       assignedAgentId: '',
-      lastCallStatus: undefined,
       leadProgressNotes: '',
       followupCount: '',
     },
@@ -307,7 +305,6 @@ export function EditLeadSheet({
         status: assignment.status || LeadStatus.NEW,
         assignedSupervisorId: assignment.assignedSupervisorId || '',
         assignedAgentId: assignment.assignedAgentId || '',
-        lastCallStatus: assignment.lastCallStatus || undefined,
         leadProgressNotes: assignment.leadProgressNotes || '',
         followupCount: assignment.followupCount?.toString() || '',
       })
@@ -432,7 +429,6 @@ export function EditLeadSheet({
         assignedSupervisorId: data.assignedSupervisorId || null,
         assignedAgentId: data.assignedAgentId || null,
         status: data.status,
-        lastCallStatus: data.lastCallStatus || null,
         leadProgressNotes: data.leadProgressNotes || null,
         followupCount: data.followupCount
           ? parseInt(data.followupCount, 10)
@@ -573,111 +569,23 @@ export function EditLeadSheet({
                             )}
                           />
 
-                          <FormField
-                            control={form.control}
-                            name="lastCallStatus"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  {t(
-                                    'leads.lastCallStatus',
-                                    'Last Call Status',
-                                  )}
-                                </FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  value={field.value || ''}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger className="h-11">
-                                      <SelectValue
-                                        placeholder={t(
-                                          'common.select',
-                                          'Select',
-                                        )}
-                                      />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value={LastCallStatus.ANSWERED}>
-                                      {t(
-                                        'leads.callStatus.answered',
-                                        'Answered',
-                                      )}
-                                    </SelectItem>
-                                    <SelectItem
-                                      value={LastCallStatus.NO_ANSWER}
-                                    >
-                                      {t(
-                                        'leads.callStatus.noAnswer',
-                                        'No Answer',
-                                      )}
-                                    </SelectItem>
-                                    <SelectItem value={LastCallStatus.BUSY}>
-                                      {t('leads.callStatus.busy', 'Busy')}
-                                    </SelectItem>
-                                    <SelectItem
-                                      value={LastCallStatus.VOICEMAIL}
-                                    >
-                                      {t(
-                                        'leads.callStatus.voicemail',
-                                        'Voicemail',
-                                      )}
-                                    </SelectItem>
-                                    <SelectItem
-                                      value={LastCallStatus.WRONG_NUMBER}
-                                    >
-                                      {t(
-                                        'leads.callStatus.wrongNumber',
-                                        'Wrong Number',
-                                      )}
-                                    </SelectItem>
-                                    <SelectItem
-                                      value={LastCallStatus.CALLBACK_REQUESTED}
-                                    >
-                                      {t(
-                                        'leads.callStatus.callbackRequested',
-                                        'Callback Requested',
-                                      )}
-                                    </SelectItem>
-                                    <SelectItem
-                                      value={LastCallStatus.NOT_INTERESTED}
-                                    >
-                                      {t(
-                                        'leads.callStatus.notInterested',
-                                        'Not Interested',
-                                      )}
-                                    </SelectItem>
-                                    <SelectItem
-                                      value={LastCallStatus.INTERESTED}
-                                    >
-                                      {t(
-                                        'leads.callStatus.interested',
-                                        'Interested',
-                                      )}
-                                    </SelectItem>
-                                    <SelectItem
-                                      value={LastCallStatus.DISCONNECTED}
-                                    >
-                                      {t(
-                                        'leads.callStatus.disconnected',
-                                        'Disconnected',
-                                      )}
-                                    </SelectItem>
-                                    <SelectItem
-                                      value={LastCallStatus.INVALID_NUMBER}
-                                    >
-                                      {t(
-                                        'leads.callStatus.invalidNumber',
-                                        'Invalid Number',
-                                      )}
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              {t('leads.lastCallStatus', 'Last Call Status')}
+                            </span>
+                            {assignment?.lastCallStatus ? (
+                              <Badge
+                                variant="secondary"
+                                className="w-fit capitalize"
+                              >
+                                {assignment.lastCallStatus.replace(/_/g, ' ')}
+                              </Badge>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                —
+                              </span>
                             )}
-                          />
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

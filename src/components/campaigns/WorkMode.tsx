@@ -20,7 +20,6 @@ import {
 } from 'lucide-react'
 
 import { LeadStatus } from '@/lib/api/types'
-import { LastCallStatus } from '@/lib/api/types/lead-assignments.types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { ServiceType } from '@/lib/api/types/services.types'
 
@@ -51,6 +50,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import {
   Popover,
   PopoverContent,
@@ -167,9 +167,6 @@ export function WorkMode({
   // Outcome form state
   // -------------------------------------------------------------------------
   const [outcomeStatus, setOutcomeStatus] = useState<LeadStatus | ''>('')
-  const [outcomeLastCallStatus, setOutcomeLastCallStatus] = useState<
-    LastCallStatus | ''
-  >('')
   const [outcomeNotes, setOutcomeNotes] = useState('')
 
   // -------------------------------------------------------------------------
@@ -335,12 +332,10 @@ export function WorkMode({
   useEffect(() => {
     if (assignment) {
       setOutcomeStatus(assignment.status ?? '')
-      setOutcomeLastCallStatus(assignment.lastCallStatus ?? '')
       setOutcomeNotes(assignment.leadProgressNotes ?? '')
       setFormValues(leadToFormValues(assignment.lead))
     } else {
       setOutcomeStatus('')
-      setOutcomeLastCallStatus('')
       setOutcomeNotes('')
       setFormValues({})
     }
@@ -366,10 +361,6 @@ export function WorkMode({
         id: assignment.id,
         data: {
           status: outcomeStatus !== '' ? (outcomeStatus as LeadStatus) : undefined,
-          lastCallStatus:
-            outcomeLastCallStatus !== ''
-              ? (outcomeLastCallStatus as LastCallStatus)
-              : null,
           leadProgressNotes: outcomeNotes || null,
         },
       },
@@ -977,61 +968,18 @@ export function WorkMode({
                 </Select>
               </div>
 
-              {/* Last Call Status */}
+              {/* Last Call Status — read-only, backend-derived */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">
+                <label className="text-sm font-medium text-muted-foreground">
                   {t('leads.lastCallStatus', 'Last Call Status')}
                 </label>
-                <Select
-                  value={outcomeLastCallStatus}
-                  onValueChange={(v) =>
-                    setOutcomeLastCallStatus(v as LastCallStatus)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={t(
-                        'workMode.selectLastCallStatus',
-                        'Select call status',
-                      )}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={LastCallStatus.ANSWERED}>
-                      {t('leads.lastCallStatus.answered', 'Answered')}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.NO_ANSWER}>
-                      {t('leads.lastCallStatus.noAnswer', 'No Answer')}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.BUSY}>
-                      {t('leads.lastCallStatus.busy', 'Busy')}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.VOICEMAIL}>
-                      {t('leads.lastCallStatus.voicemail', 'Voicemail')}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.WRONG_NUMBER}>
-                      {t('leads.lastCallStatus.wrongNumber', 'Wrong Number')}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.CALLBACK_REQUESTED}>
-                      {t(
-                        'leads.lastCallStatus.callbackRequested',
-                        'Callback Requested',
-                      )}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.NOT_INTERESTED}>
-                      {t('leads.lastCallStatus.notInterested', 'Not Interested')}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.INTERESTED}>
-                      {t('leads.lastCallStatus.interested', 'Interested')}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.DISCONNECTED}>
-                      {t('leads.lastCallStatus.disconnected', 'Disconnected')}
-                    </SelectItem>
-                    <SelectItem value={LastCallStatus.INVALID_NUMBER}>
-                      {t('leads.lastCallStatus.invalidNumber', 'Invalid Number')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                {assignment?.lastCallStatus ? (
+                  <Badge variant="secondary" className="w-fit capitalize">
+                    {assignment.lastCallStatus.replace(/_/g, ' ')}
+                  </Badge>
+                ) : (
+                  <span className="text-sm text-muted-foreground">—</span>
+                )}
               </div>
 
               {/* Progress Notes */}
@@ -1072,18 +1020,26 @@ export function WorkMode({
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              <div className="flex justify-between text-sm">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {t('common.createdAt', 'Created')}
+                  {t('leads.lastCallStatus', 'Last Outcome')}
                 </span>
-                <span>{formatDate(assignment?.createdAt)}</span>
+                {assignment?.lastCallStatus ? (
+                  <Badge variant="secondary" className="capitalize">
+                    {assignment.lastCallStatus.replace(/_/g, ' ')}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
               </div>
 
-              <div className="flex justify-between text-sm">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {t('common.updatedAt', 'Updated')}
+                  {t('leads.followupCount', 'Attempts')}
                 </span>
-                <span>{formatDate(assignment?.updatedAt)}</span>
+                <span className="font-semibold">
+                  {assignment?.followupCount ?? 0}
+                </span>
               </div>
 
               <div className="flex justify-between text-sm">
@@ -1095,16 +1051,21 @@ export function WorkMode({
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {t('leads.followupCount', 'Followup Count')}
-                </span>
-                <span>{assignment?.followupCount ?? 0}</span>
-              </div>
-
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
                   {t('leads.nextFollowUp', 'Next Follow-up')}
                 </span>
                 <span>{formatDate(assignment?.nextFollowUpAt)}</span>
+              </div>
+
+              <div className="h-px bg-border" />
+
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{t('common.createdAt', 'Created')}</span>
+                <span>{formatDate(assignment?.createdAt)}</span>
+              </div>
+
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{t('common.updatedAt', 'Updated')}</span>
+                <span>{formatDate(assignment?.updatedAt)}</span>
               </div>
             </CardContent>
           </Card>
@@ -1119,75 +1080,87 @@ export function WorkMode({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
-                  {assignment.previousAssignments.map((prev) => (
-                    <div
-                      key={prev.id}
-                      className="rounded-lg border p-3 space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">
-                          {format(new Date(prev.batchDate), 'dd MMMM yyyy')}
-                        </span>
-                        <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            prev.status === 'missed'
-                              ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border border-dashed border-orange-400'
-                              : prev.status === 'closed'
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                : prev.status === 'attempted'
-                                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                                  : prev.status === 'hot'
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                    : prev.status === 'warm'
-                                      ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
-                                      : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                          }`}
-                        >
-                          {t(`leads.status.${prev.status}`, prev.status)}
-                        </span>
-                      </div>
-
-                      {prev.assignedAgent && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {t('leads.agent', 'Agent')}
+                  {assignment.previousAssignments.map((prev) => {
+                    const attempts = prev.followupCount ?? 0
+                    const hadCalls = attempts > 0 || !!prev.lastCallStatus
+                    return (
+                      <div
+                        key={prev.id}
+                        className="rounded-lg border p-3 flex flex-col gap-2"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">
+                            {format(new Date(prev.batchDate), 'dd MMM yyyy')}
                           </span>
-                          <span>{prev.assignedAgent.name}</span>
+                          <Badge
+                            variant={
+                              prev.status === 'closed'
+                                ? 'default'
+                                : prev.status === 'missed'
+                                  ? 'outline'
+                                  : 'secondary'
+                            }
+                            className="capitalize"
+                          >
+                            {t(`leads.status.${prev.status}`, prev.status)}
+                          </Badge>
                         </div>
-                      )}
 
-                      {prev.lastCallStatus && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {t('leads.lastCallStatus', 'Call Status')}
-                          </span>
-                          <span className="capitalize">
-                            {prev.lastCallStatus.replace(/_/g, ' ')}
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                          {prev.assignedAgent && (
+                            <span>
+                              <span className="text-muted-foreground/70">
+                                {t('leads.agent', 'Agent')}:
+                              </span>{' '}
+                              <span className="text-foreground">
+                                {prev.assignedAgent.name}
+                              </span>
+                            </span>
+                          )}
+                          <span>
+                            <span className="text-muted-foreground/70">
+                              {t('leads.followupCount', 'Attempts')}:
+                            </span>{' '}
+                            <span className="text-foreground">{attempts}</span>
                           </span>
                         </div>
-                      )}
 
-                      {prev.followupCount != null && prev.followupCount > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {t('leads.followupCount', 'Followup Count')}
-                          </span>
-                          <span>{prev.followupCount}</span>
-                        </div>
-                      )}
+                        {prev.lastCallStatus && (
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-muted-foreground">
+                              {t('leads.lastCallStatus', 'Last Outcome')}:
+                            </span>
+                            <Badge
+                              variant="secondary"
+                              className="capitalize text-[10px] h-5"
+                            >
+                              {prev.lastCallStatus.replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
+                        )}
 
-                      {prev.leadProgressNotes && (
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">
-                            {t('leads.progressNotes', 'Notes')}:
-                          </span>
-                          <p className="mt-0.5 text-sm whitespace-pre-wrap">
-                            {prev.leadProgressNotes}
+                        {!hadCalls && (
+                          <p className="text-xs italic text-muted-foreground">
+                            {t(
+                              'leads.noCallsAttempted',
+                              'No calls were attempted during this assignment.',
+                            )}
                           </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+
+                        {prev.leadProgressNotes && (
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">
+                              {t('leads.progressNotes', 'Notes')}:
+                            </span>
+                            <p className="mt-0.5 whitespace-pre-wrap">
+                              {prev.leadProgressNotes}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </CardContent>
               </Card>
             )}
