@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -17,8 +17,6 @@ import {
   XCircle,
   HelpCircle,
   MessageSquare,
-  Plus,
-  Trash2,
 } from 'lucide-react'
 
 import { LeadStatus } from '@/lib/api/types'
@@ -52,7 +50,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Popover,
@@ -63,6 +60,20 @@ import {
 import { VoiceRecordingsDialog } from './VoiceRecordingsDialog'
 import { SendWhatsAppSheet } from './SendWhatsAppSheet'
 import type { VoiceRecording } from '@/hooks/api/useVoiceRecordings'
+
+import {
+  useCampaignLayout,
+  useCampaignCustomFieldKeys,
+} from '@/hooks/api/useLayoutConfigs'
+import { LayoutRenderer } from '@/components/work-mode/LayoutRenderer'
+import {
+  leadToFormValues,
+  type LeadFormValues,
+} from '@/lib/layout/lead-value'
+import {
+  buildDefaultLayout,
+  mergeDiscoveredCustomKeys,
+} from '@/lib/layout/default-layout'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -145,28 +156,9 @@ export function WorkMode({
   const [statusFilter, setStatusFilter] = useState<string>('all')
 
   // -------------------------------------------------------------------------
-  // Lead info form state
+  // Lead info form state — single record keyed by field.key
   // -------------------------------------------------------------------------
-  const [leadName, setLeadName] = useState('')
-  const [leadPhone, setLeadPhone] = useState('')
-  const [leadEmail, setLeadEmail] = useState('')
-  const [leadGender, setLeadGender] = useState('')
-  const [leadDob, setLeadDob] = useState('')
-  const [leadAddress, setLeadAddress] = useState('')
-  const [leadCity, setLeadCity] = useState('')
-  const [leadProvince, setLeadProvince] = useState('')
-  const [leadPostalCode, setLeadPostalCode] = useState('')
-  const [leadOccupation, setLeadOccupation] = useState('')
-  const [leadJobTitle, setLeadJobTitle] = useState('')
-  const [leadCompanyName, setLeadCompanyName] = useState('')
-  const [leadOfficeAddress, setLeadOfficeAddress] = useState('')
-  const [leadSalaryMin, setLeadSalaryMin] = useState('')
-  const [leadSalaryMax, setLeadSalaryMax] = useState('')
-  const [leadTags, setLeadTags] = useState('')
-  const [leadNotes, setLeadNotes] = useState('')
-  const [customFields, setCustomFields] = useState<
-    Array<{ label: string; value: string }>
-  >([])
+  const [formValues, setFormValues] = useState<LeadFormValues>({})
 
   // -------------------------------------------------------------------------
   // Outcome form state
@@ -210,6 +202,16 @@ export function WorkMode({
 
   const listAssignment: LeadAssignment | undefined = data?.data[0]
   const totalLeads = data?.meta.total ?? 0
+
+  // -------------------------------------------------------------------------
+  // Layout config
+  // -------------------------------------------------------------------------
+  const { data: layoutResp } = useCampaignLayout(campaignId)
+  const { data: customKeysResp } = useCampaignCustomFieldKeys(campaignId)
+  const resolvedLayout = useMemo(() => {
+    const base = layoutResp?.layout ?? buildDefaultLayout()
+    return mergeDiscoveredCustomKeys(base, customKeysResp?.keys ?? [])
+  }, [layoutResp, customKeysResp])
 
   // Fetch full assignment detail (includes previousAssignments)
   const { data: detailAssignment } = useLeadAssignment(listAssignment?.id)
@@ -292,41 +294,15 @@ export function WorkMode({
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (assignment) {
-      const lead = assignment.lead
       setOutcomeStatus(assignment.status ?? '')
       setOutcomeLastCallStatus(assignment.lastCallStatus ?? '')
       setOutcomeNotes(assignment.leadProgressNotes ?? '')
-      setLeadName(lead?.leadName ?? '')
-      setLeadPhone(lead?.phone ?? '')
-      setLeadEmail(lead?.email ?? '')
-      setLeadGender(lead?.gender ?? '')
-      setLeadDob(lead?.dateOfBirth?.split('T')[0] ?? '')
-      setLeadAddress(lead?.address ?? '')
-      setLeadCity(lead?.city ?? '')
-      setLeadProvince(lead?.province ?? '')
-      setLeadPostalCode(lead?.postalCode ?? '')
-      setLeadOccupation(lead?.occupation ?? '')
-      setLeadJobTitle(lead?.jobTitle ?? '')
-      setLeadCompanyName(lead?.companyName ?? '')
-      setLeadOfficeAddress(lead?.officeAddress ?? '')
-      setLeadSalaryMin(lead?.salaryMin?.toString() ?? '')
-      setLeadSalaryMax(lead?.salaryMax?.toString() ?? '')
-      setLeadTags(lead?.tags ?? '')
-      setLeadNotes(lead?.notes ?? '')
-      if (lead?.customFields && typeof lead.customFields === 'object') {
-        setCustomFields(
-          Object.entries(lead.customFields).map(([label, value]) => ({
-            label,
-            value: String(value),
-          })),
-        )
-      } else {
-        setCustomFields([])
-      }
+      setFormValues(leadToFormValues(assignment.lead))
     } else {
       setOutcomeStatus('')
       setOutcomeLastCallStatus('')
       setOutcomeNotes('')
+      setFormValues({})
     }
   }, [currentIndex, assignment?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -370,62 +346,46 @@ export function WorkMode({
   }
 
   // -------------------------------------------------------------------------
-  // Custom fields helpers
-  // -------------------------------------------------------------------------
-  const addCustomField = () => {
-    setCustomFields([...customFields, { label: '', value: '' }])
-  }
-
-  const removeCustomField = (index: number) => {
-    setCustomFields(customFields.filter((_, i) => i !== index))
-  }
-
-  const updateCustomField = (
-    index: number,
-    field: 'label' | 'value',
-    value: string,
-  ) => {
-    const updated = [...customFields]
-    updated[index][field] = value
-    setCustomFields(updated)
-  }
-
-  // -------------------------------------------------------------------------
   // Save lead info
   // -------------------------------------------------------------------------
   const handleSaveLeadInfo = () => {
     if (!assignment?.lead?.id) return
 
+    const str = (k: string): string | undefined => {
+      const v = formValues[k]
+      if (v === undefined || v === null) return undefined
+      const s = String(v).trim()
+      return s === '' ? undefined : s
+    }
+    const strOrNull = (k: string): string | null => str(k) ?? null
+    const intOrNull = (k: string): number | null => {
+      const s = str(k)
+      return s ? parseInt(s, 10) : null
+    }
+    const cf = formValues.customFields as Record<string, string> | null | undefined
+
     updateLead(
       {
         id: assignment.lead.id,
         data: {
-          leadName: leadName || undefined,
-          phone: leadPhone || undefined,
-          email: leadEmail || null,
-          gender: leadGender || null,
-          dateOfBirth: leadDob || null,
-          address: leadAddress || null,
-          city: leadCity || null,
-          province: leadProvince || null,
-          postalCode: leadPostalCode || null,
-          occupation: leadOccupation || null,
-          jobTitle: leadJobTitle || null,
-          companyName: leadCompanyName || null,
-          officeAddress: leadOfficeAddress || null,
-          salaryMin: leadSalaryMin ? parseInt(leadSalaryMin, 10) : null,
-          salaryMax: leadSalaryMax ? parseInt(leadSalaryMax, 10) : null,
-          tags: leadTags || null,
-          notes: leadNotes || null,
-          customFields: (() => {
-            const obj: Record<string, string> = {}
-            customFields.forEach((cf) => {
-              if (cf.label.trim() && cf.value.trim()) {
-                obj[cf.label.trim()] = cf.value.trim()
-              }
-            })
-            return Object.keys(obj).length > 0 ? obj : null
-          })(),
+          leadName: str('leadName'),
+          phone: str('phone'),
+          email: strOrNull('email'),
+          gender: strOrNull('gender'),
+          dateOfBirth: strOrNull('dateOfBirth'),
+          address: strOrNull('address'),
+          city: strOrNull('city'),
+          province: strOrNull('province'),
+          postalCode: strOrNull('postalCode'),
+          occupation: strOrNull('occupation'),
+          jobTitle: strOrNull('jobTitle'),
+          companyName: strOrNull('companyName'),
+          officeAddress: strOrNull('officeAddress'),
+          salaryMin: intOrNull('salaryMin'),
+          salaryMax: intOrNull('salaryMax'),
+          tags: strOrNull('tags'),
+          notes: strOrNull('notes'),
+          customFields: cf && Object.keys(cf).length > 0 ? cf : null,
         },
       },
       {
@@ -577,211 +537,33 @@ export function WorkMode({
         {/* Left column — Lead information                                   */}
         {/* ---------------------------------------------------------------- */}
         <div className="lg:col-span-2 flex flex-col gap-4">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center justify-between">
-                {t('leads.sections.basicInfo', 'Basic Information')}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleSaveLeadInfo}
-                  disabled={isSavingLead}
-                >
-                  {isSavingLead && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-                  {t('common.save', 'Save')}
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.name', 'Name')}</label>
-                  <Input value={leadName} onChange={(e) => setLeadName(e.target.value)} placeholder={t('leads.name', 'Name')} />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                    {t('leads.phone', 'Phone')}
-                    {lead?.phone && <WhatsAppStatusIcon hasWhatsapp={lead.hasWhatsapp} />}
-                  </label>
-                  <Input value={leadPhone} onChange={(e) => setLeadPhone(e.target.value)} placeholder="+62812345678" />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.email', 'Email')}</label>
-                  <Input type="email" value={leadEmail} onChange={(e) => setLeadEmail(e.target.value)} placeholder="john@example.com" />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.gender', 'Gender')}</label>
-                  <Select value={leadGender || 'unset'} onValueChange={(v) => setLeadGender(v === 'unset' ? '' : v)}>
-                    <SelectTrigger><SelectValue placeholder={t('common.select', 'Select')} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unset">-</SelectItem>
-                      <SelectItem value="male">{t('leads.male', 'Male')}</SelectItem>
-                      <SelectItem value="female">{t('leads.female', 'Female')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.dateOfBirth', 'Date of Birth')}</label>
-                  <Input type="date" value={leadDob} onChange={(e) => setLeadDob(e.target.value)} />
-                </div>
+          {/* Save bar */}
+          <div className="flex items-center justify-between">
+            {lead?.phone && (
+              <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                {t('leads.phone', 'Phone')}:
+                <span className="font-medium">{lead.phone}</span>
+                <WhatsAppStatusIcon hasWhatsapp={lead.hasWhatsapp} />
               </div>
-            </CardContent>
-          </Card>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSaveLeadInfo}
+              disabled={isSavingLead}
+              className="ml-auto"
+            >
+              {isSavingLead && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              {t('common.save', 'Save')}
+            </Button>
+          </div>
 
-          {/* Address Information */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">
-                {t('leads.sections.address', 'Address Information')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="text-xs text-muted-foreground">{t('leads.address', 'Address')}</label>
-                  <Textarea value={leadAddress} onChange={(e) => setLeadAddress(e.target.value)} className="min-h-[60px]" />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.city', 'City')}</label>
-                  <Input value={leadCity} onChange={(e) => setLeadCity(e.target.value)} />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.province', 'Province')}</label>
-                  <Input value={leadProvince} onChange={(e) => setLeadProvince(e.target.value)} />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.postalCode', 'Postal Code')}</label>
-                  <Input value={leadPostalCode} onChange={(e) => setLeadPostalCode(e.target.value)} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Work Information */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">
-                {t('leads.sections.work', 'Work Information')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.occupation', 'Occupation')}</label>
-                  <Input value={leadOccupation} onChange={(e) => setLeadOccupation(e.target.value)} />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.jobTitle', 'Job Title')}</label>
-                  <Input value={leadJobTitle} onChange={(e) => setLeadJobTitle(e.target.value)} />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.companyName', 'Company')}</label>
-                  <Input value={leadCompanyName} onChange={(e) => setLeadCompanyName(e.target.value)} />
-                </div>
-
-                <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="text-xs text-muted-foreground">{t('leads.officeAddress', 'Office Address')}</label>
-                  <Textarea value={leadOfficeAddress} onChange={(e) => setLeadOfficeAddress(e.target.value)} className="min-h-[60px]" />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.salaryMin', 'Salary Min')}</label>
-                  <Input type="number" value={leadSalaryMin} onChange={(e) => setLeadSalaryMin(e.target.value)} />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.salaryMax', 'Salary Max')}</label>
-                  <Input type="number" value={leadSalaryMax} onChange={(e) => setLeadSalaryMax(e.target.value)} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Additional Information */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">
-                {t('leads.sections.additional', 'Additional Information')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.tags', 'Tags')}</label>
-                  <Input value={leadTags} onChange={(e) => setLeadTags(e.target.value)} placeholder="vip, enterprise" />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">{t('leads.notes', 'Notes')}</label>
-                  <Textarea value={leadNotes} onChange={(e) => setLeadNotes(e.target.value)} className="min-h-[80px]" />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {t('leads.customFields', 'Custom Fields')}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addCustomField}
-                      className="h-7 gap-1 text-xs"
-                    >
-                      <Plus className="h-3 w-3" />
-                      {t('leads.addField', 'Add Field')}
-                    </Button>
-                  </div>
-
-                  {customFields.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {t('leads.noCustomFields', 'No custom fields added yet.')}
-                    </p>
-                  )}
-
-                  {customFields.map((cf, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Input
-                        placeholder={t('leads.fieldLabel', 'Label')}
-                        value={cf.label}
-                        onChange={(e) =>
-                          updateCustomField(index, 'label', e.target.value)
-                        }
-                        className="flex-1"
-                      />
-                      <Input
-                        placeholder={t('leads.fieldValue', 'Value')}
-                        value={cf.value}
-                        onChange={(e) =>
-                          updateCustomField(index, 'value', e.target.value)
-                        }
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeCustomField(index)}
-                        className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Render configurable sections from layout config */}
+          <LayoutRenderer
+            layout={resolvedLayout}
+            values={formValues}
+            onChange={setFormValues}
+          />
         </div>
 
         {/* ---------------------------------------------------------------- */}

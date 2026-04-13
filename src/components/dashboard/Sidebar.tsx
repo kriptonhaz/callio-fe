@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Sparkles,
   Smartphone,
+  LayoutPanelTop,
 } from 'lucide-react'
 import { useLogout } from '@/hooks/api/useAuth'
 import { cn } from '@/lib/utils'
@@ -161,13 +162,25 @@ export function Sidebar({
               label: t('dashboard.menu.mobileOperator', 'Mobile Operator'),
               href: '/dashboard/settings/mobile-operator',
             },
+            {
+              icon: LayoutPanelTop,
+              label: t('dashboard.menu.workModeLayout', 'Work Mode Layout'),
+              href: '/dashboard/settings/layout',
+            },
           ],
         },
       ]
     }
 
     if (role === 'admin' || role === 'supervisor') {
-      const items = [
+      type MenuItem = {
+        icon?: unknown
+        label: string
+        href: string
+        id?: string
+        children?: Array<{ label: string; href: string; icon?: unknown }>
+      }
+      const items: MenuItem[] = [
         dashboardItem,
         {
           icon: Calendar,
@@ -204,6 +217,20 @@ export function Sidebar({
         icon: Settings,
         label: t('dashboard.menu.settings'),
         href: '/dashboard/settings',
+        id: 'settings',
+        children:
+          role === 'admin'
+            ? [
+                {
+                  icon: LayoutPanelTop,
+                  label: t(
+                    'dashboard.menu.workModeLayout',
+                    'Work Mode Layout',
+                  ),
+                  href: '/dashboard/settings/layout',
+                },
+              ]
+            : undefined,
       })
 
       // Only Admin can see Users menu

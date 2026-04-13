@@ -26,6 +26,12 @@ import { ComposeSmsSheet } from '@/components/campaigns/ComposeSmsSheet'
 import { BlastWhatsAppSheet } from '@/components/campaigns/BlastWhatsAppSheet'
 import { AutoDistributeDialog } from '@/components/campaigns/AutoDistributeDialog'
 import { WorkMode } from '@/components/campaigns/WorkMode'
+import { CampaignLayoutView } from '@/components/campaigns/CampaignLayoutView'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
 import {
   Card,
@@ -97,6 +103,7 @@ import {
   Shuffle,
   List,
   UserCheck,
+  LayoutPanelTop,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -697,6 +704,38 @@ function CampaignDetailPage() {
           </CardContent>
           )}
         </Card>
+
+        {/* Campaign Settings — admin only */}
+        {isAdmin && (
+          <Collapsible>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <LayoutPanelTop className="h-5 w-5" />
+                      <CardTitle>
+                        {t('campaigns.settings', 'Campaign Settings')}
+                      </CardTitle>
+                    </div>
+                    <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+                  </div>
+                  <CardDescription>
+                    {t(
+                      'campaigns.settingsDesc',
+                      'Configure how Work Mode looks for agents on this campaign.',
+                    )}
+                  </CardDescription>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  <CampaignLayoutView campaignId={campaignId} />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
 
         {/* Leads Section - Full Width */}
         <Card>
