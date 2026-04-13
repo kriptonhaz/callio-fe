@@ -276,7 +276,7 @@ export function WorkMode({
   // backend-written lastCallStatus within a few seconds after any call ends.
   const isInPostCallPoll = postCallPollUntil > 0 && Date.now() < postCallPollUntil
   const { data: polledAssignment } = useLeadAssignment(assignment?.id, {
-    refetchInterval: isPollingForCall || isInPostCallPoll ? 1500 : false,
+    refetchInterval: isPollingForCall || isInPostCallPoll ? 1000 : false,
   })
   const activeCallData = polledAssignment?.activeCall ?? assignment?.activeCall
 
@@ -297,7 +297,7 @@ export function WorkMode({
       setCallWasActive(false)
       setRecordingCallLogId(null)
       setCallEndedSignal((n) => n + 1)
-      setPostCallPollUntil(Date.now() + 10_000)
+      setPostCallPollUntil(Date.now() + 35_000)
     }
   }, [isPollingForCall, callWasActive, polledAssignment])
 
@@ -317,7 +317,7 @@ export function WorkMode({
       callStatus === 'connecting'
     if (wasActive && !isActive) {
       setCallEndedSignal((n) => n + 1)
-      setPostCallPollUntil(Date.now() + 10_000)
+      setPostCallPollUntil(Date.now() + 35_000)
     }
     prevCallStatusRef.current = callStatus
   }, [callStatus])

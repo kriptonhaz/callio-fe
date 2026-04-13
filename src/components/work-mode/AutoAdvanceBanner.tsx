@@ -1,4 +1,4 @@
-import { Timer, X } from 'lucide-react'
+import { PhoneForwarded, Timer, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -20,30 +20,49 @@ export function AutoAdvanceBanner({
   )
 
   return (
-    <div className="relative overflow-hidden rounded-md border border-amber-200 bg-amber-50 text-amber-900">
-      <div
-        className="absolute inset-y-0 left-0 bg-amber-200/60 transition-[width] duration-1000 ease-linear"
-        style={{ width: `${pct}%` }}
-        aria-hidden
-      />
-      <div className="relative flex items-center justify-between gap-3 px-3 py-2 text-sm">
-        <div className="flex items-center gap-2">
-          <Timer className="h-4 w-4 shrink-0" />
-          <span>
-            {autoDial
-              ? `Auto-advancing and dialing next lead in ${secondsLeft}s…`
-              : `Auto-advancing to next lead in ${secondsLeft}s…`}
-          </span>
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 right-6 z-[100] w-[360px] animate-in slide-in-from-right fade-in rounded-lg border-2 border-amber-400 bg-background shadow-2xl"
+    >
+      <div className="flex items-start gap-3 p-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+          {autoDial ? (
+            <PhoneForwarded className="h-5 w-5" />
+          ) : (
+            <Timer className="h-5 w-5" />
+          )}
         </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold leading-tight">
+            {autoDial
+              ? 'Advancing and dialing next lead'
+              : 'Advancing to next lead'}
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            In{' '}
+            <span className="font-bold text-foreground tabular-nums">
+              {secondsLeft}s
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-end gap-2 px-4 pb-3">
         <Button
           size="sm"
-          variant="ghost"
+          variant="outline"
           onClick={onCancel}
-          className="h-7 gap-1 text-amber-900 hover:bg-amber-200/60 hover:text-amber-900"
+          className="gap-1.5 border-amber-400 hover:bg-amber-50 hover:text-amber-900"
         >
-          <X className="h-3.5 w-3.5" />
+          <X className="h-4 w-4" />
           Cancel
         </Button>
+      </div>
+      <div className="h-1 w-full overflow-hidden rounded-b-lg bg-amber-100">
+        <div
+          className="h-full bg-amber-500 transition-[width] duration-1000 ease-linear"
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   )

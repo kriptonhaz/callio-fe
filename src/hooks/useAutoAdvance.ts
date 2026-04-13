@@ -39,7 +39,7 @@ export interface AutoAdvanceState {
   cancel: () => void
 }
 
-const GRACE_WINDOW_MS = 3000
+const GRACE_WINDOW_MS = 30000
 
 export function useAutoAdvance({
   settings,
@@ -102,12 +102,19 @@ export function useAutoAdvance({
   // React to call-ended signal.
   useEffect(() => {
     if (callEndedSignal === 0) return
-    if (!settings?.autoAdvanceEnabled) return
-    if (!prerequisites.campaignHasVoip) return
-    if (!prerequisites.sipRegistered) return
-    if (!prerequisites.agentPlacedCall) return
-    if (isLastLead) return
-    if (settings.autoAdvanceStatuses.length === 0) return
+    const why: string[] = []
+    if (!settings?.autoAdvanceEnabled) why.push('settings.autoAdvanceEnabled=false')
+    if (!prerequisites.campaignHasVoip) why.push('campaignHasVoip=false')
+    if (!prerequisites.sipRegistered) why.push('sipRegistered=false')
+    if (!prerequisites.agentPlacedCall) why.push('agentPlacedCall=false')
+    if (isLastLead) why.push('isLastLead=true')
+    if (settings && settings.autoAdvanceStatuses.length === 0)
+      why.push('autoAdvanceStatuses=[]')
+    if (why.length > 0) {
+      console.debug('[auto-advance] skipped:', why.join(', '))
+      return
+    }
+    if (!settings) return
 
     // Grace window: wait for backend to populate lastCallStatus.
     const startedForIndex = currentIndex
@@ -115,7 +122,14 @@ export function useAutoAdvance({
 
     const evaluateAndStart = (status: LastCallStatus | null | undefined) => {
       if (!status) return false
-      if (!statuses.has(status)) return false
+      if (!statuses.has(status)) {
+        console.debug(
+          `[auto-advance] status "${status}" not in configured list`,
+          Array.from(statuses),
+        )
+        return false
+      }
+      console.debug(`[auto-advance] starting countdown for status "${status}"`)
       // Start countdown.
       const total = Math.max(1, Math.min(60, settings.autoAdvanceDelaySec))
       setSecondsLeft(total)
@@ -139,18 +153,27 @@ export function useAutoAdvance({
 
     const startedAt = Date.now()
     const tick = () => {
-      if (Date.now() - startedAt >= GRACE_WINDOW_MS) {
+      const elapsed = Date.now() - startedAt
+      if (elapsed >= GRACE_WINDOW_MS) {
+        console.debug(
+          `[auto-advance] grace window expired after ${Math.round(elapsed / 1000)}s without a matching status. Last read:`,
+          getCurrentStatusRef.current(),
+        )
         graceTimerRef.current = null
         return
       }
       const s = getCurrentStatusRef.current()
+      console.debug(
+        `[auto-advance] polling @ ${Math.round(elapsed / 1000)}s, status=`,
+        s,
+      )
       if (evaluateAndStart(s)) {
         graceTimerRef.current = null
         return
       }
-      graceTimerRef.current = window.setTimeout(tick, 500)
+      graceTimerRef.current = window.setTimeout(tick, 1000)
     }
-    graceTimerRef.current = window.setTimeout(tick, 500)
+    graceTimerRef.current = window.setTimeout(tick, 1000)
 
     return () => {
       // callEndedSignal changed or deps changed — cleanup is in `clearTimers`
