@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -65,7 +65,10 @@ import {
   useCampaignLayout,
   useCampaignCustomFieldKeys,
 } from '@/hooks/api/useLayoutConfigs'
+import { useVoipSettings } from '@/hooks/api/useVoipSettings'
+import { useAutoAdvance } from '@/hooks/useAutoAdvance'
 import { LayoutRenderer } from '@/components/work-mode/LayoutRenderer'
+import { AutoAdvanceBanner } from '@/components/work-mode/AutoAdvanceBanner'
 import {
   leadToFormValues,
   type LeadFormValues,
@@ -183,6 +186,13 @@ export function WorkMode({
     null,
   )
 
+  // Auto-advance signal bus — bumps when any call (live SIP, AI, recording) ends.
+  const [callEndedSignal, setCallEndedSignal] = useState(0)
+  const [agentPlacedCall, setAgentPlacedCall] = useState(false)
+  // Window end timestamp during which we keep polling the assignment so the
+  // backend-written lastCallStatus is visible to the auto-advance hook.
+  const [postCallPollUntil, setPostCallPollUntil] = useState(0)
+
   // -------------------------------------------------------------------------
   // WhatsApp sheet state
   // -------------------------------------------------------------------------
@@ -202,6 +212,11 @@ export function WorkMode({
 
   const listAssignment: LeadAssignment | undefined = data?.data[0]
   const totalLeads = data?.meta.total ?? 0
+
+  // -------------------------------------------------------------------------
+  // VoIP settings (auto-advance after call)
+  // -------------------------------------------------------------------------
+  const { data: voipSettings } = useVoipSettings()
 
   // -------------------------------------------------------------------------
   // Layout config
@@ -257,9 +272,11 @@ export function WorkMode({
   const { mutate: initiateAiAgentCall, isPending: isInitiatingAiCall } =
     useInitiateAiAgentCall()
 
-  // Poll assignment to detect active-call changes
+  // Poll assignment to detect active-call changes AND to pick up the
+  // backend-written lastCallStatus within a few seconds after any call ends.
+  const isInPostCallPoll = postCallPollUntil > 0 && Date.now() < postCallPollUntil
   const { data: polledAssignment } = useLeadAssignment(assignment?.id, {
-    refetchInterval: isPollingForCall ? 2000 : false,
+    refetchInterval: isPollingForCall || isInPostCallPoll ? 1500 : false,
   })
   const activeCallData = polledAssignment?.activeCall ?? assignment?.activeCall
 
@@ -279,8 +296,31 @@ export function WorkMode({
       setIsPollingForCall(false)
       setCallWasActive(false)
       setRecordingCallLogId(null)
+      setCallEndedSignal((n) => n + 1)
+      setPostCallPollUntil(Date.now() + 10_000)
     }
   }, [isPollingForCall, callWasActive, polledAssignment])
+
+  // Detect live SIP call end via callStatus transition (active → ended/idle).
+  const prevCallStatusRef = useRef(callStatus)
+  useEffect(() => {
+    const prev = prevCallStatusRef.current
+    const wasActive =
+      prev === 'active' ||
+      prev === 'ringing' ||
+      prev === 'calling' ||
+      prev === 'connecting'
+    const isActive =
+      callStatus === 'active' ||
+      callStatus === 'ringing' ||
+      callStatus === 'calling' ||
+      callStatus === 'connecting'
+    if (wasActive && !isActive) {
+      setCallEndedSignal((n) => n + 1)
+      setPostCallPollUntil(Date.now() + 10_000)
+    }
+    prevCallStatusRef.current = callStatus
+  }, [callStatus])
 
   // -------------------------------------------------------------------------
   // Update assignment mutation
@@ -304,6 +344,7 @@ export function WorkMode({
       setOutcomeNotes('')
       setFormValues({})
     }
+    setAgentPlacedCall(false)
   }, [currentIndex, assignment?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // -------------------------------------------------------------------------
@@ -402,6 +443,80 @@ export function WorkMode({
   }
 
   // -------------------------------------------------------------------------
+  // Auto-advance after call
+  // -------------------------------------------------------------------------
+  const initiateLiveCall = useCallback(() => {
+    const currentLead = assignment?.lead
+    if (!currentLead?.phone || !currentLead?.id) return
+    if (!sipCredentials || !currentUser?.id) return
+    if (!isRegistered) {
+      toast.error(
+        t(
+          'leads.sipDisconnected',
+          'SIP disconnected, please dial manually',
+        ),
+      )
+      return
+    }
+    setCallMode('live')
+    setSelectedRecording(null)
+    const dialNumber = normalizePhone(currentLead.phone)
+    initiateSession(
+      {
+        campaignId,
+        leadId: currentLead.id,
+        phoneNumber: currentLead.phone,
+        agentId: currentUser.id,
+      },
+      {
+        onSuccess: (sessionData) => {
+          const dialExtension = `${dialNumber}*${sessionData.sessionToken}`
+          makeCall(dialExtension, sipCredentials.server)
+        },
+        onError: () => {
+          toast.error(
+            t(
+              'leads.sessionInitFailed',
+              'Failed to initiate call session',
+            ),
+          )
+        },
+      },
+    )
+  }, [
+    assignment?.lead,
+    sipCredentials,
+    currentUser?.id,
+    isRegistered,
+    campaignId,
+    initiateSession,
+    makeCall,
+    t,
+  ])
+
+  const campaignHasVoip = !!campaignServices?.some(
+    (s) => s.serviceType === ServiceType.VOICE || s.serviceType === 'voice',
+  )
+
+  const { secondsLeft, totalSeconds, cancel: cancelAutoAdvance } =
+    useAutoAdvance({
+      settings: voipSettings,
+      prerequisites: {
+        campaignHasVoip,
+        sipRegistered: isRegistered,
+        agentPlacedCall,
+      },
+      currentIndex,
+      isLastLead: currentIndex >= totalLeads,
+      getCurrentStatus: () => polledAssignment?.lastCallStatus ?? null,
+      callEndedSignal,
+      onAdvance: () => {
+        if (currentIndex < totalLeads) setCurrentIndex(currentIndex + 1)
+      },
+      onAutoDial: initiateLiveCall,
+    })
+
+  // -------------------------------------------------------------------------
   // Loading state
   // -------------------------------------------------------------------------
   if (isLoading) {
@@ -476,6 +591,15 @@ export function WorkMode({
   // -------------------------------------------------------------------------
   return (
     <div className="flex flex-col gap-4">
+      {secondsLeft !== null && (
+        <AutoAdvanceBanner
+          secondsLeft={secondsLeft}
+          totalSeconds={totalSeconds}
+          autoDial={voipSettings?.autoAdvanceLiveCall}
+          onCancel={cancelAutoAdvance}
+        />
+      )}
+
       {/* ------------------------------------------------------------------ */}
       {/* Header bar                                                          */}
       {/* ------------------------------------------------------------------ */}
@@ -685,6 +809,8 @@ export function WorkMode({
                               setCallOptionsOpen(false)
                               setCallMode('live')
                               setSelectedRecording(null)
+                              setAgentPlacedCall(true)
+                              cancelAutoAdvance()
 
                               const dialNumber = normalizePhone(lead.phone)
 
@@ -729,6 +855,8 @@ export function WorkMode({
                               if (!lead?.phone || !lead?.id) return
 
                               setCallOptionsOpen(false)
+                              setAgentPlacedCall(true)
+                              cancelAutoAdvance()
                               const dialNumber = normalizePhone(lead.phone)
 
                               initiateAiAgentCall(
@@ -1081,6 +1209,8 @@ export function WorkMode({
         onCall={(recording) => {
           if (!lead?.phone || !lead?.id) return
 
+          setAgentPlacedCall(true)
+          cancelAutoAdvance()
           const dialNumber = normalizePhone(lead.phone)
 
           dialRecording(

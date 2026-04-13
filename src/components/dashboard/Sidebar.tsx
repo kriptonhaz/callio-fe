@@ -9,6 +9,7 @@ import {
   Sparkles,
   Smartphone,
   LayoutPanelTop,
+  PhoneCall as PhoneCallIcon,
 } from 'lucide-react'
 import { useLogout } from '@/hooks/api/useAuth'
 import { cn } from '@/lib/utils'
@@ -167,6 +168,11 @@ export function Sidebar({
               label: t('dashboard.menu.workModeLayout', 'Work Mode Layout'),
               href: '/dashboard/settings/layout',
             },
+            {
+              icon: PhoneCallIcon,
+              label: t('dashboard.menu.voipSettings', 'VoIP Settings'),
+              href: '/dashboard/settings/voip',
+            },
           ],
         },
       ]
@@ -228,6 +234,14 @@ export function Sidebar({
                     'Work Mode Layout',
                   ),
                   href: '/dashboard/settings/layout',
+                },
+                {
+                  icon: PhoneCallIcon,
+                  label: t(
+                    'dashboard.menu.voipSettings',
+                    'VoIP Settings',
+                  ),
+                  href: '/dashboard/settings/voip',
                 },
               ]
             : undefined,
