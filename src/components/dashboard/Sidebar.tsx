@@ -10,6 +10,7 @@ import {
   Smartphone,
   LayoutPanelTop,
   PhoneCall as PhoneCallIcon,
+  Database,
 } from 'lucide-react'
 import { useLogout } from '@/hooks/api/useAuth'
 import { cn } from '@/lib/utils'
@@ -173,6 +174,11 @@ export function Sidebar({
               label: t('dashboard.menu.voipSettings', 'VoIP Settings'),
               href: '/dashboard/settings/voip',
             },
+            {
+              icon: Database,
+              label: t('dashboard.menu.masterData', 'Master Data'),
+              href: '/dashboard/settings/master-data',
+            },
           ],
         },
       ]
@@ -242,6 +248,11 @@ export function Sidebar({
                     'VoIP Settings',
                   ),
                   href: '/dashboard/settings/voip',
+                },
+                {
+                  icon: Database,
+                  label: t('dashboard.menu.masterData', 'Master Data'),
+                  href: '/dashboard/settings/master-data',
                 },
               ]
             : undefined,

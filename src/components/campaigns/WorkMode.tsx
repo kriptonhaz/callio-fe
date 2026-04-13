@@ -19,7 +19,9 @@ import {
   MessageSquare,
 } from 'lucide-react'
 
-import { LeadStatus } from '@/lib/api/types'
+import type { LeadStatus } from '@/lib/api/types'
+import { LeadStatusBadge } from '@/components/lead-status/LeadStatusBadge'
+import { LeadStatusSelect } from '@/components/lead-status/LeadStatusSelect'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { ServiceType } from '@/lib/api/types/services.types'
 
@@ -42,13 +44,6 @@ import { useSipStore } from '@/store/useSipStore'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -535,21 +530,12 @@ export function WorkMode({
       <div className="flex flex-col items-center gap-3 py-24">
         {/* Keep header so filter can be changed */}
         <div className="flex items-center gap-3 mb-4">
-          <Select value={statusFilter} onValueChange={handleFilterChange}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('workMode.filterAll', 'All')}</SelectItem>
-              <SelectItem value={LeadStatus.NEW}>{t('leads.status.new', 'New')}</SelectItem>
-              <SelectItem value={LeadStatus.ATTEMPTED}>{t('leads.status.attempted', 'Attempted')}</SelectItem>
-              <SelectItem value={LeadStatus.HOT}>{t('leads.status.hot', 'Hot')}</SelectItem>
-              <SelectItem value={LeadStatus.WARM}>{t('leads.status.warm', 'Warm')}</SelectItem>
-              <SelectItem value={LeadStatus.COLD}>{t('leads.status.cold', 'Cold')}</SelectItem>
-              <SelectItem value={LeadStatus.CLOSED}>{t('leads.status.closed', 'Closed')}</SelectItem>
-              <SelectItem value={LeadStatus.MISSED}>{t('leads.status.missed', 'Missed')}</SelectItem>
-            </SelectContent>
-          </Select>
+          <LeadStatusSelect
+            value={statusFilter}
+            onValueChange={handleFilterChange}
+            includeAll
+            className="w-36"
+          />
         </div>
         <Users className="h-10 w-10 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
@@ -628,20 +614,12 @@ export function WorkMode({
         </div>
 
         {/* Status filter */}
-        <Select value={statusFilter} onValueChange={handleFilterChange}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('workMode.filterAll', 'All')}</SelectItem>
-            <SelectItem value={LeadStatus.NEW}>{t('leads.status.new', 'New')}</SelectItem>
-            <SelectItem value={LeadStatus.ATTEMPTED}>{t('leads.status.attempted', 'Attempted')}</SelectItem>
-            <SelectItem value={LeadStatus.HOT}>{t('leads.status.hot', 'Hot')}</SelectItem>
-            <SelectItem value={LeadStatus.WARM}>{t('leads.status.warm', 'Warm')}</SelectItem>
-            <SelectItem value={LeadStatus.COLD}>{t('leads.status.cold', 'Cold')}</SelectItem>
-            <SelectItem value={LeadStatus.CLOSED}>{t('leads.status.closed', 'Closed')}</SelectItem>
-          </SelectContent>
-        </Select>
+        <LeadStatusSelect
+          value={statusFilter}
+          onValueChange={handleFilterChange}
+          includeAll
+          className="w-36"
+        />
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -936,36 +914,11 @@ export function WorkMode({
                 <label className="text-sm font-medium">
                   {t('common.status', 'Status')}
                 </label>
-                <Select
+                <LeadStatusSelect
                   value={outcomeStatus}
-                  onValueChange={(v) => setOutcomeStatus(v as LeadStatus)}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={t('workMode.selectStatus', 'Select status')}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={LeadStatus.NEW}>
-                      {t('leads.status.new', 'New')}
-                    </SelectItem>
-                    <SelectItem value={LeadStatus.ATTEMPTED}>
-                      {t('leads.status.attempted', 'Attempted')}
-                    </SelectItem>
-                    <SelectItem value={LeadStatus.HOT}>
-                      {t('leads.status.hot', 'Hot')}
-                    </SelectItem>
-                    <SelectItem value={LeadStatus.WARM}>
-                      {t('leads.status.warm', 'Warm')}
-                    </SelectItem>
-                    <SelectItem value={LeadStatus.COLD}>
-                      {t('leads.status.cold', 'Cold')}
-                    </SelectItem>
-                    <SelectItem value={LeadStatus.CLOSED}>
-                      {t('leads.status.closed', 'Closed')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  onValueChange={setOutcomeStatus}
+                  placeholder={t('workMode.selectStatus', 'Select status')}
+                />
               </div>
 
               {/* Last Call Status — read-only, backend-derived */}
@@ -1092,18 +1045,7 @@ export function WorkMode({
                           <span className="text-sm font-medium">
                             {format(new Date(prev.batchDate), 'dd MMM yyyy')}
                           </span>
-                          <Badge
-                            variant={
-                              prev.status === 'closed'
-                                ? 'default'
-                                : prev.status === 'missed'
-                                  ? 'outline'
-                                  : 'secondary'
-                            }
-                            className="capitalize"
-                          >
-                            {t(`leads.status.${prev.status}`, prev.status)}
-                          </Badge>
+                          <LeadStatusBadge slug={prev.status} />
                         </div>
 
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">

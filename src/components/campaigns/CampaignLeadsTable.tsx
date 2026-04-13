@@ -6,9 +6,12 @@ import {
 } from '@/hooks/api/useLeadAssignments'
 import { useMe } from '@/hooks/api/useAuth'
 import { useDebounce } from '@/hooks/useDebounce'
-import { LeadStatus } from '@/lib/api/types'
+import type { LeadStatus } from '@/lib/api/types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { EditLeadSheet } from './EditLeadSheet'
+import { LeadStatusBadge } from '@/components/lead-status/LeadStatusBadge'
+import { LeadStatusSelect } from '@/components/lead-status/LeadStatusSelect'
+import { ALL_FILTER_VALUE } from '@/lib/lead-status/constants'
 import {
   Table,
   TableBody,
@@ -18,15 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,7 +69,7 @@ export function CampaignLeadsTable({
   const isAgent = me?.role === 'agent'
 
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<LeadStatus>(ALL_FILTER_VALUE)
   const [internalBatchDate, setInternalBatchDate] = useState(
     new Date().toISOString().split('T')[0],
   )
@@ -98,7 +93,7 @@ export function CampaignLeadsTable({
   } = useLeadAssignments({
     campaignId,
     search: debouncedSearch || undefined,
-    status: statusFilter === 'all' ? undefined : statusFilter,
+    status: statusFilter === ALL_FILTER_VALUE ? undefined : statusFilter,
     batchDate: !isAgent && batchDate ? batchDate : undefined,
     page,
     limit,
@@ -137,51 +132,9 @@ export function CampaignLeadsTable({
   const totalPages = leadsData?.meta?.totalPages || 1
   const totalItems = leadsData?.meta?.total || 0
 
-  const getStatusBadge = (status: LeadStatus) => {
-    const statusConfig: Record<
-      LeadStatus,
-      { className: string; label: string }
-    > = {
-      [LeadStatus.NEW]: {
-        className:
-          'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-        label: t('leads.status.new', 'New'),
-      },
-      [LeadStatus.ATTEMPTED]: {
-        className:
-          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-        label: t('leads.status.attempted', 'Attempted'),
-      },
-      [LeadStatus.HOT]: {
-        className:
-          'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-        label: t('leads.status.hot', 'Hot'),
-      },
-      [LeadStatus.WARM]: {
-        className:
-          'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-        label: t('leads.status.warm', 'Warm'),
-      },
-      [LeadStatus.COLD]: {
-        className:
-          'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
-        label: t('leads.status.cold', 'Cold'),
-      },
-      [LeadStatus.CLOSED]: {
-        className:
-          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        label: t('leads.status.closed', 'Closed'),
-      },
-      [LeadStatus.MISSED]: {
-        className:
-          'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border border-dashed border-orange-400',
-        label: t('leads.status.missed', 'Missed'),
-      },
-    }
-
-    const config = statusConfig[status] || statusConfig[LeadStatus.NEW]
-    return <Badge className={config.className}>{config.label}</Badge>
-  }
+  const getStatusBadge = (status: LeadStatus) => (
+    <LeadStatusBadge slug={status} />
+  )
 
   const handleRowClick = (assignment: LeadAssignment) => {
     setSelectedAssignment(assignment)
@@ -258,43 +211,16 @@ export function CampaignLeadsTable({
           />
         )}
 
-        <Select
+        <LeadStatusSelect
           value={statusFilter}
-          onValueChange={(value) => {
-            setStatusFilter(value as LeadStatus | 'all')
+          onValueChange={(v) => {
+            setStatusFilter(v)
             setPage(1)
           }}
-        >
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue
-              placeholder={t('leads.filterByStatus', 'Filter by status')}
-            />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('common.all', 'All')}</SelectItem>
-            <SelectItem value={LeadStatus.NEW}>
-              {t('leads.status.new', 'New')}
-            </SelectItem>
-            <SelectItem value={LeadStatus.ATTEMPTED}>
-              {t('leads.status.attempted', 'Attempted')}
-            </SelectItem>
-            <SelectItem value={LeadStatus.HOT}>
-              {t('leads.status.hot', 'Hot')}
-            </SelectItem>
-            <SelectItem value={LeadStatus.WARM}>
-              {t('leads.status.warm', 'Warm')}
-            </SelectItem>
-            <SelectItem value={LeadStatus.COLD}>
-              {t('leads.status.cold', 'Cold')}
-            </SelectItem>
-            <SelectItem value={LeadStatus.CLOSED}>
-              {t('leads.status.closed', 'Closed')}
-            </SelectItem>
-            <SelectItem value={LeadStatus.MISSED}>
-              {t('leads.status.missed', 'Missed')}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+          includeAll
+          className="w-full sm:w-40"
+          placeholder={t('leads.filterByStatus', 'Filter by status')}
+        />
       </div>
 
       {/* Table */}

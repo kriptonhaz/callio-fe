@@ -21,9 +21,11 @@ import {
 import { useInitiateAiAgentCall } from '@/hooks/api/useAiAgentCalls'
 import { useMe } from '@/hooks/api/useAuth'
 import { useSipStore } from '@/store/useSipStore'
-import { LeadStatus, UserRole } from '@/lib/api/types'
+import { UserRole } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
+import { LeadStatusSelect } from '@/components/lead-status/LeadStatusSelect'
+import { SYSTEM_SLUGS } from '@/lib/lead-status/constants'
 import type { UpdateLeadRequest } from '@/lib/api/types/leads.types'
 import {
   Sheet,
@@ -110,7 +112,7 @@ const leadFormSchema = z.object({
   tags: z.string().optional(),
   notes: z.string().optional(),
   // Assignment fields
-  status: z.nativeEnum(LeadStatus),
+  status: z.string().min(1),
   assignedSupervisorId: z.string().optional(),
   assignedAgentId: z.string().optional(),
   leadProgressNotes: z.string().optional(),
@@ -272,7 +274,7 @@ export function EditLeadSheet({
       salaryMax: '',
       tags: '',
       notes: '',
-      status: LeadStatus.NEW,
+      status: SYSTEM_SLUGS.NEW,
       assignedSupervisorId: '',
       assignedAgentId: '',
       leadProgressNotes: '',
@@ -302,7 +304,7 @@ export function EditLeadSheet({
         salaryMax: lead.salaryMax?.toString() || '',
         tags: lead.tags || '',
         notes: lead.notes || '',
-        status: assignment.status || LeadStatus.NEW,
+        status: assignment.status || SYSTEM_SLUGS.NEW,
         assignedSupervisorId: assignment.assignedSupervisorId || '',
         assignedAgentId: assignment.assignedAgentId || '',
         leadProgressNotes: assignment.leadProgressNotes || '',
@@ -534,36 +536,13 @@ export function EditLeadSheet({
                                   {t('common.status', 'Status')}{' '}
                                   <span className="text-red-500">*</span>
                                 </FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  value={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger className="h-11">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value={LeadStatus.NEW}>
-                                      {t('leads.status.new', 'New')}
-                                    </SelectItem>
-                                    <SelectItem value={LeadStatus.ATTEMPTED}>
-                                      {t('leads.status.attempted', 'Attempted')}
-                                    </SelectItem>
-                                    <SelectItem value={LeadStatus.HOT}>
-                                      {t('leads.status.hot', 'Hot')}
-                                    </SelectItem>
-                                    <SelectItem value={LeadStatus.WARM}>
-                                      {t('leads.status.warm', 'Warm')}
-                                    </SelectItem>
-                                    <SelectItem value={LeadStatus.COLD}>
-                                      {t('leads.status.cold', 'Cold')}
-                                    </SelectItem>
-                                    <SelectItem value={LeadStatus.CLOSED}>
-                                      {t('leads.status.closed', 'Closed')}
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <FormControl>
+                                  <LeadStatusSelect
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    className="h-11"
+                                  />
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}

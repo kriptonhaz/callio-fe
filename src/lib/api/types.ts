@@ -55,15 +55,9 @@ export enum CampaignStatus {
   COMPLETED = 'completed',
 }
 
-export enum LeadStatus {
-  NEW = 'new',
-  ATTEMPTED = 'attempted',
-  HOT = 'hot',
-  WARM = 'warm',
-  COLD = 'cold',
-  CLOSED = 'closed',
-  MISSED = 'missed',
-}
+// Lead status is now dynamic per-client master data — see
+// `useLeadStatusOptions`. This type alias preserves call-site signatures.
+export type LeadStatus = string
 
 export enum AppointmentStatus {
   SCHEDULED = 'scheduled',

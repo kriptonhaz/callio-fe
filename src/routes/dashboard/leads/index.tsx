@@ -66,7 +66,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { AddLeadSheet } from '@/components/campaigns/AddLeadSheet'
 import { EditLeadSheet } from '@/components/campaigns/EditLeadSheet'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
-import { LeadStatus } from '@/lib/api/types'
+import { SYSTEM_SLUGS } from '@/lib/lead-status/constants'
 import { toast } from 'sonner'
 import { StandardPagination } from '@/components/common/StandardPagination'
 import { WhatsAppInstanceSelector } from '@/components/leads/WhatsAppInstanceSelector'
@@ -374,7 +374,7 @@ function LeadsPage() {
       leadId: lead.id,
       campaignId: '', // No campaign association from leads page
       assignedAgentId: null,
-      status: lead.status || LeadStatus.NEW,
+      status: lead.status || SYSTEM_SLUGS.NEW,
       priority: 'normal',
       lastCallStatus: null,
       lastCallDate: null,
