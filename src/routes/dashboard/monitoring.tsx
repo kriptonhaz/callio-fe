@@ -435,7 +435,7 @@ function MonitoringPage() {
                           agents.map((agent) => (
                             <TableRow key={agent.extension}>
                               <TableCell className="font-medium">
-                                {agent.user.name}
+                                {agent.user?.name ?? '-'}
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="font-mono">
@@ -443,9 +443,9 @@ function MonitoringPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="capitalize">
-                                {agent.user.role}
+                                {agent.user?.role ?? '-'}
                               </TableCell>
-                              <TableCell>{agent.user.email}</TableCell>
+                              <TableCell>{agent.user?.email ?? '-'}</TableCell>
                               <TableCell>
                                 {getStatusBadge(agent.status)}
                               </TableCell>
@@ -533,15 +533,15 @@ function MonitoringPage() {
                           <TableRow key={call.id}>
                             <TableCell className="font-medium">
                               <div className="flex flex-col">
-                                <span>{call.agent.name}</span>
+                                <span>{call.agent?.name ?? '-'}</span>
                                 <span className="text-xs text-muted-foreground">
-                                  Ext: {call.agent.sipExtension}
+                                  Ext: {call.agent?.sipExtension ?? '-'}
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell>{call.phoneNumber}</TableCell>
-                            <TableCell>{call.campaign.name}</TableCell>
-                            <TableCell>{call.lead.leadName}</TableCell>
+                            <TableCell>{call.phoneNumber ?? '-'}</TableCell>
+                            <TableCell>{call.campaign?.name ?? '-'}</TableCell>
+                            <TableCell>{call.lead?.leadName ?? '-'}</TableCell>
                             <TableCell>
                               {call.startTime
                                 ? format(new Date(call.startTime), 'HH:mm:ss')
@@ -660,7 +660,7 @@ function MonitoringPage() {
                     {t('monitoring.campaign', 'Campaign')}
                   </span>
                   <span className="font-medium">
-                    {monitoringCall.campaign.name}
+                    {monitoringCall.campaign?.name ?? '-'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -668,7 +668,7 @@ function MonitoringPage() {
                     {t('monitoring.lead', 'Lead')}
                   </span>
                   <span className="font-medium">
-                    {monitoringCall.lead.leadName}
+                    {monitoringCall.lead?.leadName ?? '-'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -676,7 +676,7 @@ function MonitoringPage() {
                     {t('monitoring.agent', 'Agent')}
                   </span>
                   <span className="font-medium">
-                    {monitoringCall.agent.name}
+                    {monitoringCall.agent?.name ?? '-'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -684,7 +684,7 @@ function MonitoringPage() {
                     {t('monitoring.phoneNumber', 'Phone Number')}
                   </span>
                   <span className="font-medium">
-                    {monitoringCall.phoneNumber}
+                    {monitoringCall.phoneNumber ?? '-'}
                   </span>
                 </div>
               </div>
