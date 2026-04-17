@@ -104,7 +104,6 @@ import {
   List,
   UserCheck,
   LayoutPanelTop,
-  TrendingUp,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -773,31 +772,6 @@ function CampaignDetailPage() {
                     </Button>
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
-                  {isAdmin && (
-                    <Link
-                      to="/dashboard/reports"
-                      search={{
-                        tab: 'performance',
-                        campaignId,
-                        page: 1,
-                        limit: 10,
-                      }}
-                    >
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 sm:flex-none"
-                      >
-                        <TrendingUp className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">
-                          {t(
-                            'campaigns.viewPerformance',
-                            'View performance',
-                          )}
-                        </span>
-                      </Button>
-                    </Link>
-                  )}
                   {/* Compose SMS Button - Admin only, only show if campaign has SMS service */}
                   {isAdmin &&
                     campaign.campaignServices?.some(

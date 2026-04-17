@@ -108,11 +108,12 @@ export const leadAssignmentsApi = {
 
 export const useLeadAssignments = (
   params: LeadAssignmentsQueryParams,
+  enabled = true,
 ): UseQueryResult<PaginatedResponse<LeadAssignment>, Error> => {
   return useQuery({
     queryKey: leadAssignmentsKeys.list(params),
     queryFn: () => leadAssignmentsApi.getAll(params),
-    enabled: !!params.campaignId,
+    enabled: enabled && !!params.campaignId,
     staleTime: 30 * 1000,
   })
 }

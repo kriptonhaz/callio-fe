@@ -17,6 +17,8 @@ import {
   XCircle,
   HelpCircle,
   MessageSquare,
+  Search,
+  X,
 } from 'lucide-react'
 
 import type { LeadStatus } from '@/lib/api/types'
@@ -41,11 +43,13 @@ import {
 } from '@/hooks/api/useCalls'
 import { useInitiateAiAgentCall } from '@/hooks/api/useAiAgentCalls'
 import { useSipStore } from '@/store/useSipStore'
+import { useDebounce } from '@/hooks/useDebounce'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   Popover,
   PopoverContent,
@@ -64,6 +68,7 @@ import { useVoipSettings } from '@/hooks/api/useVoipSettings'
 import { useAutoAdvance } from '@/hooks/useAutoAdvance'
 import { LayoutRenderer } from '@/components/work-mode/LayoutRenderer'
 import { AutoAdvanceBanner } from '@/components/work-mode/AutoAdvanceBanner'
+import { WhatsAppHistoryCard } from '@/components/work-mode/WhatsAppHistoryCard'
 import {
   leadToFormValues,
   type LeadFormValues,
@@ -152,6 +157,10 @@ export function WorkMode({
     onIndexChange?.(index)
   }
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [lockedPhone, setLockedPhone] = useState<string | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [goToPageInput, setGoToPageInput] = useState<string>('')
 
   // -------------------------------------------------------------------------
   // Lead info form state — single record keyed by field.key
@@ -193,14 +202,35 @@ export function WorkMode({
   // -------------------------------------------------------------------------
   // Data fetching
   // -------------------------------------------------------------------------
+  const debouncedSearch = useDebounce(searchQuery, 300)
+
+  // Main paginator is driven by the locked phone only (when a lead is picked
+  // from the autocomplete). Typing in the search input does NOT affect the
+  // paginator — it only drives the suggestions list.
   const { data, isLoading } = useLeadAssignments({
     campaignId,
     status:
       statusFilter === 'all' ? undefined : (statusFilter as LeadStatus),
     batchDate: batchDate || undefined,
+    search: lockedPhone ?? undefined,
     page: currentIndex,
     limit: 1,
   })
+
+  // Separate search query for the autocomplete dropdown. Only runs when the
+  // dropdown is open and the user has typed at least 2 characters.
+  const { data: searchResults } = useLeadAssignments(
+    {
+      campaignId,
+      status:
+        statusFilter === 'all' ? undefined : (statusFilter as LeadStatus),
+      batchDate: batchDate || undefined,
+      search: debouncedSearch || undefined,
+      page: 1,
+      limit: 10,
+    },
+    searchOpen && debouncedSearch.trim().length >= 2,
+  )
 
   const listAssignment: LeadAssignment | undefined = data?.data[0]
   const totalLeads = data?.meta.total ?? 0
@@ -343,6 +373,20 @@ export function WorkMode({
   const handleFilterChange = (value: string) => {
     setStatusFilter(value)
     setCurrentIndex(1)
+  }
+
+  // Reset paginator when the locked phone changes (including clear)
+  useEffect(() => {
+    setCurrentIndex(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockedPhone])
+
+  const handleGoToPage = () => {
+    const n = parseInt(goToPageInput, 10)
+    if (!Number.isFinite(n)) return
+    const clamped = Math.max(1, Math.min(totalLeads, n))
+    setCurrentIndex(clamped)
+    setGoToPageInput('')
   }
 
   // -------------------------------------------------------------------------
@@ -580,46 +624,164 @@ export function WorkMode({
       {/* ------------------------------------------------------------------ */}
       {/* Header bar                                                          */}
       {/* ------------------------------------------------------------------ */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {/* Navigation */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={currentIndex === 1}
-            onClick={() => setCurrentIndex(Math.max(1, currentIndex - 1))}
-            className="gap-1"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            {t('workMode.prev', 'Prev')}
-          </Button>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Navigation */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentIndex === 1}
+              onClick={() => setCurrentIndex(Math.max(1, currentIndex - 1))}
+              className="gap-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              {t('workMode.prev', 'Prev')}
+            </Button>
 
-          <span className="text-sm text-muted-foreground whitespace-nowrap px-2">
-            {t('workMode.leadXofY', 'Lead {{x}} of {{y}}', {
-              x: currentIndex,
-              y: totalLeads,
-            })}
-          </span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap px-2">
+              {t('workMode.leadXofY', 'Lead {{x}} of {{y}}', {
+                x: currentIndex,
+                y: totalLeads,
+              })}
+            </span>
 
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={currentIndex >= totalLeads}
-            onClick={() => setCurrentIndex(Math.min(totalLeads, currentIndex + 1))}
-            className="gap-1"
-          >
-            {t('workMode.next', 'Next')}
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentIndex >= totalLeads}
+              onClick={() =>
+                setCurrentIndex(Math.min(totalLeads, currentIndex + 1))
+              }
+              className="gap-1"
+            >
+              {t('workMode.next', 'Next')}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+
+            {/* Go to page */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {t('workMode.goTo', 'Go to')}
+              </span>
+              <Input
+                type="number"
+                min={1}
+                max={totalLeads || 1}
+                value={goToPageInput}
+                onChange={(e) => setGoToPageInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleGoToPage()
+                  }
+                }}
+                placeholder="#"
+                className="h-8 w-16 text-sm"
+                disabled={totalLeads === 0}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleGoToPage}
+                disabled={!goToPageInput || totalLeads === 0}
+                className="h-8"
+              >
+                {t('workMode.go', 'Go')}
+              </Button>
+            </div>
+          </div>
+
+          {/* Status filter */}
+          <LeadStatusSelect
+            value={statusFilter}
+            onValueChange={handleFilterChange}
+            includeAll
+            className="w-36"
+          />
         </div>
 
-        {/* Status filter */}
-        <LeadStatusSelect
-          value={statusFilter}
-          onValueChange={handleFilterChange}
-          includeAll
-          className="w-36"
-        />
+        {/* Search by lead name (autocomplete) */}
+        <div className="flex items-center gap-2 max-w-md">
+          <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+            <PopoverTrigger asChild>
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setSearchOpen(true)
+                  }}
+                  onFocus={() => setSearchOpen(true)}
+                  placeholder={t(
+                    'workMode.searchLead',
+                    'Search by lead name or phone…',
+                  )}
+                  className="h-9 pl-8"
+                />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="p-0 w-[var(--radix-popover-trigger-width)]"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              {debouncedSearch.trim().length < 2 ? (
+                <div className="px-3 py-3 text-xs text-muted-foreground">
+                  {t(
+                    'workMode.searchHint',
+                    'Type at least 2 characters to search.',
+                  )}
+                </div>
+              ) : (searchResults?.data.length ?? 0) === 0 ? (
+                <div className="px-3 py-3 text-xs text-muted-foreground">
+                  {t('workMode.noMatches', 'No matching leads.')}
+                </div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto py-1">
+                  {searchResults?.data.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => {
+                        if (!a.lead?.phone) return
+                        setLockedPhone(a.lead.phone)
+                        setSearchQuery(
+                          `${a.lead.leadName} — ${a.lead.phone}`,
+                        )
+                        setSearchOpen(false)
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex flex-col"
+                    >
+                      <span className="font-medium truncate">
+                        {a.lead?.leadName ?? '—'}
+                      </span>
+                      <span className="text-xs text-muted-foreground font-mono truncate">
+                        {a.lead?.phone ?? '—'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          {lockedPhone && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setLockedPhone(null)
+                setSearchQuery('')
+              }}
+              className="h-9 gap-1"
+            >
+              <X className="h-3.5 w-3.5" />
+              {t('workMode.clearSearch', 'Clear')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -900,6 +1062,9 @@ export function WorkMode({
               )}
             </CardContent>
           </Card>
+
+          {/* WhatsApp History */}
+          <WhatsAppHistoryCard lead={lead} />
 
           {/* Outcome */}
           <Card>

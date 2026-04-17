@@ -24,7 +24,6 @@ import {
   Paperclip,
   Send,
   ArrowLeft,
-  UserPlus,
   Check,
   CheckCheck,
   Loader2,
@@ -48,6 +47,10 @@ import {
   useUploadMedia,
   useUpdateWhatsAppInstance,
 } from '@/hooks/api/useWhatsapp'
+import { useQuery } from '@tanstack/react-query'
+import { apiClient, buildQueryString } from '@/lib/api/client'
+import type { Lead } from '@/lib/api/types/leads.types'
+import type { PaginatedResponse } from '@/lib/api/types'
 import { toast } from 'sonner'
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
 
@@ -79,6 +82,41 @@ function WhatsAppDetailsPage(): React.ReactElement {
   // Fetch instances to get current instance phone number
   const { data: instances } = useWhatsAppInstances()
   const currentInstance = instances?.find((i) => i.id === instanceId)
+
+  // Fetch ALL leads for the instance's client (paginated internally) so we
+  // can cross-reference every contact against its lead name, even on clients
+  // with thousands of leads. Backend caps `limit` at 100 per page.
+  const clientId = currentInstance?.clientId
+  const { data: allLeads } = useQuery({
+    queryKey: ['leads-all', clientId],
+    enabled: !!clientId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const all: Lead[] = []
+      const limit = 100
+      let page = 1
+      let totalPages = 1
+      do {
+        const qs = buildQueryString({ clientId, page, limit })
+        const resp = await apiClient
+          .get(`leads${qs}`)
+          .json<PaginatedResponse<Lead>>()
+        all.push(...resp.data)
+        totalPages = resp.meta.totalPages
+        page += 1
+      } while (page <= totalPages && page < 50) // hard cap at 5000 leads
+      return all
+    },
+  })
+
+  const leadNameByPhone = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const lead of allLeads ?? []) {
+      const key = phoneLookupKey(lead.phone)
+      if (key) map.set(key, lead.leadName)
+    }
+    return map
+  }, [allLeads])
 
   // Fetch chat list
   const { data: chats, isLoading: isChatsLoading } =
@@ -287,9 +325,9 @@ function WhatsAppDetailsPage(): React.ReactElement {
             )}
           >
             <CardContent className="p-0 flex flex-col h-full">
-              {/* Search & Actions */}
-              <div className="p-3 border-b flex items-center gap-2">
-                <div className="relative flex-1">
+              {/* Search */}
+              <div className="p-3 border-b">
+                <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={t(
@@ -301,12 +339,6 @@ function WhatsAppDetailsPage(): React.ReactElement {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Button variant="ghost" size="icon">
-                  <UserPlus className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
               </div>
 
               {/* Chat List */}
@@ -323,12 +355,19 @@ function WhatsAppDetailsPage(): React.ReactElement {
                       </div>
                     ) : (
                       filteredChats
-                        .filter((chat) =>
-                          chat.name
+                        .map((chat) => ({
+                          chat,
+                          displayName: resolveChatDisplayName(
+                            chat,
+                            leadNameByPhone,
+                          ),
+                        }))
+                        .filter(({ displayName }) =>
+                          displayName
                             .toLowerCase()
                             .includes(searchQuery.toLowerCase()),
                         )
-                        .map((chat) => (
+                        .map(({ chat, displayName }) => (
                           <button
                             key={chat.id}
                             type="button"
@@ -352,14 +391,14 @@ function WhatsAppDetailsPage(): React.ReactElement {
                                 {chat.isGroup ? (
                                   <Users className="h-4 w-4" />
                                 ) : (
-                                  chat.name.slice(0, 2).toUpperCase()
+                                  displayName.slice(0, 2).toUpperCase()
                                 )}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
                                 <span className="font-medium truncate">
-                                  {chat.name || formatJid(chat.jid)}
+                                  {displayName}
                                 </span>
                                 {chat.lastMessage && (
                                   <span className="text-xs text-muted-foreground">
@@ -418,14 +457,21 @@ function WhatsAppDetailsPage(): React.ReactElement {
                         {selectedChatData.isGroup ? (
                           <Users className="h-4 w-4" />
                         ) : (
-                          selectedChatData.name.slice(0, 2).toUpperCase()
+                          resolveChatDisplayName(
+                            selectedChatData,
+                            leadNameByPhone,
+                          )
+                            .slice(0, 2)
+                            .toUpperCase()
                         )}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <h3 className="font-semibold">
-                        {selectedChatData.name ||
-                          formatJid(selectedChatData.jid)}
+                        {resolveChatDisplayName(
+                          selectedChatData,
+                          leadNameByPhone,
+                        )}
                       </h3>
                       {selectedChatData.isGroup && (
                         <span className="text-sm text-muted-foreground">
@@ -1030,6 +1076,52 @@ function formatJid(jid: string): string {
     return jid.split('@')[0]
   }
   return jid.split('@')[0]
+}
+
+// Normalize a phone/JID into a canonical lookup key by stripping separators
+// and the leading local "0" or country code "62" (Indonesia) so all three
+// forms of the same number map to the same key:
+//   "081234567890"         -> "81234567890"
+//   "6281234567890"        -> "81234567890"
+//   "+6281234567890"       -> "81234567890"
+//   "6281234567890@s.whatsapp.net" -> "81234567890"
+function phoneLookupKey(input: string | null | undefined): string {
+  if (!input) return ''
+  let d = input.split('@')[0].replace(/[^0-9]/g, '')
+  if (d.startsWith('0')) d = d.slice(1)
+  else if (d.startsWith('62')) d = d.slice(2)
+  return d
+}
+
+// Compose the display name for a chat row:
+// - If the device-saved name is missing or equals the raw phone number,
+//   fall back to the matching lead name (if any).
+// - If the device has a saved name AND we also have a lead match, show
+//   "Saved Contact - Lead Name".
+// - Otherwise, show whatever we have (saved name, or JID fallback).
+function resolveChatDisplayName(
+  chat: { name: string; jid: string; isGroup: boolean },
+  leadNameByPhone: Map<string, string>,
+): string {
+  if (chat.isGroup) {
+    return chat.name || formatJid(chat.jid)
+  }
+
+  const phone = chat.jid.split('@')[0]
+  const leadName = leadNameByPhone.get(phoneLookupKey(phone))
+  const savedName = chat.name?.trim() ?? ''
+  const isSavedNameJustPhone =
+    savedName.length === 0 || savedName.replace(/[^0-9]/g, '') === savedName
+
+  if (isSavedNameJustPhone) {
+    return leadName || savedName || formatJid(chat.jid)
+  }
+
+  if (leadName) {
+    return `${savedName} - ${leadName}`
+  }
+
+  return savedName
 }
 
 // Helper function to format timestamp
