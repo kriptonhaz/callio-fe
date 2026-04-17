@@ -254,7 +254,7 @@ export function CampaignLeadsTable({
                 {t('leads.agent', 'Agent')}
               </TableHead>
               <TableHead className="font-semibold text-primary">
-                {t('common.status', 'Status')}
+                {t('leads.approachStatus', 'Approach Status')}
               </TableHead>
               <TableHead className="font-semibold text-primary text-right">
                 {t('common.actions', 'Actions')}

@@ -66,6 +66,7 @@ import {
   MoreHorizontal,
   Play,
   XCircle,
+  TrendingUp,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -93,10 +94,12 @@ import {
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api/client'
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon'
+import { PerformanceReport } from '@/components/reports/performance/PerformanceReport'
 
 interface ReportsSearch {
   page: number
   limit: number
+  tab?: string
   disposition?: string
   status?: SmsStatus
   agentId?: string
@@ -119,6 +122,7 @@ export const Route = createFileRoute('/dashboard/reports')({
     return {
       page: Number(search.page || 1),
       limit: Number(search.limit || 10),
+      tab: (search.tab as string) || undefined,
       disposition: (search.disposition as string) || undefined,
       status: (search.status as SmsStatus) || undefined,
       agentId: (search.agentId as string) || undefined,
@@ -141,7 +145,7 @@ function ReportsPage(): React.ReactElement {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const searchParams = Route.useSearch()
-  const [activeTab, setActiveTab] = useState('voip')
+  const [activeTab, setActiveTab] = useState(searchParams.tab || 'voip')
   const [startDate, setStartDate] = useState<Date | undefined>(
     searchParams.startDate ? new Date(searchParams.startDate) : undefined,
   )
@@ -966,8 +970,26 @@ function ReportsPage(): React.ReactElement {
                     <span className="hidden sm:inline">AI</span>
                   </Button>
                 )}
+                <Button
+                  variant={activeTab === 'performance' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab('performance')}
+                  className="h-8 gap-2"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    {t('reports.performance', 'Performance')}
+                  </span>
+                </Button>
               </div>
             </div>
+
+            {/* Agent Performance Tab */}
+            <TabsContent value="performance" className="space-y-0 mt-0">
+              <PerformanceReport
+                initialCampaignId={searchParams.campaignId}
+              />
+            </TabsContent>
 
             {/* VoIP Call Logs Tab */}
             {hasVoipService && (

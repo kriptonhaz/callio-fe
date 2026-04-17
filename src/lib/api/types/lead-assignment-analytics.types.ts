@@ -4,6 +4,8 @@ export interface LeadAssignmentAnalyticsParams {
   campaignId?: string
   startDate?: string
   endDate?: string
+  byAgent?: boolean
+  outcomeFunnel?: boolean
 }
 
 export interface TodayQueue {
@@ -48,12 +50,28 @@ export interface ProcessingRate {
   rate: number
 }
 
+export interface PerAgentBreakdownItem {
+  agentId: string
+  agentName: string
+  statusCounts: Record<string, number>
+  totalLeads: number
+  conversionCount: number
+}
+
+export interface OutcomeFunnelItem {
+  statusSlug: string
+  leadCount: number
+  avgAttemptsToReach: number
+}
+
 export interface LeadAssignmentAnalyticsResponse {
   todayQueue: TodayQueue
-  dailyBreakdown: DailyBreakdownItem[]
-  statusBreakdown: StatusBreakdownItem[]
-  callDispositionBreakdown: CallDispositionBreakdownItem[]
-  campaignBreakdown: CampaignBreakdownItem[]
+  dailyBreakdown: Array<DailyBreakdownItem>
+  statusBreakdown: Array<StatusBreakdownItem>
+  callDispositionBreakdown: Array<CallDispositionBreakdownItem>
+  campaignBreakdown: Array<CampaignBreakdownItem>
   followupStats: FollowupStats
   processingRate: ProcessingRate
+  perAgentBreakdown?: Array<PerAgentBreakdownItem>
+  outcomeFunnel?: Array<OutcomeFunnelItem>
 }

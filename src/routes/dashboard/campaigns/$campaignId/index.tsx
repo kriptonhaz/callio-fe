@@ -104,6 +104,7 @@ import {
   List,
   UserCheck,
   LayoutPanelTop,
+  TrendingUp,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
@@ -740,21 +741,22 @@ function CampaignDetailPage() {
         {/* Leads Section - Full Width */}
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  {t('campaigns.leads', 'Leads')}
-                </CardTitle>
-                <CardDescription className="flex items-center gap-3">
+            <div className="flex flex-col gap-3">
+              <CardTitle className="flex items-center gap-3">
+                <Users className="h-5 w-5" />
+                {t('campaigns.leads', 'Leads')}
+                <span className="text-sm font-normal text-muted-foreground">
                   {t('campaigns.leadsCount', '{{count}} leads assigned', {
                     count: visibleLeadsCount,
                   })}
+                </span>
+              </CardTitle>
+              <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="inline-flex items-center rounded-lg bg-muted p-1 gap-0.5">
                     <Button
                       variant={viewMode === 'list' ? 'default' : 'ghost'}
                       size="sm"
-                      className="h-7 px-2.5 text-xs"
+                      className="h-8 px-2.5 text-xs"
                       onClick={() => setViewMode('list')}
                     >
                       <List className="h-3.5 w-3.5 mr-1" />
@@ -763,16 +765,39 @@ function CampaignDetailPage() {
                     <Button
                       variant={viewMode === 'work' ? 'default' : 'ghost'}
                       size="sm"
-                      className="h-7 px-2.5 text-xs"
+                      className="h-8 px-2.5 text-xs"
                       onClick={() => setViewMode('work')}
                     >
                       <UserCheck className="h-3.5 w-3.5 mr-1" />
                       {t('campaigns.workMode', 'Work Mode')}
                     </Button>
                   </span>
-                </CardDescription>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                  {isAdmin && (
+                    <Link
+                      to="/dashboard/reports"
+                      search={{
+                        tab: 'performance',
+                        campaignId,
+                        page: 1,
+                        limit: 10,
+                      }}
+                    >
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 sm:flex-none"
+                      >
+                        <TrendingUp className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">
+                          {t(
+                            'campaigns.viewPerformance',
+                            'View performance',
+                          )}
+                        </span>
+                      </Button>
+                    </Link>
+                  )}
                   {/* Compose SMS Button - Admin only, only show if campaign has SMS service */}
                   {isAdmin &&
                     campaign.campaignServices?.some(
@@ -907,6 +932,7 @@ function CampaignDetailPage() {
                       </Button>
                     </>
                   )}
+                  </div>
                 </div>
             </div>
           </CardHeader>
