@@ -10,6 +10,8 @@ import type { LeadStatus } from '@/lib/api/types'
 import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { EditLeadSheet } from './EditLeadSheet'
 import { LeadStatusBadge } from '@/components/lead-status/LeadStatusBadge'
+import { Badge } from '@/components/ui/badge'
+import { format, isToday, isYesterday } from 'date-fns'
 import { LeadStatusSelect } from '@/components/lead-status/LeadStatusSelect'
 import { ALL_FILTER_VALUE } from '@/lib/lead-status/constants'
 import {
@@ -256,6 +258,12 @@ export function CampaignLeadsTable({
               <TableHead className="font-semibold text-primary">
                 {t('leads.approachStatus', 'Approach Status')}
               </TableHead>
+              <TableHead className="font-semibold text-primary">
+                {t('leads.lastCall', 'Last Call')}
+              </TableHead>
+              <TableHead className="font-semibold text-primary">
+                {t('leads.lastWhatsapp', 'Last WhatsApp')}
+              </TableHead>
               <TableHead className="font-semibold text-primary text-right">
                 {t('common.actions', 'Actions')}
               </TableHead>
@@ -279,6 +287,12 @@ export function CampaignLeadsTable({
                   </TableCell>
                   <TableCell>
                     <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
                   </TableCell>
                   <TableCell>
                     <Skeleton className="h-4 w-20" />
@@ -314,6 +328,12 @@ export function CampaignLeadsTable({
                   </TableCell>
                   <TableCell>{assignment.assignedAgent?.name || '-'}</TableCell>
                   <TableCell>{getStatusBadge(assignment.status)}</TableCell>
+                  <TableCell>
+                    <LastCallCell assignment={assignment} />
+                  </TableCell>
+                  <TableCell>
+                    <LastWhatsappCell assignment={assignment} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -345,7 +365,7 @@ export function CampaignLeadsTable({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={onSelectedLeadsChange ? 8 : 7}
+                  colSpan={onSelectedLeadsChange ? 10 : 9}
                   className="h-32 text-center"
                 >
                   <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -412,4 +432,80 @@ export function CampaignLeadsTable({
       </AlertDialog>
     </div>
   )
+}
+
+function LastCallCell({ assignment }: { assignment: LeadAssignment }) {
+  const { t } = useTranslation()
+  const disposition = assignment.lastCallStatus
+  const ts = assignment.lastContactedAt
+
+  if (!disposition && !ts) {
+    return <span className="text-muted-foreground">—</span>
+  }
+
+  return (
+    <div className="flex flex-col gap-1 min-w-0">
+      {disposition ? (
+        <Badge variant="secondary" className="w-fit capitalize text-xs">
+          {disposition.replace(/_/g, ' ')}
+        </Badge>
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      )}
+      {ts && (
+        <span
+          className="text-xs text-muted-foreground whitespace-nowrap"
+          title={new Date(ts).toLocaleString()}
+        >
+          {formatSmartDate(ts, t)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function LastWhatsappCell({ assignment }: { assignment: LeadAssignment }) {
+  const { t } = useTranslation()
+  const last = assignment.lastWhatsappMessage
+  if (!last) {
+    return <span className="text-muted-foreground">—</span>
+  }
+
+  return (
+    <div className="flex flex-col gap-1 min-w-0">
+      <span
+        className={
+          last.direction === 'outbound'
+            ? 'text-xs text-primary font-medium w-fit'
+            : 'text-xs text-muted-foreground font-medium w-fit'
+        }
+      >
+        {last.direction === 'outbound'
+          ? `↗ ${t('leads.whatsappSent', 'Sent')}`
+          : `↙ ${t('leads.whatsappReceived', 'Received')}`}
+      </span>
+      {last.createdAt && (
+        <span
+          className="text-xs text-muted-foreground whitespace-nowrap"
+          title={new Date(last.createdAt).toLocaleString()}
+        >
+          {formatSmartDate(last.createdAt, t)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+type TFn = ReturnType<typeof useTranslation>['t']
+
+function formatSmartDate(iso: string, t: TFn): string {
+  try {
+    const d = new Date(iso)
+    if (isToday(d)) return `${t('leads.today', 'Today')} ${format(d, 'HH:mm')}`
+    if (isYesterday(d))
+      return `${t('leads.yesterday', 'Yesterday')} ${format(d, 'HH:mm')}`
+    return format(d, 'dd MMM yyyy HH:mm')
+  } catch {
+    return ''
+  }
 }

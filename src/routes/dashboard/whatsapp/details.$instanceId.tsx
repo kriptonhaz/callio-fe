@@ -17,9 +17,7 @@ import {
 } from '@/components/ui/popover'
 import {
   Search,
-  Phone,
   Video,
-  MoreVertical,
   Smile,
   Paperclip,
   Send,
@@ -479,20 +477,6 @@ function WhatsAppDetailsPage(): React.ReactElement {
                         </span>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon">
-                      <Search className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Phone className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Video className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
 

@@ -51,6 +51,14 @@ export interface LeadAssignment {
   activeCall?: ActiveCall | null
   batchDate?: string | null
   previousAssignments?: PreviousAssignment[]
+  // Populated by backend when available: summary of the latest WhatsApp
+  // message exchanged with this lead (either direction).
+  lastWhatsappMessage?: {
+    direction: 'inbound' | 'outbound'
+    messageType?: string
+    content?: string | null
+    createdAt: string
+  } | null
 }
 
 export interface PreviousAssignment {
