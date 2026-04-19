@@ -11,6 +11,7 @@ import {
   LayoutPanelTop,
   PhoneCall as PhoneCallIcon,
   Database,
+  Mail,
 } from 'lucide-react'
 import { useLogout } from '@/hooks/api/useAuth'
 import { cn } from '@/lib/utils'
@@ -215,6 +216,18 @@ export function Sidebar({
           href: '/dashboard/reports',
         },
       ]
+
+      // Admin-only: Email client menu, positioned directly below WhatsApp.
+      if (role === 'admin') {
+        const idx = items.findIndex((i) => i.href === '/dashboard/whatsapp')
+        const emailItem: MenuItem = {
+          icon: Mail,
+          label: t('dashboard.menu.email', 'Email'),
+          href: '/dashboard/email',
+        }
+        if (idx >= 0) items.splice(idx + 1, 0, emailItem)
+        else items.push(emailItem)
+      }
 
       // Only show Monitoring if VoIP service is enabled
       if (hasVoipService) {

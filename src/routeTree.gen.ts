@@ -28,6 +28,7 @@ import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/s
 import { Route as DashboardLeadsIndexRouteImport } from './routes/dashboard/leads/index'
 import { Route as DashboardInternalUserIndexRouteImport } from './routes/dashboard/internal-user/index'
 import { Route as DashboardGsmDevicesIndexRouteImport } from './routes/dashboard/gsm-devices/index'
+import { Route as DashboardEmailIndexRouteImport } from './routes/dashboard/email/index'
 import { Route as DashboardClientsIndexRouteImport } from './routes/dashboard/clients/index'
 import { Route as DashboardCampaignsIndexRouteImport } from './routes/dashboard/campaigns/index'
 import { Route as DashboardGsmDevicesGsmDeviceIdRouteImport } from './routes/dashboard/gsm-devices/$gsmDeviceId'
@@ -143,6 +144,11 @@ const DashboardGsmDevicesIndexRoute =
     path: '/gsm-devices/',
     getParentRoute: () => DashboardRoute,
   } as any)
+const DashboardEmailIndexRoute = DashboardEmailIndexRouteImport.update({
+  id: '/email/',
+  path: '/email/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardClientsIndexRoute = DashboardClientsIndexRouteImport.update({
   id: '/clients/',
   path: '/clients/',
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/gsm-devices/$gsmDeviceId': typeof DashboardGsmDevicesGsmDeviceIdRoute
   '/dashboard/campaigns': typeof DashboardCampaignsIndexRoute
   '/dashboard/clients': typeof DashboardClientsIndexRoute
+  '/dashboard/email': typeof DashboardEmailIndexRoute
   '/dashboard/gsm-devices': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user': typeof DashboardInternalUserIndexRoute
   '/dashboard/leads': typeof DashboardLeadsIndexRoute
@@ -290,6 +297,7 @@ export interface FileRoutesByTo {
   '/dashboard/gsm-devices/$gsmDeviceId': typeof DashboardGsmDevicesGsmDeviceIdRoute
   '/dashboard/campaigns': typeof DashboardCampaignsIndexRoute
   '/dashboard/clients': typeof DashboardClientsIndexRoute
+  '/dashboard/email': typeof DashboardEmailIndexRoute
   '/dashboard/gsm-devices': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user': typeof DashboardInternalUserIndexRoute
   '/dashboard/leads': typeof DashboardLeadsIndexRoute
@@ -328,6 +336,7 @@ export interface FileRoutesById {
   '/dashboard/gsm-devices/$gsmDeviceId': typeof DashboardGsmDevicesGsmDeviceIdRoute
   '/dashboard/campaigns/': typeof DashboardCampaignsIndexRoute
   '/dashboard/clients/': typeof DashboardClientsIndexRoute
+  '/dashboard/email/': typeof DashboardEmailIndexRoute
   '/dashboard/gsm-devices/': typeof DashboardGsmDevicesIndexRoute
   '/dashboard/internal-user/': typeof DashboardInternalUserIndexRoute
   '/dashboard/leads/': typeof DashboardLeadsIndexRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices/$gsmDeviceId'
     | '/dashboard/campaigns'
     | '/dashboard/clients'
+    | '/dashboard/email'
     | '/dashboard/gsm-devices'
     | '/dashboard/internal-user'
     | '/dashboard/leads'
@@ -402,6 +412,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices/$gsmDeviceId'
     | '/dashboard/campaigns'
     | '/dashboard/clients'
+    | '/dashboard/email'
     | '/dashboard/gsm-devices'
     | '/dashboard/internal-user'
     | '/dashboard/leads'
@@ -439,6 +450,7 @@ export interface FileRouteTypes {
     | '/dashboard/gsm-devices/$gsmDeviceId'
     | '/dashboard/campaigns/'
     | '/dashboard/clients/'
+    | '/dashboard/email/'
     | '/dashboard/gsm-devices/'
     | '/dashboard/internal-user/'
     | '/dashboard/leads/'
@@ -602,6 +614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardGsmDevicesIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/email/': {
+      id: '/dashboard/email/'
+      path: '/email'
+      fullPath: '/dashboard/email'
+      preLoaderRoute: typeof DashboardEmailIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/clients/': {
       id: '/dashboard/clients/'
       path: '/clients'
@@ -755,6 +774,7 @@ interface DashboardRouteChildren {
   DashboardGsmDevicesGsmDeviceIdRoute: typeof DashboardGsmDevicesGsmDeviceIdRoute
   DashboardCampaignsIndexRoute: typeof DashboardCampaignsIndexRoute
   DashboardClientsIndexRoute: typeof DashboardClientsIndexRoute
+  DashboardEmailIndexRoute: typeof DashboardEmailIndexRoute
   DashboardGsmDevicesIndexRoute: typeof DashboardGsmDevicesIndexRoute
   DashboardInternalUserIndexRoute: typeof DashboardInternalUserIndexRoute
   DashboardLeadsIndexRoute: typeof DashboardLeadsIndexRoute
@@ -781,6 +801,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardGsmDevicesGsmDeviceIdRoute: DashboardGsmDevicesGsmDeviceIdRoute,
   DashboardCampaignsIndexRoute: DashboardCampaignsIndexRoute,
   DashboardClientsIndexRoute: DashboardClientsIndexRoute,
+  DashboardEmailIndexRoute: DashboardEmailIndexRoute,
   DashboardGsmDevicesIndexRoute: DashboardGsmDevicesIndexRoute,
   DashboardInternalUserIndexRoute: DashboardInternalUserIndexRoute,
   DashboardLeadsIndexRoute: DashboardLeadsIndexRoute,

@@ -17,6 +17,7 @@ import {
   XCircle,
   HelpCircle,
   MessageSquare,
+  Mail,
   Search,
   X,
 } from 'lucide-react'
@@ -69,6 +70,9 @@ import { useAutoAdvance } from '@/hooks/useAutoAdvance'
 import { LayoutRenderer } from '@/components/work-mode/LayoutRenderer'
 import { AutoAdvanceBanner } from '@/components/work-mode/AutoAdvanceBanner'
 import { WhatsAppHistoryCard } from '@/components/work-mode/WhatsAppHistoryCard'
+import { EmailHistoryCard } from '@/components/work-mode/EmailHistoryCard'
+import { ComposeDialog } from '@/components/email/ComposeDialog'
+import { useEmailAccounts } from '@/hooks/api/useEmail'
 import {
   leadToFormValues,
   type LeadFormValues,
@@ -198,6 +202,8 @@ export function WorkMode({
   // WhatsApp sheet state
   // -------------------------------------------------------------------------
   const [whatsappSheetOpen, setWhatsappSheetOpen] = useState(false)
+  const [emailComposeOpen, setEmailComposeOpen] = useState(false)
+  const [emailAccountId, setEmailAccountId] = useState<string | null>(null)
 
   // -------------------------------------------------------------------------
   // Data fetching
@@ -239,6 +245,15 @@ export function WorkMode({
   // VoIP settings (auto-advance after call)
   // -------------------------------------------------------------------------
   const { data: voipSettings } = useVoipSettings()
+
+  // Email accounts available to the current user — drives the "Send Email"
+  // button visibility + the composer's from-selector.
+  const { data: emailAccounts } = useEmailAccounts()
+  useEffect(() => {
+    if (!emailAccountId && emailAccounts && emailAccounts.length > 0) {
+      setEmailAccountId(emailAccounts[0].id)
+    }
+  }, [emailAccounts, emailAccountId])
 
   // -------------------------------------------------------------------------
   // Layout config
@@ -1060,11 +1075,35 @@ export function WorkMode({
                   {t('workMode.sendWhatsApp', 'Send WhatsApp')}
                 </Button>
               )}
+
+              {/* Send Email button */}
+              {(emailAccounts?.length ?? 0) > 0 && (
+                <Button
+                  variant="outline"
+                  className="gap-2 self-start"
+                  disabled={!lead?.email}
+                  title={
+                    lead?.email
+                      ? undefined
+                      : t(
+                          'workMode.emailDisabled',
+                          "This lead has no email address — fill it in first to send email.",
+                        )
+                  }
+                  onClick={() => setEmailComposeOpen(true)}
+                >
+                  <Mail className="h-4 w-4" />
+                  {t('workMode.sendEmail', 'Send Email')}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
           {/* WhatsApp History */}
           <WhatsAppHistoryCard lead={lead} />
+
+          {/* Email History */}
+          <EmailHistoryCard lead={lead} />
 
           {/* Outcome */}
           <Card>
@@ -1331,6 +1370,23 @@ export function WorkMode({
           leadName={lead.leadName}
         />
       )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Send Email compose dialog                                           */}
+      {/* ------------------------------------------------------------------ */}
+      <ComposeDialog
+        open={emailComposeOpen}
+        onOpenChange={setEmailComposeOpen}
+        accountId={emailAccountId}
+        accountEmail={
+          emailAccounts?.find((a) => a.id === emailAccountId)?.email
+        }
+        accounts={emailAccounts}
+        onAccountIdChange={setEmailAccountId}
+        initial={{
+          to: lead?.email ? [lead.email] : [],
+        }}
+      />
     </div>
   )
 }

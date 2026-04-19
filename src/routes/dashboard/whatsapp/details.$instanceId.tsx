@@ -45,10 +45,7 @@ import {
   useUploadMedia,
   useUpdateWhatsAppInstance,
 } from '@/hooks/api/useWhatsapp'
-import { useQuery } from '@tanstack/react-query'
-import { apiClient, buildQueryString } from '@/lib/api/client'
-import type { Lead } from '@/lib/api/types/leads.types'
-import type { PaginatedResponse } from '@/lib/api/types'
+import { useAllClientLeads } from '@/hooks/api/useAllClientLeads'
 import { toast } from 'sonner'
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
 
@@ -81,31 +78,9 @@ function WhatsAppDetailsPage(): React.ReactElement {
   const { data: instances } = useWhatsAppInstances()
   const currentInstance = instances?.find((i) => i.id === instanceId)
 
-  // Fetch ALL leads for the instance's client (paginated internally) so we
-  // can cross-reference every contact against its lead name, even on clients
-  // with thousands of leads. Backend caps `limit` at 100 per page.
-  const clientId = currentInstance?.clientId
-  const { data: allLeads } = useQuery({
-    queryKey: ['leads-all', clientId],
-    enabled: !!clientId,
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const all: Lead[] = []
-      const limit = 100
-      let page = 1
-      let totalPages = 1
-      do {
-        const qs = buildQueryString({ clientId, page, limit })
-        const resp = await apiClient
-          .get(`leads${qs}`)
-          .json<PaginatedResponse<Lead>>()
-        all.push(...resp.data)
-        totalPages = resp.meta.totalPages
-        page += 1
-      } while (page <= totalPages && page < 50) // hard cap at 5000 leads
-      return all
-    },
-  })
+  // Fetch ALL leads for the instance's client so we can cross-reference
+  // every contact against its lead name.
+  const { data: allLeads } = useAllClientLeads(currentInstance?.clientId)
 
   const leadNameByPhone = useMemo(() => {
     const map = new Map<string, string>()

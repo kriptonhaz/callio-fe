@@ -59,6 +59,16 @@ export interface LeadAssignment {
     content?: string | null
     createdAt: string
   } | null
+  // Populated by backend: summary of the latest email exchanged with this
+  // lead (currently outbound only from the user's connected accounts).
+  lastEmail?: {
+    direction: 'inbound' | 'outbound'
+    subject: string | null
+    recipientEmail: string
+    recipientType: 'to' | 'cc' | 'bcc'
+    messageId: string
+    sentAt: string
+  } | null
 }
 
 export interface PreviousAssignment {

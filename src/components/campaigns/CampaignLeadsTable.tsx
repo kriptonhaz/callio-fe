@@ -11,7 +11,7 @@ import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { EditLeadSheet } from './EditLeadSheet'
 import { LeadStatusBadge } from '@/components/lead-status/LeadStatusBadge'
 import { Badge } from '@/components/ui/badge'
-import { format, isToday, isYesterday } from 'date-fns'
+import { formatSmartDate } from '@/lib/format/smart-date'
 import { LeadStatusSelect } from '@/components/lead-status/LeadStatusSelect'
 import { ALL_FILTER_VALUE } from '@/lib/lead-status/constants'
 import {
@@ -264,6 +264,9 @@ export function CampaignLeadsTable({
               <TableHead className="font-semibold text-primary">
                 {t('leads.lastWhatsapp', 'Last WhatsApp')}
               </TableHead>
+              <TableHead className="font-semibold text-primary">
+                {t('leads.lastEmail', 'Last Email')}
+              </TableHead>
               <TableHead className="font-semibold text-primary text-right">
                 {t('common.actions', 'Actions')}
               </TableHead>
@@ -287,6 +290,9 @@ export function CampaignLeadsTable({
                   </TableCell>
                   <TableCell>
                     <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
                   </TableCell>
                   <TableCell>
                     <Skeleton className="h-4 w-20" />
@@ -334,6 +340,9 @@ export function CampaignLeadsTable({
                   <TableCell>
                     <LastWhatsappCell assignment={assignment} />
                   </TableCell>
+                  <TableCell>
+                    <LastEmailCell assignment={assignment} />
+                  </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -365,7 +374,7 @@ export function CampaignLeadsTable({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={onSelectedLeadsChange ? 10 : 9}
+                  colSpan={onSelectedLeadsChange ? 11 : 10}
                   className="h-32 text-center"
                 >
                   <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -457,7 +466,10 @@ function LastCallCell({ assignment }: { assignment: LeadAssignment }) {
           className="text-xs text-muted-foreground whitespace-nowrap"
           title={new Date(ts).toLocaleString()}
         >
-          {formatSmartDate(ts, t)}
+          {formatSmartDate(ts, {
+            today: t('leads.today', 'Today'),
+            yesterday: t('leads.yesterday', 'Yesterday'),
+          })}
         </span>
       )}
     </div>
@@ -489,23 +501,55 @@ function LastWhatsappCell({ assignment }: { assignment: LeadAssignment }) {
           className="text-xs text-muted-foreground whitespace-nowrap"
           title={new Date(last.createdAt).toLocaleString()}
         >
-          {formatSmartDate(last.createdAt, t)}
+          {formatSmartDate(last.createdAt, {
+            today: t('leads.today', 'Today'),
+            yesterday: t('leads.yesterday', 'Yesterday'),
+          })}
         </span>
       )}
     </div>
   )
 }
 
-type TFn = ReturnType<typeof useTranslation>['t']
-
-function formatSmartDate(iso: string, t: TFn): string {
-  try {
-    const d = new Date(iso)
-    if (isToday(d)) return `${t('leads.today', 'Today')} ${format(d, 'HH:mm')}`
-    if (isYesterday(d))
-      return `${t('leads.yesterday', 'Yesterday')} ${format(d, 'HH:mm')}`
-    return format(d, 'dd MMM yyyy HH:mm')
-  } catch {
-    return ''
+function LastEmailCell({ assignment }: { assignment: LeadAssignment }) {
+  const { t } = useTranslation()
+  const last = assignment.lastEmail
+  if (!last) {
+    return <span className="text-muted-foreground">—</span>
   }
+
+  return (
+    <div
+      className="flex flex-col gap-1 min-w-0"
+      title={last.subject ?? undefined}
+    >
+      <span
+        className={
+          last.direction === 'outbound'
+            ? 'text-xs text-primary font-medium w-fit'
+            : 'text-xs text-muted-foreground font-medium w-fit'
+        }
+      >
+        {last.direction === 'outbound'
+          ? `↗ ${t('leads.emailSent', 'Sent')}`
+          : `↙ ${t('leads.emailReceived', 'Received')}`}
+      </span>
+      {last.subject && (
+        <span className="text-xs text-foreground truncate max-w-[200px]">
+          {last.subject}
+        </span>
+      )}
+      {last.sentAt && (
+        <span
+          className="text-xs text-muted-foreground whitespace-nowrap"
+          title={new Date(last.sentAt).toLocaleString()}
+        >
+          {formatSmartDate(last.sentAt, {
+            today: t('leads.today', 'Today'),
+            yesterday: t('leads.yesterday', 'Yesterday'),
+          })}
+        </span>
+      )}
+    </div>
+  )
 }
