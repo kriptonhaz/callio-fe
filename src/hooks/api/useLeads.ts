@@ -1,19 +1,22 @@
 import {
-  useQuery,
+  
+  
   useMutation,
-  useQueryClient,
-  type UseQueryResult,
-  type UseMutationResult,
+  useQuery,
+  useQueryClient
 } from '@tanstack/react-query'
-import { apiClient, buildQueryString } from '@/lib/api/client'
 import { campaignsKeys } from './useCampaigns'
+import type {UseMutationResult, UseQueryResult} from '@tanstack/react-query';
 import type { PaginatedResponse } from '@/lib/api/types'
 import type {
-  Lead,
+  BulkDeleteLeadsByFilterRequest,
+  BulkDeleteLeadsByFilterResponse,
   CreateLeadRequest,
-  UpdateLeadRequest,
+  Lead,
   LeadsQueryParams,
+  UpdateLeadRequest,
 } from '@/lib/api/types/leads.types'
+import { apiClient, buildQueryString } from '@/lib/api/client'
 
 export const leadsKeys = {
   all: ['leads'] as const,
@@ -59,8 +62,16 @@ const leadsApi = {
     await apiClient.delete(`leads/${id}`)
   },
 
-  bulkDelete: async (leadIds: string[]): Promise<void> => {
+  bulkDelete: async (leadIds: Array<string>): Promise<void> => {
     await apiClient.post('leads/bulk-delete', { json: { leadIds } })
+  },
+
+  bulkDeleteByFilter: async (
+    data: BulkDeleteLeadsByFilterRequest,
+  ): Promise<BulkDeleteLeadsByFilterResponse> => {
+    return await apiClient
+      .post('leads/bulk-delete-by-filter', { json: data })
+      .json<BulkDeleteLeadsByFilterResponse>()
   },
 
   bulkImport: async (
@@ -86,7 +97,7 @@ const leadsApi = {
 
   bulkCheckWhatsApp: async (
     instanceId: string,
-    leadIds: string[],
+    leadIds: Array<string>,
   ): Promise<BulkCheckWhatsAppResult> => {
     return await apiClient
       .post('leads/check-whatsapp', { json: { instanceId, leadIds } })
@@ -176,7 +187,7 @@ export const useDeleteLead = (): UseMutationResult<void, Error, string> => {
 export const useBulkDeleteLeads = (): UseMutationResult<
   void,
   Error,
-  string[]
+  Array<string>
 > => {
   const queryClient = useQueryClient()
   return useMutation({
@@ -191,11 +202,27 @@ export const useBulkDeleteLeads = (): UseMutationResult<
   })
 }
 
+export const useBulkDeleteLeadsByFilter = (): UseMutationResult<
+  BulkDeleteLeadsByFilterResponse,
+  Error,
+  BulkDeleteLeadsByFilterRequest
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: leadsApi.bulkDeleteByFilter,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: leadsKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['lead-assignments'] })
+      queryClient.invalidateQueries({ queryKey: campaignsKeys.all })
+    },
+  })
+}
+
 export interface BulkImportResponse {
   created: number
   reused: number
   skipped: number
-  errors: string[]
+  errors: Array<string>
   leads: Array<{ id: string; leadName: string; phone: string; isNew: boolean }>
 }
 
@@ -231,7 +258,7 @@ export interface CheckWhatsAppResult {
 }
 
 export interface BulkCheckWhatsAppResult {
-  results: CheckWhatsAppResult[]
+  results: Array<CheckWhatsAppResult>
   summary: {
     total: number
     hasWhatsapp: number
@@ -257,7 +284,7 @@ export const useCheckLeadWhatsApp = (): UseMutationResult<
 export const useBulkCheckLeadWhatsApp = (): UseMutationResult<
   BulkCheckWhatsAppResult,
   Error,
-  { instanceId: string; leadIds: string[] }
+  { instanceId: string; leadIds: Array<string> }
 > => {
   const queryClient = useQueryClient()
   return useMutation({

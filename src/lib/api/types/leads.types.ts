@@ -23,7 +23,7 @@ export interface Lead {
   hasWhatsapp?: boolean | null
   status: LeadStatus
   clientId: string
-  campaignIds?: string[] | null
+  campaignIds?: Array<string> | null
   source?: string | null
   createdAt: string
   updatedAt?: string
@@ -49,7 +49,7 @@ export interface CreateLeadRequest {
   customFields?: Record<string, string> | null
   tags?: string | null
   notes?: string | null
-  campaignIds?: string[] | null
+  campaignIds?: Array<string> | null
 }
 
 export interface UpdateLeadRequest extends Partial<CreateLeadRequest> {}
@@ -59,4 +59,16 @@ export interface LeadsQueryParams extends PaginationParams {
   status?: LeadStatus
   clientId?: string
   campaignId?: string
+}
+
+export interface BulkDeleteLeadsByFilterRequest {
+  search?: string
+  status?: LeadStatus
+  clientId?: string
+  campaignId?: string
+  confirm: true
+}
+
+export interface BulkDeleteLeadsByFilterResponse {
+  deleted: number
 }

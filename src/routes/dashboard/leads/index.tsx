@@ -1,18 +1,35 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import {
+  CheckCircle,
+  Download,
+  HelpCircle,
+  Loader2,
+  MessageSquare,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Users as UsersIcon,
+  XCircle,
+} from 'lucide-react'
+import { toast } from 'sonner'
+import type { Lead } from '@/lib/api/types/leads.types'
+import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { RoleGuard } from '@/lib/auth-guard'
 import {
-  useLeads,
+  useBulkCheckLeadWhatsApp,
+  useBulkDeleteLeads,
+  useBulkDeleteLeadsByFilter,
   useBulkImportLeads,
   useDeleteLead,
-  useBulkDeleteLeads,
-  useBulkCheckLeadWhatsApp,
+  useLeads,
 } from '@/hooks/api/useLeads'
 import { useWhatsAppInstances } from '@/hooks/api/useWhatsapp'
 import { useMe } from '@/hooks/api/useAuth'
 import sampleCsvUrl from '@/assets/data/sample-leads-import.csv?url'
-import type { Lead } from '@/lib/api/types/leads.types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -48,26 +65,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Search,
-  Plus,
-  Loader2,
-  Users as UsersIcon,
-  Download,
-  Upload,
-  MoreHorizontal,
-  Trash2,
-  MessageSquare,
-  CheckCircle,
-  XCircle,
-  HelpCircle,
-} from 'lucide-react'
 import { useDebounce } from '@/hooks/useDebounce'
 import { AddLeadSheet } from '@/components/campaigns/AddLeadSheet'
 import { EditLeadSheet } from '@/components/campaigns/EditLeadSheet'
-import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { SYSTEM_SLUGS } from '@/lib/lead-status/constants'
-import { toast } from 'sonner'
 import { StandardPagination } from '@/components/common/StandardPagination'
 import { WhatsAppInstanceSelector } from '@/components/leads/WhatsAppInstanceSelector'
 
@@ -105,7 +106,8 @@ function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null)
-  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Array<string>>([])
+  const [selectAllAcrossPages, setSelectAllAcrossPages] = useState(false)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [instanceSelectorOpen, setInstanceSelectorOpen] = useState(false)
   const debouncedSearch = useDebounce(searchValue, 500)
@@ -131,6 +133,10 @@ function LeadsPage() {
   const { mutate: deleteLead, isPending: isDeleting } = useDeleteLead()
   const { mutate: bulkDeleteLeads, isPending: isBulkDeleting } =
     useBulkDeleteLeads()
+  const {
+    mutate: bulkDeleteLeadsByFilter,
+    isPending: isBulkDeletingByFilter,
+  } = useBulkDeleteLeadsByFilter()
   const { mutate: bulkCheckWhatsApp, isPending: isBulkChecking } =
     useBulkCheckLeadWhatsApp()
   const { data: whatsappInstances } = useWhatsAppInstances()
@@ -217,15 +223,41 @@ function LeadsPage() {
   }
 
   const handleBulkDelete = () => {
+    if (selectAllAcrossPages) {
+      bulkDeleteLeadsByFilter(
+        {
+          search: debouncedSearch || undefined,
+          confirm: true,
+        },
+        {
+          onSuccess: (data) => {
+            toast.success(
+              t(
+                'leads.bulkDeleted',
+                `Successfully deleted {{count}} lead(s)`,
+                { count: data.deleted },
+              ),
+            )
+            setSelectedLeadIds([])
+            setSelectAllAcrossPages(false)
+            setBulkDeleteDialogOpen(false)
+          },
+          onError: () => {
+            toast.error(t('leads.bulkDeleteFailed', 'Failed to delete leads'))
+          },
+        },
+      )
+      return
+    }
+
     if (selectedLeadIds.length === 0) return
 
     bulkDeleteLeads(selectedLeadIds, {
       onSuccess: () => {
         toast.success(
-          t(
-            'leads.bulkDeleted',
-            `Successfully deleted ${selectedLeadIds.length} lead(s)`,
-          ),
+          t('leads.bulkDeleted', `Successfully deleted {{count}} lead(s)`, {
+            count: selectedLeadIds.length,
+          }),
         )
         setSelectedLeadIds([])
         setBulkDeleteDialogOpen(false)
@@ -284,6 +316,9 @@ function LeadsPage() {
   }
 
   const toggleLeadSelection = (leadId: string) => {
+    // Changing an individual row exits "all across pages" mode — the user
+    // is back to working with concrete ids.
+    if (selectAllAcrossPages) setSelectAllAcrossPages(false)
     setSelectedLeadIds((prev) =>
       prev.includes(leadId)
         ? prev.filter((id) => id !== leadId)
@@ -294,6 +329,7 @@ function LeadsPage() {
   const toggleSelectAll = () => {
     if (selectedLeadIds.length === leadsData?.data.length) {
       setSelectedLeadIds([])
+      setSelectAllAcrossPages(false)
     } else {
       setSelectedLeadIds(leadsData?.data.map((lead) => lead.id) || [])
     }
@@ -302,6 +338,10 @@ function LeadsPage() {
   const isAllSelected =
     (leadsData?.data?.length ?? 0) > 0 &&
     selectedLeadIds.length === (leadsData?.data?.length ?? 0)
+
+  const totalLeads = leadsData?.meta.total ?? 0
+  const pageSize = leadsData?.data.length ?? 0
+  const showSelectAllBanner = isAllSelected && totalLeads > pageSize
 
   const handleDownloadSample = () => {
     const link = document.createElement('a')
@@ -435,7 +475,8 @@ function LeadsPage() {
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     {t('leads.deleteSelected', 'Delete')} (
-                    {selectedLeadIds.length})
+                    {selectAllAcrossPages ? totalLeads : selectedLeadIds.length}
+                    )
                   </Button>
                 )}
               </>
@@ -534,6 +575,50 @@ function LeadsPage() {
             </div>
           </CardHeader>
           <CardContent>
+            {isAdmin && showSelectAllBanner && (
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+                {selectAllAcrossPages ? (
+                  <>
+                    <span>
+                      {t(
+                        'leads.allAcrossPagesSelected',
+                        'All {{total}} leads matching your filter are selected.',
+                        { total: totalLeads },
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className="font-medium text-primary underline-offset-2 hover:underline self-start sm:self-auto"
+                      onClick={() => setSelectAllAcrossPages(false)}
+                    >
+                      {t('leads.clearSelection', 'Clear selection')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {t(
+                        'leads.allOnPageSelected',
+                        'All {{count}} leads on this page are selected.',
+                        { count: selectedLeadIds.length },
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className="font-medium text-primary underline-offset-2 hover:underline self-start sm:self-auto"
+                      onClick={() => setSelectAllAcrossPages(true)}
+                    >
+                      {t(
+                        'leads.selectAllMatching',
+                        'Select all {{total}} matching filter',
+                        { total: totalLeads },
+                      )}
+                      {' →'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader className="bg-gradient-to-r from-primary/5 to-primary/10">
@@ -697,7 +782,7 @@ function LeadsPage() {
           <EditLeadSheet
             open={isEditSheetOpen}
             onOpenChange={setIsEditSheetOpen}
-            assignment={convertToAssignment(selectedLead)!}
+            assignment={convertToAssignment(selectedLead)}
             clientId={clientId!}
             campaignId="" // No campaign context from leads page
             showAssignment={false} // Hide assignment section on leads page
@@ -756,20 +841,26 @@ function LeadsPage() {
                 {t(
                   'leads.confirmBulkDeleteDescription',
                   'Are you sure you want to delete {{count}} lead(s)? This action cannot be undone.',
-                  { count: selectedLeadIds.length },
+                  {
+                    count: selectAllAcrossPages
+                      ? totalLeads
+                      : selectedLeadIds.length,
+                  },
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isBulkDeleting}>
+              <AlertDialogCancel
+                disabled={isBulkDeleting || isBulkDeletingByFilter}
+              >
                 {t('common.cancel', 'Cancel')}
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleBulkDelete}
-                disabled={isBulkDeleting}
+                disabled={isBulkDeleting || isBulkDeletingByFilter}
                 className="bg-red-600 hover:bg-red-700"
               >
-                {isBulkDeleting && (
+                {(isBulkDeleting || isBulkDeletingByFilter) && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
                 {t('common.delete', 'Delete')}
