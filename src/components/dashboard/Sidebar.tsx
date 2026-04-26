@@ -12,6 +12,7 @@ import {
   PhoneCall as PhoneCallIcon,
   Database,
   Mail,
+  KeyRound,
 } from 'lucide-react'
 import { useLogout } from '@/hooks/api/useAuth'
 import { cn } from '@/lib/utils'
@@ -180,6 +181,11 @@ export function Sidebar({
               label: t('dashboard.menu.masterData', 'Master Data'),
               href: '/dashboard/settings/master-data',
             },
+            {
+              icon: KeyRound,
+              label: t('dashboard.menu.changePassword', 'Change Password'),
+              href: '/dashboard/settings/change-password',
+            },
           ],
         },
       ]
@@ -238,6 +244,11 @@ export function Sidebar({
         })
       }
 
+      const changePasswordChild = {
+        icon: KeyRound,
+        label: t('dashboard.menu.changePassword', 'Change Password'),
+        href: '/dashboard/settings/change-password',
+      }
       items.push({
         icon: Settings,
         label: t('dashboard.menu.settings'),
@@ -267,8 +278,9 @@ export function Sidebar({
                   label: t('dashboard.menu.masterData', 'Master Data'),
                   href: '/dashboard/settings/master-data',
                 },
+                changePasswordChild,
               ]
-            : undefined,
+            : [changePasswordChild],
       })
 
       // Only Admin can see Users menu
@@ -300,6 +312,14 @@ export function Sidebar({
           icon: Settings,
           label: t('dashboard.menu.settings'),
           href: '/dashboard/settings',
+          id: 'settings',
+          children: [
+            {
+              icon: KeyRound,
+              label: t('dashboard.menu.changePassword', 'Change Password'),
+              href: '/dashboard/settings/change-password',
+            },
+          ],
         },
       ]
     }

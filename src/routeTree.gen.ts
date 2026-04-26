@@ -38,6 +38,7 @@ import { Route as DashboardSettingsMobileOperatorIndexRouteImport } from './rout
 import { Route as DashboardSettingsMasterDataIndexRouteImport } from './routes/dashboard/settings/master-data/index'
 import { Route as DashboardSettingsLayoutIndexRouteImport } from './routes/dashboard/settings/layout/index'
 import { Route as DashboardSettingsDefaultPricingIndexRouteImport } from './routes/dashboard/settings/default-pricing/index'
+import { Route as DashboardSettingsChangePasswordIndexRouteImport } from './routes/dashboard/settings/change-password/index'
 import { Route as DashboardSettingsAiProviderIndexRouteImport } from './routes/dashboard/settings/ai-provider/index'
 import { Route as DashboardClientsClientIdIndexRouteImport } from './routes/dashboard/clients/$clientId/index'
 import { Route as DashboardCampaignsCampaignIdIndexRouteImport } from './routes/dashboard/campaigns/$campaignId/index'
@@ -200,6 +201,12 @@ const DashboardSettingsDefaultPricingIndexRoute =
     path: '/default-pricing/',
     getParentRoute: () => DashboardSettingsRoute,
   } as any)
+const DashboardSettingsChangePasswordIndexRoute =
+  DashboardSettingsChangePasswordIndexRouteImport.update({
+    id: '/change-password/',
+    path: '/change-password/',
+    getParentRoute: () => DashboardSettingsRoute,
+  } as any)
 const DashboardSettingsAiProviderIndexRoute =
   DashboardSettingsAiProviderIndexRouteImport.update({
     id: '/ai-provider/',
@@ -275,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/campaigns/$campaignId': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
+  '/dashboard/settings/change-password': typeof DashboardSettingsChangePasswordIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
   '/dashboard/settings/layout': typeof DashboardSettingsLayoutIndexRoute
   '/dashboard/settings/master-data': typeof DashboardSettingsMasterDataIndexRoute
@@ -311,6 +319,7 @@ export interface FileRoutesByTo {
   '/dashboard/campaigns/$campaignId': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
+  '/dashboard/settings/change-password': typeof DashboardSettingsChangePasswordIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
   '/dashboard/settings/layout': typeof DashboardSettingsLayoutIndexRoute
   '/dashboard/settings/master-data': typeof DashboardSettingsMasterDataIndexRoute
@@ -350,6 +359,7 @@ export interface FileRoutesById {
   '/dashboard/campaigns/$campaignId/': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId/': typeof DashboardClientsClientIdIndexRoute
   '/dashboard/settings/ai-provider/': typeof DashboardSettingsAiProviderIndexRoute
+  '/dashboard/settings/change-password/': typeof DashboardSettingsChangePasswordIndexRoute
   '/dashboard/settings/default-pricing/': typeof DashboardSettingsDefaultPricingIndexRoute
   '/dashboard/settings/layout/': typeof DashboardSettingsLayoutIndexRoute
   '/dashboard/settings/master-data/': typeof DashboardSettingsMasterDataIndexRoute
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/dashboard/campaigns/$campaignId'
     | '/dashboard/clients/$clientId'
     | '/dashboard/settings/ai-provider'
+    | '/dashboard/settings/change-password'
     | '/dashboard/settings/default-pricing'
     | '/dashboard/settings/layout'
     | '/dashboard/settings/master-data'
@@ -426,6 +437,7 @@ export interface FileRouteTypes {
     | '/dashboard/campaigns/$campaignId'
     | '/dashboard/clients/$clientId'
     | '/dashboard/settings/ai-provider'
+    | '/dashboard/settings/change-password'
     | '/dashboard/settings/default-pricing'
     | '/dashboard/settings/layout'
     | '/dashboard/settings/master-data'
@@ -464,6 +476,7 @@ export interface FileRouteTypes {
     | '/dashboard/campaigns/$campaignId/'
     | '/dashboard/clients/$clientId/'
     | '/dashboard/settings/ai-provider/'
+    | '/dashboard/settings/change-password/'
     | '/dashboard/settings/default-pricing/'
     | '/dashboard/settings/layout/'
     | '/dashboard/settings/master-data/'
@@ -684,6 +697,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsDefaultPricingIndexRouteImport
       parentRoute: typeof DashboardSettingsRoute
     }
+    '/dashboard/settings/change-password/': {
+      id: '/dashboard/settings/change-password/'
+      path: '/change-password'
+      fullPath: '/dashboard/settings/change-password'
+      preLoaderRoute: typeof DashboardSettingsChangePasswordIndexRouteImport
+      parentRoute: typeof DashboardSettingsRoute
+    }
     '/dashboard/settings/ai-provider/': {
       id: '/dashboard/settings/ai-provider/'
       path: '/ai-provider'
@@ -739,6 +759,7 @@ declare module '@tanstack/react-router' {
 interface DashboardSettingsRouteChildren {
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
   DashboardSettingsAiProviderIndexRoute: typeof DashboardSettingsAiProviderIndexRoute
+  DashboardSettingsChangePasswordIndexRoute: typeof DashboardSettingsChangePasswordIndexRoute
   DashboardSettingsDefaultPricingIndexRoute: typeof DashboardSettingsDefaultPricingIndexRoute
   DashboardSettingsLayoutIndexRoute: typeof DashboardSettingsLayoutIndexRoute
   DashboardSettingsMasterDataIndexRoute: typeof DashboardSettingsMasterDataIndexRoute
@@ -749,6 +770,8 @@ interface DashboardSettingsRouteChildren {
 const DashboardSettingsRouteChildren: DashboardSettingsRouteChildren = {
   DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
   DashboardSettingsAiProviderIndexRoute: DashboardSettingsAiProviderIndexRoute,
+  DashboardSettingsChangePasswordIndexRoute:
+    DashboardSettingsChangePasswordIndexRoute,
   DashboardSettingsDefaultPricingIndexRoute:
     DashboardSettingsDefaultPricingIndexRoute,
   DashboardSettingsLayoutIndexRoute: DashboardSettingsLayoutIndexRoute,

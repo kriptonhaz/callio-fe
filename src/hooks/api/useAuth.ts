@@ -1,30 +1,31 @@
 import {
+  
+  
   useMutation,
   useQuery,
-  useQueryClient,
-  type UseMutationResult,
-  type UseQueryResult,
+  useQueryClient
 } from '@tanstack/react-query'
-import {
-  apiClient,
-  setAccessToken,
-  setRefreshToken,
-  clearTokens,
-} from '@/lib/api/client'
+import { notificationsKeys } from './useNotifications'
+import type {UseMutationResult, UseQueryResult} from '@tanstack/react-query';
 import type {
+  AuthResponse,
   LoginRequest,
   RegisterRequest,
-  AuthResponse,
   User,
 } from '@/lib/api/types/auth.types'
+import {
+  apiClient,
+  clearTokens,
+  handleApiError,
+  setAccessToken,
+  setRefreshToken,
+} from '@/lib/api/client'
 
 // Query keys
 export const authKeys = {
   all: ['auth'] as const,
   me: () => [...authKeys.all, 'me'] as const,
 }
-
-import { handleApiError } from '@/lib/api/client'
 
 // API functions
 const authApi = {
@@ -208,6 +209,46 @@ export const useResetPassword = (): UseMutationResult<
       } catch (error) {
         return handleApiError(error)
       }
+    },
+  })
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export interface ChangePasswordResponse {
+  message: string
+}
+
+/**
+ * Change password mutation hook
+ * For authenticated users to update their own password.
+ */
+export const useChangePassword = (): UseMutationResult<
+  ChangePasswordResponse,
+  Error,
+  ChangePasswordRequest
+> => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (
+      data: ChangePasswordRequest,
+    ): Promise<ChangePasswordResponse> => {
+      try {
+        const response = await apiClient
+          .post('auth/change-password', { json: data })
+          .json<ChangePasswordResponse>()
+        return response
+      } catch (error) {
+        return handleApiError(error)
+      }
+    },
+    onSuccess: () => {
+      // Backend creates a "Password Changed" notification — refresh the bell.
+      queryClient.invalidateQueries({ queryKey: notificationsKeys.lists() })
     },
   })
 }
