@@ -42,6 +42,7 @@ import {
   MessageCircle,
   AlertCircle,
   BrainCircuit,
+  Mail,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ServiceType, ClientService } from '@/lib/api/types/services.types'
@@ -100,6 +101,21 @@ export function EditClientServicesModal({
     },
   })
 
+  // Belt-and-suspenders: any time email's subscriptionType drifts from
+  // 'postpaid' (e.g. legacy data, form races), force it back. The static
+  // indicator above doesn't render its own FormField, so we own the form
+  // value entirely here.
+  const emailSubType = form.watch(`services.${ServiceType.EMAIL}.subscriptionType`)
+  useEffect(() => {
+    if (emailSubType !== 'postpaid') {
+      form.setValue(
+        `services.${ServiceType.EMAIL}.subscriptionType`,
+        'postpaid',
+        { shouldValidate: false, shouldDirty: false },
+      )
+    }
+  }, [emailSubType, form])
+
   useEffect(() => {
     if (open) {
       const servicesMap: Record<
@@ -118,9 +134,17 @@ export function EditClientServicesModal({
         const existing = services.find((s) => s.serviceType === type)
         const balance = balances.find((b) => b.serviceType === type)
 
+        // Email is postpaid-only in v1 — there's no per-message billing model.
+        // Force postpaid regardless of any legacy stored value so the prepaid
+        // balance branch is never reached for email on submit.
+        const isEmail = type === ServiceType.EMAIL
+        const subscriptionType: 'prepaid' | 'postpaid' = isEmail
+          ? 'postpaid'
+          : existing?.subscriptionType ?? 'postpaid'
+
         servicesMap[type] = {
           isEnabled: existing?.isEnabled ?? false,
-          subscriptionType: existing?.subscriptionType ?? 'postpaid',
+          subscriptionType,
           expiresAt: existing?.expiresAt ? new Date(existing.expiresAt) : null,
           balanceAmount: balance?.balance?.balanceAmount
             ? Number(balance.balance.balanceAmount)
@@ -280,6 +304,8 @@ export function EditClientServicesModal({
         return <MessageCircle className="h-5 w-5 text-green-600" />
       case ServiceType.AI:
         return <BrainCircuit className="h-5 w-5 text-purple-500" />
+      case ServiceType.EMAIL:
+        return <Mail className="h-5 w-5 text-orange-500" />
       default:
         return <AlertCircle className="h-5 w-5 text-gray-500" />
     }
@@ -295,6 +321,8 @@ export function EditClientServicesModal({
         return t('services.whatsapp', 'WhatsApp')
       case ServiceType.AI:
         return t('services.ai', 'AI')
+      case ServiceType.EMAIL:
+        return t('services.email', 'Email')
       default:
         return type
     }
@@ -368,39 +396,59 @@ export function EditClientServicesModal({
                       <div className="space-y-4 pt-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Subscription Type */}
-                          <FormField
-                            control={form.control}
-                            name={`services.${type}.subscriptionType`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>
-                                  {t(
-                                    'services.subscriptionType',
-                                    'Subscription Type',
-                                  )}
-                                </FormLabel>
-                                <Select
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="prepaid">
-                                      {t('services.prepaid', 'Prepaid')}
-                                    </SelectItem>
-                                    <SelectItem value="postpaid">
-                                      {t('services.postpaid', 'Postpaid')}
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                          {type === ServiceType.EMAIL ? (
+                            <FormItem>
+                              <FormLabel>
+                                {t(
+                                  'services.subscriptionType',
+                                  'Subscription Type',
+                                )}
+                              </FormLabel>
+                              <div className="flex h-9 w-full items-center rounded-md border border-input bg-muted/50 px-3 py-1 text-sm text-muted-foreground">
+                                {t('services.postpaid', 'Postpaid')}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t(
+                                  'services.emailPostpaidNote',
+                                  'Email service is postpaid (no per-message billing in v1).',
+                                )}
+                              </p>
+                            </FormItem>
+                          ) : (
+                            <FormField
+                              control={form.control}
+                              name={`services.${type}.subscriptionType`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>
+                                    {t(
+                                      'services.subscriptionType',
+                                      'Subscription Type',
+                                    )}
+                                  </FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select type" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="prepaid">
+                                        {t('services.prepaid', 'Prepaid')}
+                                      </SelectItem>
+                                      <SelectItem value="postpaid">
+                                        {t('services.postpaid', 'Postpaid')}
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
 
                           {/* Expiry Date */}
                           <FormField

@@ -8,6 +8,7 @@ import {
   Edit,
   Plus,
   BrainCircuit,
+  Mail,
 } from 'lucide-react'
 import type { ClientService } from '@/lib/api/types/services.types'
 import type { ClientServiceBalance } from '@/lib/api/types/balance.types'
@@ -47,6 +48,8 @@ export function ClientServicesCard({
         return <MessageCircle className="h-5 w-5 text-green-600" />
       case ServiceType.AI:
         return <BrainCircuit className="h-5 w-5 text-purple-500" />
+      case ServiceType.EMAIL:
+        return <Mail className="h-5 w-5 text-orange-500" />
       default:
         return <AlertCircle className="h-5 w-5 text-gray-500" />
     }
@@ -62,6 +65,8 @@ export function ClientServicesCard({
         return t('services.whatsapp', 'WhatsApp')
       case ServiceType.AI:
         return t('services.ai', 'AI')
+      case ServiceType.EMAIL:
+        return t('services.email', 'Email')
       default:
         return type
     }

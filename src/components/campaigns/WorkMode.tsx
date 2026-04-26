@@ -688,6 +688,10 @@ export function WorkMode({
     (s) => s.serviceType === ServiceType.WHATSAPP || s.serviceType === 'whatsapp',
   )
 
+  const campaignHasEmail = campaignServices?.some(
+    (s) => s.serviceType === ServiceType.EMAIL || s.serviceType === 'email',
+  )
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -1142,8 +1146,9 @@ export function WorkMode({
                 </Button>
               )}
 
-              {/* Send Email button */}
-              {(emailAccounts?.length ?? 0) > 0 && (
+              {/* Send Email button — only when the campaign has email service
+                  AND the user has at least one connected email account. */}
+              {campaignHasEmail && (emailAccounts?.length ?? 0) > 0 && (
                 <Button
                   variant="outline"
                   className="gap-2 self-start"

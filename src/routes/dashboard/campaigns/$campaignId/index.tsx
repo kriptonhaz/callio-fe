@@ -309,6 +309,11 @@ function CampaignDetailPage() {
             'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
           label: t('services.ai', 'AI'),
         },
+        email: {
+          className:
+            'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+          label: t('services.email', 'Email'),
+        },
       }
 
     const config = serviceConfig[serviceType] || {
@@ -1113,14 +1118,27 @@ function CampaignDetailPage() {
                                     />
                                   </FormControl>
                                   <FormLabel className="font-normal cursor-pointer">
-                                    {service.serviceType === 'voice' &&
-                                      t('services.voice', 'VoIP')}
-                                    {service.serviceType === 'sms' &&
-                                      t('services.sms', 'SMS')}
-                                    {service.serviceType === 'whatsapp' &&
-                                      t('services.whatsapp', 'WhatsApp')}
-                                    {service.serviceType === 'ai' &&
-                                      t('services.ai', 'AI')}
+                                    {(() => {
+                                      const slug = String(
+                                        service.serviceType ?? '',
+                                      )
+                                        .toLowerCase()
+                                        .trim()
+                                      if (slug === 'voice')
+                                        return t('services.voice', 'VoIP')
+                                      if (slug === 'sms')
+                                        return t('services.sms', 'SMS')
+                                      if (slug === 'whatsapp')
+                                        return t(
+                                          'services.whatsapp',
+                                          'WhatsApp',
+                                        )
+                                      if (slug === 'ai')
+                                        return t('services.ai', 'AI')
+                                      if (slug === 'email')
+                                        return t('services.email', 'Email')
+                                      return slug
+                                    })()}
                                   </FormLabel>
                                 </FormItem>
                               )}

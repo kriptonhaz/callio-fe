@@ -3,6 +3,7 @@ export enum ServiceType {
   SMS = 'sms',
   WHATSAPP = 'whatsapp',
   AI = 'ai',
+  EMAIL = 'email',
 }
 
 export interface ClientService {

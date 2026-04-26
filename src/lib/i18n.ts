@@ -522,6 +522,10 @@ const resources = {
         voice: 'VoIP',
         sms: 'SMS',
         whatsapp: 'WhatsApp',
+        ai: 'AI',
+        email: 'Email',
+        emailPostpaidNote:
+          'Email service is postpaid (no per-message billing in v1).',
         pickDate: 'Pick a date',
       },
       sipExtensions: {
@@ -1152,6 +1156,10 @@ const resources = {
         voice: 'VoIP',
         sms: 'SMS',
         whatsapp: 'WhatsApp',
+        ai: 'AI',
+        email: 'Email',
+        emailPostpaidNote:
+          'Layanan email bersifat postpaid (tidak ada penagihan per pesan di v1).',
         pickDate: 'Pilih tanggal',
       },
       sipExtensions: {
