@@ -4,29 +4,57 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from 'sonner'
-import { useUpdateLead, useCheckLeadWhatsApp } from '@/hooks/api/useLeads'
+import {
+  BrainCircuit,
+  CheckCircle,
+  ChevronDown,
+  HelpCircle,
+  Loader2,
+  MessageSquare,
+  Music,
+  Phone,
+  PhoneOff,
+  Plus,
+  Trash2,
+  User,
+  XCircle,
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { EmergencyContactsField } from './EmergencyContactsField'
+import { VoiceRecordingsDialog } from './VoiceRecordingsDialog'
+import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
+import type {
+  EmergencyContact,
+  UpdateLeadRequest,
+} from '@/lib/api/types/leads.types'
+import type { VoiceRecording } from '@/hooks/api/useVoiceRecordings'
+import { useCheckLeadWhatsApp, useUpdateLead } from '@/hooks/api/useLeads'
 import { useWhatsAppInstances } from '@/hooks/api/useWhatsapp'
 import {
-  useUpdateLeadAssignment,
   useLeadAssignment,
+  useUpdateLeadAssignment,
 } from '@/hooks/api/useLeadAssignments'
 import { useUsers } from '@/hooks/api/useUsers'
 import { useEnabledServices } from '@/hooks/api/useServices'
 import { useSipCredentials } from '@/hooks/api/useSipExtensions'
 import {
-  useInitiateCallSession,
   useDialRecording,
   useHangupCall,
+  useInitiateCallSession,
 } from '@/hooks/api/useCalls'
 import { useInitiateAiAgentCall } from '@/hooks/api/useAiAgentCalls'
 import { useMe } from '@/hooks/api/useAuth'
 import { useSipStore } from '@/store/useSipStore'
 import { UserRole } from '@/lib/api/types'
 import { ServiceType } from '@/lib/api/types/services.types'
-import type { LeadAssignment } from '@/lib/api/types/lead-assignments.types'
 import { LeadStatusSelect } from '@/components/lead-status/LeadStatusSelect'
 import { SYSTEM_SLUGS } from '@/lib/lead-status/constants'
-import type { UpdateLeadRequest } from '@/lib/api/types/leads.types'
+import {
+  MAX_EMERGENCY_CONTACTS,
+  OTHER_RELATION,
+  RELATION_SLUGS,
+  isKnownRelation,
+} from '@/lib/leads/relations'
 import {
   Sheet,
   SheetContent,
@@ -63,30 +91,35 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Loader2,
-  ChevronDown,
-  Phone,
-  PhoneOff,
-  Plus,
-  Trash2,
-  Music,
-  BrainCircuit,
-  User,
-  MessageSquare,
-  CheckCircle,
-  XCircle,
-  HelpCircle,
-} from 'lucide-react'
-import { format } from 'date-fns'
-import { VoiceRecordingsDialog } from './VoiceRecordingsDialog'
 import { WhatsAppInstanceSelector } from '@/components/leads/WhatsAppInstanceSelector'
-import type { VoiceRecording } from '@/hooks/api/useVoiceRecordings'
 
 interface CustomField {
   label: string
   value: string
 }
+
+const emergencyContactRowSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    phone: z.string().min(1, 'Phone is required'),
+    relation: z
+      .string()
+      .min(1, 'Please select a relation')
+      .refine(
+        (v) =>
+          (RELATION_SLUGS as ReadonlyArray<string>).includes(v) ||
+          v === OTHER_RELATION,
+        'Please select a relation',
+      ),
+    relationOther: z.string().optional(),
+  })
+  .refine(
+    (d) => d.relation !== OTHER_RELATION || (d.relationOther ?? '').trim() !== '',
+    {
+      path: ['relationOther'],
+      message: 'Please specify the relationship',
+    },
+  )
 
 const leadFormSchema = z.object({
   // Lead fields
@@ -111,6 +144,10 @@ const leadFormSchema = z.object({
   salaryMax: z.string().optional(),
   tags: z.string().optional(),
   notes: z.string().optional(),
+  emergencyContacts: z
+    .array(emergencyContactRowSchema)
+    .max(MAX_EMERGENCY_CONTACTS)
+    .optional(),
   // Assignment fields
   status: z.string().min(1),
   assignedSupervisorId: z.string().optional(),
@@ -129,7 +166,7 @@ interface EditLeadSheetProps {
   campaignId: string
   onSuccess?: () => void
   showAssignment?: boolean // Optional prop to show/hide assignment section
-  campaignServices?: { serviceType: string }[] // Campaign services to check VoIP availability
+  campaignServices?: Array<{ serviceType: string }> // Campaign services to check VoIP availability
 }
 
 export function EditLeadSheet({
@@ -175,7 +212,7 @@ export function EditLeadSheet({
   const [workOpen, setWorkOpen] = useState(false)
   const [additionalOpen, setAdditionalOpen] = useState(false)
   const [assignmentOpen, setAssignmentOpen] = useState(true)
-  const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [customFields, setCustomFields] = useState<Array<CustomField>>([])
 
   // Voice recording call mode state
   const [callMode, setCallMode] = useState<'live' | 'recording'>('live')
@@ -274,6 +311,7 @@ export function EditLeadSheet({
       salaryMax: '',
       tags: '',
       notes: '',
+      emergencyContacts: [],
       status: SYSTEM_SLUGS.NEW,
       assignedSupervisorId: '',
       assignedAgentId: '',
@@ -304,6 +342,16 @@ export function EditLeadSheet({
         salaryMax: lead.salaryMax?.toString() || '',
         tags: lead.tags || '',
         notes: lead.notes || '',
+        emergencyContacts: (lead.emergencyContacts ?? []).map((c) => {
+          const known = isKnownRelation(c.relation)
+          const slug = c.relation.toLowerCase().trim()
+          return {
+            name: c.name,
+            phone: c.phone,
+            relation: known ? slug : OTHER_RELATION,
+            relationOther: known ? '' : c.relation,
+          }
+        }),
         status: assignment.status || SYSTEM_SLUGS.NEW,
         assignedSupervisorId: assignment.assignedSupervisorId || '',
         assignedAgentId: assignment.assignedAgentId || '',
@@ -414,6 +462,19 @@ export function EditLeadSheet({
           }
         })
         return Object.keys(obj).length > 0 ? obj : null
+      })(),
+      emergencyContacts: (() => {
+        const rows = (data.emergencyContacts ?? []).map<EmergencyContact>(
+          (r) => ({
+            name: r.name.trim(),
+            phone: r.phone.trim(),
+            relation:
+              r.relation === OTHER_RELATION
+                ? (r.relationOther ?? '').trim()
+                : r.relation,
+          }),
+        )
+        return rows.length > 0 ? rows : null
       })(),
       tags: data.tags || null,
       notes: data.notes || null,
@@ -862,6 +923,12 @@ export function EditLeadSheet({
                     )}
                   />
                 </div>
+
+                {/* Emergency Contacts Section */}
+                <EmergencyContactsField
+                  control={form.control}
+                  name="emergencyContacts"
+                />
               </div>
 
               {/* Address Section - Collapsible Card */}

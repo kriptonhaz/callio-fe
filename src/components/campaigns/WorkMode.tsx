@@ -71,6 +71,8 @@ import { LayoutRenderer } from '@/components/work-mode/LayoutRenderer'
 import { AutoAdvanceBanner } from '@/components/work-mode/AutoAdvanceBanner'
 import { WhatsAppHistoryCard } from '@/components/work-mode/WhatsAppHistoryCard'
 import { EmailHistoryCard } from '@/components/work-mode/EmailHistoryCard'
+import { EmergencyContactsCard } from '@/components/work-mode/EmergencyContactsCard'
+import type { EmergencyContact } from '@/lib/api/types/leads.types'
 import { ComposeDialog } from '@/components/email/ComposeDialog'
 import { useEmailAccounts } from '@/hooks/api/useEmail'
 import {
@@ -560,6 +562,70 @@ export function WorkMode({
       },
       onAutoDial: initiateLiveCall,
     })
+
+  // Live SIP call to one of the lead's emergency contacts. Same flow as the
+  // primary live call (session is still attributed to the lead via leadId),
+  // but dials the contact's phone number instead.
+  const dialEmergencyContact = useCallback(
+    (contact: EmergencyContact) => {
+      const currentLead = assignment?.lead
+      if (!currentLead?.id) return
+      if (!contact.phone) return
+      if (!sipCredentials || !currentUser?.id) return
+      if (!isRegistered) {
+        toast.error(
+          t(
+            'leads.sipDisconnected',
+            'SIP disconnected, please dial manually',
+          ),
+        )
+        return
+      }
+      setCallMode('live')
+      setSelectedRecording(null)
+      setAgentPlacedCall(true)
+      cancelAutoAdvance()
+      const dialNumber = normalizePhone(contact.phone)
+      initiateSession(
+        {
+          campaignId,
+          leadId: currentLead.id,
+          phoneNumber: contact.phone,
+          agentId: currentUser.id,
+        },
+        {
+          onSuccess: (sessionData) => {
+            const dialExtension = `${dialNumber}*${sessionData.sessionToken}`
+            makeCall(dialExtension, sipCredentials.server)
+            toast.success(
+              t('workMode.callingEmergency', 'Calling {{name}}', {
+                name: contact.name,
+              }),
+            )
+          },
+          onError: () => {
+            toast.error(
+              t(
+                'leads.sessionInitFailed',
+                'Failed to initiate call session',
+              ),
+            )
+          },
+        },
+      )
+    },
+    [
+      assignment?.lead,
+      sipCredentials,
+      currentUser?.id,
+      isRegistered,
+      campaignId,
+      cancelAutoAdvance,
+      initiateSession,
+      makeCall,
+      t,
+    ],
+  )
 
   // -------------------------------------------------------------------------
   // Loading state
@@ -1098,6 +1164,20 @@ export function WorkMode({
               )}
             </CardContent>
           </Card>
+
+          {/* Emergency Contacts */}
+          <EmergencyContactsCard
+            lead={lead}
+            onCall={dialEmergencyContact}
+            callDisabled={
+              isCallActive ||
+              isDialingAny ||
+              !sipCredentials ||
+              !currentUser?.id ||
+              !lead?.id ||
+              !campaignHasVoip
+            }
+          />
 
           {/* WhatsApp History */}
           <WhatsAppHistoryCard lead={lead} />

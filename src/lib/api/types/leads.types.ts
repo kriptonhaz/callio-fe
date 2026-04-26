@@ -1,5 +1,17 @@
 import type { LeadStatus, PaginationParams } from '../types'
 
+export interface EmergencyContact {
+  // Backend-managed fields, present on responses but not on create payloads.
+  id?: string
+  leadId?: string
+  createdAt?: string
+  updatedAt?: string
+  // Required on both request and response.
+  name: string
+  phone: string
+  relation: string
+}
+
 export interface Lead {
   id: string
   leadName: string
@@ -18,6 +30,7 @@ export interface Lead {
   salaryMin?: number | null
   salaryMax?: number | null
   customFields?: Record<string, string> | null
+  emergencyContacts?: Array<EmergencyContact> | null
   tags?: string | null
   notes?: string | null
   hasWhatsapp?: boolean | null
@@ -47,6 +60,7 @@ export interface CreateLeadRequest {
   salaryMin?: number | null
   salaryMax?: number | null
   customFields?: Record<string, string> | null
+  emergencyContacts?: Array<EmergencyContact> | null
   tags?: string | null
   notes?: string | null
   campaignIds?: Array<string> | null

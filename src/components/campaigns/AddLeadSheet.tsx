@@ -4,8 +4,18 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from 'sonner'
+import { ChevronDown, Loader2, Plus, Trash2 } from 'lucide-react'
+import { EmergencyContactsField } from './EmergencyContactsField'
+import type {
+  CreateLeadRequest,
+  EmergencyContact,
+} from '@/lib/api/types/leads.types'
 import { useCreateLead } from '@/hooks/api/useLeads'
-import type { CreateLeadRequest } from '@/lib/api/types/leads.types'
+import {
+  MAX_EMERGENCY_CONTACTS,
+  OTHER_RELATION,
+  RELATION_SLUGS,
+} from '@/lib/leads/relations'
 import {
   Sheet,
   SheetContent,
@@ -36,12 +46,34 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Loader2, ChevronDown, Plus, Trash2 } from 'lucide-react'
 
 interface CustomField {
   label: string
   value: string
 }
+
+const emergencyContactRowSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    phone: z.string().min(1, 'Phone is required'),
+    relation: z
+      .string()
+      .min(1, 'Please select a relation')
+      .refine(
+        (v) =>
+          (RELATION_SLUGS as ReadonlyArray<string>).includes(v) ||
+          v === OTHER_RELATION,
+        'Please select a relation',
+      ),
+    relationOther: z.string().optional(),
+  })
+  .refine(
+    (d) => d.relation !== OTHER_RELATION || (d.relationOther ?? '').trim() !== '',
+    {
+      path: ['relationOther'],
+      message: 'Please specify the relationship',
+    },
+  )
 
 const leadFormSchema = z.object({
   leadName: z.string().min(2, 'leads.validation.nameMin'),
@@ -65,6 +97,10 @@ const leadFormSchema = z.object({
   salaryMax: z.string().optional(),
   tags: z.string().optional(),
   notes: z.string().optional(),
+  emergencyContacts: z
+    .array(emergencyContactRowSchema)
+    .max(MAX_EMERGENCY_CONTACTS)
+    .optional(),
 })
 
 type LeadFormValues = z.infer<typeof leadFormSchema>
@@ -90,7 +126,7 @@ export function AddLeadSheet({
   const [addressOpen, setAddressOpen] = useState(false)
   const [workOpen, setWorkOpen] = useState(false)
   const [additionalOpen, setAdditionalOpen] = useState(false)
-  const [customFields, setCustomFields] = useState<CustomField[]>([])
+  const [customFields, setCustomFields] = useState<Array<CustomField>>([])
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -112,6 +148,7 @@ export function AddLeadSheet({
       salaryMax: '',
       tags: '',
       notes: '',
+      emergencyContacts: [],
     },
   })
 
@@ -171,6 +208,19 @@ export function AddLeadSheet({
       salaryMax: data.salaryMax ? parseInt(data.salaryMax, 10) : null,
       customFields:
         Object.keys(customFieldsObj).length > 0 ? customFieldsObj : null,
+      emergencyContacts: (() => {
+        const rows = (data.emergencyContacts ?? []).map<EmergencyContact>(
+          (r) => ({
+            name: r.name.trim(),
+            phone: r.phone.trim(),
+            relation:
+              r.relation === OTHER_RELATION
+                ? (r.relationOther ?? '').trim()
+                : r.relation,
+          }),
+        )
+        return rows.length > 0 ? rows : null
+      })(),
       tags: data.tags || null,
       notes: data.notes || null,
     }
@@ -326,6 +376,12 @@ export function AddLeadSheet({
                     )}
                   />
                 </div>
+
+                {/* Emergency Contacts Section */}
+                <EmergencyContactsField
+                  control={form.control}
+                  name="emergencyContacts"
+                />
               </div>
 
               {/* Address Section - Collapsible Card */}
