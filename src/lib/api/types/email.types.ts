@@ -130,3 +130,86 @@ export interface EmailHistoryResponse {
   accounts: Array<EmailHistoryAccountStatus>
   messages: Array<EmailHistoryEnvelope>
 }
+
+// =============================================================================
+// Email templates + blast
+// =============================================================================
+
+export interface EmailTemplate {
+  id: string
+  clientId: string
+  name: string
+  subject: string
+  html: string
+  description?: string | null
+  createdBy?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateEmailTemplateRequest {
+  name: string
+  subject: string
+  html: string
+  description?: string
+}
+
+export type UpdateEmailTemplateRequest = Partial<CreateEmailTemplateRequest>
+
+export interface EmailTemplatesQueryParams {
+  page?: number
+  limit?: number
+  search?: string
+}
+
+export type EmailBlastSkipReason =
+  | 'no_email'
+  | 'invalid_email'
+  | 'wrong_client'
+  | 'duplicate'
+
+export interface EmailBlastSkipped {
+  leadId: string
+  reason: EmailBlastSkipReason
+}
+
+export interface EmailBlastRequest {
+  templateId: string
+  leadIds: Array<string>
+  subjectOverride?: string
+  htmlOverride?: string
+  delaySeconds?: number
+  scheduledAt?: string
+}
+
+export interface EmailBlastResponse {
+  jobId: string
+  totalRecipients: number
+  skipped: Array<EmailBlastSkipped>
+}
+
+export type EmailBlastJobStatus =
+  | 'queued'
+  | 'sending'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+
+export interface EmailBlastJobError {
+  leadId: string
+  message: string
+}
+
+export interface EmailBlastJob {
+  id: string
+  templateId: string
+  accountId: string
+  status: EmailBlastJobStatus
+  total: number
+  sent: number
+  failed: number
+  errors: Array<EmailBlastJobError>
+  startedAt: string | null
+  completedAt: string | null
+  createdAt: string
+}

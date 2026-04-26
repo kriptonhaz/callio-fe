@@ -40,6 +40,7 @@ import { Route as DashboardSettingsLayoutIndexRouteImport } from './routes/dashb
 import { Route as DashboardSettingsDefaultPricingIndexRouteImport } from './routes/dashboard/settings/default-pricing/index'
 import { Route as DashboardSettingsChangePasswordIndexRouteImport } from './routes/dashboard/settings/change-password/index'
 import { Route as DashboardSettingsAiProviderIndexRouteImport } from './routes/dashboard/settings/ai-provider/index'
+import { Route as DashboardEmailTemplatesIndexRouteImport } from './routes/dashboard/email/templates/index'
 import { Route as DashboardClientsClientIdIndexRouteImport } from './routes/dashboard/clients/$clientId/index'
 import { Route as DashboardCampaignsCampaignIdIndexRouteImport } from './routes/dashboard/campaigns/$campaignId/index'
 import { Route as DashboardWhatsappSettingIdRouteImport } from './routes/dashboard/whatsapp/setting.$id'
@@ -213,6 +214,12 @@ const DashboardSettingsAiProviderIndexRoute =
     path: '/ai-provider/',
     getParentRoute: () => DashboardSettingsRoute,
   } as any)
+const DashboardEmailTemplatesIndexRoute =
+  DashboardEmailTemplatesIndexRouteImport.update({
+    id: '/email/templates/',
+    path: '/email/templates/',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardClientsClientIdIndexRoute =
   DashboardClientsClientIdIndexRouteImport.update({
     id: '/clients/$clientId/',
@@ -281,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/whatsapp/setting/$id': typeof DashboardWhatsappSettingIdRoute
   '/dashboard/campaigns/$campaignId': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/email/templates': typeof DashboardEmailTemplatesIndexRoute
   '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/change-password': typeof DashboardSettingsChangePasswordIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
@@ -318,6 +326,7 @@ export interface FileRoutesByTo {
   '/dashboard/whatsapp/setting/$id': typeof DashboardWhatsappSettingIdRoute
   '/dashboard/campaigns/$campaignId': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/email/templates': typeof DashboardEmailTemplatesIndexRoute
   '/dashboard/settings/ai-provider': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/change-password': typeof DashboardSettingsChangePasswordIndexRoute
   '/dashboard/settings/default-pricing': typeof DashboardSettingsDefaultPricingIndexRoute
@@ -358,6 +367,7 @@ export interface FileRoutesById {
   '/dashboard/whatsapp/setting/$id': typeof DashboardWhatsappSettingIdRoute
   '/dashboard/campaigns/$campaignId/': typeof DashboardCampaignsCampaignIdIndexRoute
   '/dashboard/clients/$clientId/': typeof DashboardClientsClientIdIndexRoute
+  '/dashboard/email/templates/': typeof DashboardEmailTemplatesIndexRoute
   '/dashboard/settings/ai-provider/': typeof DashboardSettingsAiProviderIndexRoute
   '/dashboard/settings/change-password/': typeof DashboardSettingsChangePasswordIndexRoute
   '/dashboard/settings/default-pricing/': typeof DashboardSettingsDefaultPricingIndexRoute
@@ -399,6 +409,7 @@ export interface FileRouteTypes {
     | '/dashboard/whatsapp/setting/$id'
     | '/dashboard/campaigns/$campaignId'
     | '/dashboard/clients/$clientId'
+    | '/dashboard/email/templates'
     | '/dashboard/settings/ai-provider'
     | '/dashboard/settings/change-password'
     | '/dashboard/settings/default-pricing'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/dashboard/whatsapp/setting/$id'
     | '/dashboard/campaigns/$campaignId'
     | '/dashboard/clients/$clientId'
+    | '/dashboard/email/templates'
     | '/dashboard/settings/ai-provider'
     | '/dashboard/settings/change-password'
     | '/dashboard/settings/default-pricing'
@@ -475,6 +487,7 @@ export interface FileRouteTypes {
     | '/dashboard/whatsapp/setting/$id'
     | '/dashboard/campaigns/$campaignId/'
     | '/dashboard/clients/$clientId/'
+    | '/dashboard/email/templates/'
     | '/dashboard/settings/ai-provider/'
     | '/dashboard/settings/change-password/'
     | '/dashboard/settings/default-pricing/'
@@ -711,6 +724,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsAiProviderIndexRouteImport
       parentRoute: typeof DashboardSettingsRoute
     }
+    '/dashboard/email/templates/': {
+      id: '/dashboard/email/templates/'
+      path: '/email/templates'
+      fullPath: '/dashboard/email/templates'
+      preLoaderRoute: typeof DashboardEmailTemplatesIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/clients/$clientId/': {
       id: '/dashboard/clients/$clientId/'
       path: '/clients/$clientId'
@@ -809,6 +829,7 @@ interface DashboardRouteChildren {
   DashboardWhatsappSettingIdRoute: typeof DashboardWhatsappSettingIdRoute
   DashboardCampaignsCampaignIdIndexRoute: typeof DashboardCampaignsCampaignIdIndexRoute
   DashboardClientsClientIdIndexRoute: typeof DashboardClientsClientIdIndexRoute
+  DashboardEmailTemplatesIndexRoute: typeof DashboardEmailTemplatesIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -839,6 +860,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCampaignsCampaignIdIndexRoute:
     DashboardCampaignsCampaignIdIndexRoute,
   DashboardClientsClientIdIndexRoute: DashboardClientsClientIdIndexRoute,
+  DashboardEmailTemplatesIndexRoute: DashboardEmailTemplatesIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

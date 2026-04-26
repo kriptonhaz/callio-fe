@@ -1463,6 +1463,7 @@ export function WorkMode({
         }
         accounts={emailAccounts}
         onAccountIdChange={setEmailAccountId}
+        lead={lead}
         initial={{
           to: lead?.email ? [lead.email] : [],
         }}

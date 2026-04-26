@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Loader2, Mail, Plus, Trash2 } from 'lucide-react'
+import { Link, useLocation } from '@tanstack/react-router'
+import { FileText, Loader2, Mail, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { GoogleIcon } from './icons/GoogleIcon'
 import type { EmailAccount } from '@/lib/api/types/email.types'
+import { useMe } from '@/hooks/api/useAuth'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -32,6 +34,12 @@ export function AccountsPanel({
   onAddClick,
 }: Props) {
   const { data: accounts, isLoading } = useEmailAccounts()
+  const { data: me } = useMe()
+  const isAdmin = me?.role === 'admin'
+  const location = useLocation()
+  const onTemplatesPage = location.pathname.startsWith(
+    '/dashboard/email/templates',
+  )
   const deleteMut = useDeleteEmailAccount()
   const [toDelete, setToDelete] = useState<EmailAccount | null>(null)
 
@@ -48,6 +56,20 @@ export function AccountsPanel({
 
   return (
     <div className="flex flex-col gap-2">
+      {isAdmin && (
+        <div className="flex flex-col gap-0.5 pb-2 border-b">
+          <Link
+            to="/dashboard/email/templates"
+            className={cn(
+              'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors',
+              onTemplatesPage && 'bg-muted font-medium',
+            )}
+          >
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            Templates
+          </Link>
+        </div>
+      )}
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Accounts

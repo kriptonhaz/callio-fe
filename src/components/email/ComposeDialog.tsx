@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Loader2, Paperclip, Send, X } from 'lucide-react'
+import { Loader2, Paperclip, Send, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { HTTPError } from 'ky'
 import { EmailChipInput } from './EmailChipInput'
+import { HtmlEmailFrame } from './HtmlEmailFrame'
+import type { EmailAccount } from '@/lib/api/types/email.types'
+import type { Lead } from '@/lib/api/types/leads.types'
 import {
   Dialog,
   DialogContent,
@@ -22,9 +25,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { useSendEmail } from '@/hooks/api/useEmail'
-import type { EmailAccount } from '@/lib/api/types/email.types'
+import { useEmailTemplates } from '@/hooks/api/useEmailTemplates'
+import { renderPreview } from '@/lib/email/preview'
+import { SAMPLE_PREVIEW_LEAD } from '@/lib/email/template-variables'
 
 export interface ComposeInitialValues {
   to?: Array<string>
@@ -50,6 +61,13 @@ interface Props {
    */
   accounts?: Array<EmailAccount>
   onAccountIdChange?: (id: string) => void
+  /**
+   * The lead this email is being sent to. When provided, a "Use template"
+   * dropdown appears at the top of the dialog and template variables
+   * ({leadName}, {firstName}, etc.) are substituted with this lead's data
+   * on the fly.
+   */
+  lead?: Lead | null
 }
 
 // Recommended limits — Gmail caps around 25 MB for total payload (attachments
@@ -71,6 +89,7 @@ export function ComposeDialog({
   initial,
   accounts,
   onAccountIdChange,
+  lead,
 }: Props) {
   const [to, setTo] = useState<Array<string>>(initial?.to ?? [])
   const [cc, setCc] = useState<Array<string>>(initial?.cc ?? [])
@@ -80,8 +99,57 @@ export function ComposeDialog({
   )
   const [subject, setSubject] = useState(initial?.subject ?? '')
   const [body, setBody] = useState(initial?.body ?? '')
+  // Tracks whether the body is HTML (set after picking a template) vs plain
+  // text (the default). Sent over the wire as `html` or `text` accordingly.
+  const [isHtml, setIsHtml] = useState(false)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [attachments, setAttachments] = useState<Array<File>>([])
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Templates are only fetched when the dialog has lead context — i.e. the
+  // caller can do variable substitution. In the standalone email page flow
+  // (no lead), we keep the dialog template-free.
+  const templatesEnabled = !!lead
+  const { data: templatesPage } = useEmailTemplates(
+    templatesEnabled ? { page: 1, limit: 100 } : {},
+  )
+  const templates = templatesEnabled ? templatesPage?.data ?? [] : []
+
+  const previewLead = useMemo(() => {
+    if (!lead) return SAMPLE_PREVIEW_LEAD
+    return {
+      leadName: lead.leadName,
+      phone: lead.phone,
+      email: lead.email ?? '',
+      city: lead.city ?? '',
+      province: lead.province ?? '',
+      companyName: lead.companyName ?? '',
+      jobTitle: lead.jobTitle ?? '',
+      occupation: lead.occupation ?? '',
+      address: lead.address ?? '',
+      customFields: lead.customFields ?? null,
+    }
+  }, [lead])
+
+  const handlePickTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId)
+    if (!templateId) return
+    const tpl = templates.find((t) => t.id === templateId)
+    if (!tpl) return
+    setSubject(renderPreview(tpl.subject, previewLead))
+    setBody(renderPreview(tpl.html, previewLead))
+    setIsHtml(true)
+  }
+
+  // Clear the picked template and reset subject/body back to the dialog's
+  // initial seed values so the user can start over (e.g., they picked the
+  // wrong template and want to write a plain-text message instead).
+  const handleClearTemplate = () => {
+    setSelectedTemplateId('')
+    setSubject(initial?.subject ?? '')
+    setBody(initial?.body ?? '')
+    setIsHtml(false)
+  }
 
   const sendMut = useSendEmail(accountId)
 
@@ -96,9 +164,11 @@ export function ComposeDialog({
       )
       setSubject(initial?.subject ?? '')
       setBody(initial?.body ?? '')
+      setIsHtml(false)
+      setSelectedTemplateId('')
       setAttachments([])
     }
-     
+
   }, [open])
 
   // Re-seed when `initial` changes and dialog is open (e.g., opening Reply
@@ -164,7 +234,7 @@ export function ComposeDialog({
         cc: cc.length ? cc : undefined,
         bcc: bcc.length ? bcc : undefined,
         subject: subject.trim(),
-        text: body,
+        ...(isHtml ? { html: body } : { text: body }),
         inReplyTo: initial?.inReplyTo,
         references: initial?.references,
         attachments: attachments.length ? attachments : undefined,
@@ -272,6 +342,60 @@ export function ComposeDialog({
             </>
           )}
 
+          {/* Template picker (only when we have lead context for substitution) */}
+          {templatesEnabled && (
+            <div className="grid grid-cols-[70px_1fr] items-center gap-2">
+              <Label
+                className="text-sm text-muted-foreground inline-flex items-center gap-1"
+                htmlFor="compose-template"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Template
+              </Label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Select
+                    value={selectedTemplateId}
+                    onValueChange={handlePickTemplate}
+                  >
+                    <SelectTrigger id="compose-template">
+                      <SelectValue
+                        placeholder={
+                          templates.length === 0
+                            ? 'No saved templates'
+                            : 'Pick a template…'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          <span className="font-medium">{t.name}</span>
+                          <span className="text-muted-foreground ml-2 text-xs">
+                            {t.subject}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {selectedTemplateId && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearTemplate}
+                    className="h-9 gap-1 text-xs text-muted-foreground"
+                    title="Clear template selection"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Subject */}
           <div className="grid grid-cols-[70px_1fr] items-center gap-2">
             <Label
@@ -288,13 +412,38 @@ export function ComposeDialog({
             />
           </div>
 
-          {/* Body */}
-          <Textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="Write your message…"
-            className="min-h-[240px] resize-y"
-          />
+          {/* Body — plain textarea by default, swaps to Edit/Preview tabs once
+              an HTML template has been selected. */}
+          {isHtml ? (
+            <Tabs defaultValue="preview" className="w-full">
+              <TabsList className="mb-2">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="edit">Edit HTML</TabsTrigger>
+              </TabsList>
+              <TabsContent value="preview" className="mt-0">
+                <HtmlEmailFrame
+                  html={body}
+                  className="w-full min-h-[240px] max-h-[60vh] bg-white rounded border"
+                />
+              </TabsContent>
+              <TabsContent value="edit" className="mt-0">
+                <Textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder="Write your message…"
+                  className="min-h-[240px] resize-y font-mono text-xs"
+                  spellCheck={false}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <Textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Write your message…"
+              className="min-h-[240px] resize-y"
+            />
+          )}
 
           {/* Attachments */}
           {attachments.length > 0 && (
