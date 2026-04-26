@@ -1,10 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 import { RichTextEmailEditor } from './RichTextEmailEditor'
 import { HtmlEmailPreview } from './HtmlEmailPreview'
 import type { EmailTemplate } from '@/lib/api/types/email.types'
@@ -23,6 +23,21 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -36,6 +51,8 @@ import {
   useCreateEmailTemplate,
   useUpdateEmailTemplate,
 } from '@/hooks/api/useEmailTemplates'
+import { useAiModels } from '@/hooks/api/useAiModels'
+import { useGenerateEmailTemplate } from '@/hooks/api/useAiEmailTemplate'
 import { renderPreview } from '@/lib/email/preview'
 import { SAMPLE_PREVIEW_LEAD } from '@/lib/email/template-variables'
 
@@ -73,6 +90,21 @@ export function EmailTemplateEditorSheet({
   const { mutate: updateTemplate, isPending: isUpdating } =
     useUpdateEmailTemplate()
   const isPending = isCreating || isUpdating
+
+  // ---------------------------------------------------------------------
+  // AI generation
+  // ---------------------------------------------------------------------
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiModelId, setAiModelId] = useState('')
+  const generateMut = useGenerateEmailTemplate()
+
+  // Fetch chat-capable models only when the dialog is open.
+  const { data: aiModelsPage, isLoading: aiModelsLoading } = useAiModels(
+    { capability: 'chat', limit: 50 },
+    aiOpen,
+  )
+  const aiModels = aiModelsPage?.data ?? []
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -159,6 +191,50 @@ export function EmailTemplateEditorSheet({
   const watchHtml = form.watch('html')
   const watchSubject = form.watch('subject')
   const previewSubject = renderPreview(watchSubject || '', SAMPLE_PREVIEW_LEAD)
+
+  const handleGenerateWithAi = () => {
+    if (!aiPrompt.trim() || !aiModelId) return
+    generateMut.mutate(
+      {
+        prompt: aiPrompt.trim(),
+        modelId: aiModelId,
+        subject: form.getValues('subject') || undefined,
+        templateName: form.getValues('name') || undefined,
+      },
+      {
+        onSuccess: (data) => {
+          // Insert generated HTML into the form. The editor detects
+          // <style> / <html> and auto-locks to View Source mode.
+          form.setValue('html', data.html, {
+            shouldDirty: true,
+            shouldValidate: true,
+          })
+          // Only fill the subject when the user hasn't typed one yet.
+          if (data.subject && !form.getValues('subject')) {
+            form.setValue('subject', data.subject, { shouldDirty: true })
+          }
+          toast.success(
+            t(
+              'email.templates.aiGenerateSuccess',
+              'Email template generated successfully',
+            ),
+          )
+          setAiOpen(false)
+          setAiPrompt('')
+          setAiModelId('')
+        },
+        onError: (err) => {
+          toast.error(
+            err.message ||
+              t(
+                'email.templates.aiGenerateFailed',
+                'Failed to generate email template',
+              ),
+          )
+        },
+      },
+    )
+  }
 
   return (
     <Sheet
@@ -274,14 +350,29 @@ export function EmailTemplateEditorSheet({
                       <span className="text-red-500">*</span>
                     </FormLabel>
                     <Tabs defaultValue="edit">
-                      <TabsList className="mb-2">
-                        <TabsTrigger value="edit">
-                          {t('email.templates.tabEdit', 'Edit')}
-                        </TabsTrigger>
-                        <TabsTrigger value="preview">
-                          {t('email.templates.tabPreview', 'Preview')}
-                        </TabsTrigger>
-                      </TabsList>
+                      <div className="mb-2 flex items-center justify-between gap-2">
+                        <TabsList>
+                          <TabsTrigger value="edit">
+                            {t('email.templates.tabEdit', 'Edit')}
+                          </TabsTrigger>
+                          <TabsTrigger value="preview">
+                            {t('email.templates.tabPreview', 'Preview')}
+                          </TabsTrigger>
+                        </TabsList>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setAiOpen(true)}
+                          className="gap-1.5 h-8"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-primary" />
+                          {t(
+                            'email.templates.generateWithAi',
+                            'Generate with AI',
+                          )}
+                        </Button>
+                      </div>
                       <TabsContent value="edit" className="mt-0">
                         <FormControl>
                           <RichTextEmailEditor
@@ -340,6 +431,114 @@ export function EmailTemplateEditorSheet({
           </form>
         </Form>
       </SheetContent>
+
+      {/* AI generation modal — mirrors the SMS generator UX. */}
+      <Dialog
+        open={aiOpen}
+        onOpenChange={(o) => {
+          if (!o && generateMut.isPending) return
+          setAiOpen(o)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t(
+                'email.templates.aiDialogTitle',
+                'Generate Email Template with AI',
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                'email.templates.aiDialogDescription',
+                'Describe what you want the email to say. The AI will generate a styled HTML template you can edit and preview.',
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {t('campaigns.aiModel', 'AI Model')}
+              </label>
+              <Select value={aiModelId} onValueChange={setAiModelId}>
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      aiModelsLoading
+                        ? t('common.loading', 'Loading…')
+                        : aiModels.length === 0
+                          ? t(
+                              'email.templates.aiNoModels',
+                              'No AI models available',
+                            )
+                          : t('campaigns.selectAiModel', 'Select AI model')
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiModels.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                {t('campaigns.prompt', 'Prompt')}
+              </label>
+              <Textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder={t(
+                  'email.templates.aiPromptPlaceholder',
+                  "e.g., A welcome email for new customers introducing our product, with a call-to-action button.",
+                )}
+                className="min-h-[120px]"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'email.templates.aiHint',
+                'Tip: include the tone (formal, friendly), main offer, and call-to-action. Use {leadName}, {firstName}, etc. for merge tags.',
+              )}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAiOpen(false)}
+              disabled={generateMut.isPending}
+            >
+              {t('common.cancel', 'Cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleGenerateWithAi}
+              disabled={
+                !aiPrompt.trim() ||
+                !aiModelId ||
+                generateMut.isPending
+              }
+              className="gap-2"
+            >
+              {generateMut.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t('common.generating', 'Generating…')}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  {t('common.generate', 'Generate')}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   )
 }

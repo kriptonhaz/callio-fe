@@ -67,3 +67,33 @@ export interface GenerateSmsResponse {
   }
   costAmount: number
 }
+
+// AI Email Template Generation
+export interface GenerateEmailTemplateRequest {
+  prompt: string
+  modelId: string
+  // Optional context — if the user already typed a name/subject, pass it
+  // along so the model can match tone/topic.
+  subject?: string
+  templateName?: string
+}
+
+export interface GenerateEmailTemplateResponse {
+  // Full HTML document — should include <!DOCTYPE>, <head>, <style>, <body>
+  // so the user lands in View Source with styling preserved.
+  html: string
+  // Optional subject suggestion. FE only applies it when the user has not
+  // typed their own subject yet.
+  subject?: string
+  modelUsed: {
+    id: string
+    name: string
+    provider: string
+  }
+  tokensUsed: {
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+  }
+  costAmount: number
+}

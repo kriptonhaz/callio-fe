@@ -382,6 +382,17 @@ const resources = {
             'Showing sample data — recipients will see their own values.',
           editorDescription:
             'Compose an HTML email template. Use the Insert Variable menu to add merge tags.',
+          generateWithAi: 'Generate with AI',
+          aiDialogTitle: 'Generate Email Template with AI',
+          aiDialogDescription:
+            'Describe what you want the email to say. The AI will generate a styled HTML template you can edit and preview.',
+          aiPromptPlaceholder:
+            'e.g., A welcome email for new customers introducing our product, with a call-to-action button.',
+          aiHint:
+            'Tip: include the tone (formal, friendly), main offer, and call-to-action. Use {leadName}, {firstName}, etc. for merge tags.',
+          aiNoModels: 'No AI models available',
+          aiGenerateSuccess: 'Email template generated successfully',
+          aiGenerateFailed: 'Failed to generate email template',
           editor: {
             placeholder: 'Write your email here…',
             bold: 'Bold',
@@ -1013,6 +1024,17 @@ const resources = {
             'Menampilkan data contoh — penerima akan melihat data mereka sendiri.',
           editorDescription:
             'Susun template email HTML. Gunakan menu Insert Variable untuk menambahkan merge tag.',
+          generateWithAi: 'Buat dengan AI',
+          aiDialogTitle: 'Buat Template Email dengan AI',
+          aiDialogDescription:
+            'Jelaskan isi email yang Anda inginkan. AI akan membuat template HTML yang bisa Anda edit dan pratinjau.',
+          aiPromptPlaceholder:
+            'mis. Email selamat datang untuk pelanggan baru yang memperkenalkan produk kami, dengan tombol ajakan bertindak.',
+          aiHint:
+            'Tips: sertakan nada (formal, ramah), penawaran utama, dan ajakan bertindak. Gunakan {leadName}, {firstName}, dll. untuk merge tag.',
+          aiNoModels: 'Tidak ada model AI tersedia',
+          aiGenerateSuccess: 'Template email berhasil dibuat',
+          aiGenerateFailed: 'Gagal membuat template email',
           editor: {
             placeholder: 'Tulis email Anda di sini…',
             bold: 'Tebal',
