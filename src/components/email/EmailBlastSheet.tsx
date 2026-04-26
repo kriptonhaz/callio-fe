@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { AlertTriangle, Loader2, Mail, Search, Send } from 'lucide-react'
+import { AlertTriangle, Loader2, Mail, Search, Send, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { EmailTemplate } from '@/lib/api/types/email.types'
 import type { Lead } from '@/lib/api/types/leads.types'
@@ -32,16 +32,40 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import { StandardPagination } from '@/components/common/StandardPagination'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useLeads } from '@/hooks/api/useLeads'
 import { useEmailAccounts } from '@/hooks/api/useEmail'
-import { useSendEmailBlast } from '@/hooks/api/useEmailTemplates'
+import {
+  useEmailTemplates,
+  useSendEmailBlast,
+} from '@/hooks/api/useEmailTemplates'
+import { HtmlEmailFrame } from './HtmlEmailFrame'
+import { renderPreview } from '@/lib/email/preview'
+import { SAMPLE_PREVIEW_LEAD } from '@/lib/email/template-variables'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-  template: EmailTemplate | null
+  /**
+   * When provided, the sheet opens preselected to this template (entry from
+   * the Templates page's "Send Blast" row action). When null/undefined, the
+   * user picks a template from the inline dropdown (entry from a Campaign's
+   * Blast Action menu).
+   */
+  template?: EmailTemplate | null
+  /**
+   * When provided, recipients are scoped to leads belonging to this campaign.
+   * Without it, the picker spans every lead in the client.
+   */
+  campaignId?: string
   // Called once the blast is accepted by the backend.
   onJobCreated?: (jobId: string) => void
 }
@@ -52,6 +76,7 @@ export function EmailBlastSheet({
   open,
   onOpenChange,
   template,
+  campaignId,
   onJobCreated,
 }: Props) {
   const { t } = useTranslation()
@@ -60,7 +85,12 @@ export function EmailBlastSheet({
   const debouncedSearch = useDebounce(search, 400)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [accountId, setAccountId] = useState<string>('')
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [subject, setSubject] = useState('')
+  // Editable HTML body. Initialized from the picked template's html and
+  // optionally tweaked before send. If body !== activeTemplate.html on
+  // submit, we send it as `htmlOverride`.
+  const [body, setBody] = useState('')
   const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('now')
   const [scheduledAt, setScheduledAt] = useState('')
   const [delaySeconds, setDelaySeconds] = useState(5)
@@ -70,17 +100,32 @@ export function EmailBlastSheet({
     page,
     limit: 20,
     search: debouncedSearch || undefined,
+    campaignId,
   })
+  // Fetch templates only when the sheet is open and we don't already have a
+  // preset template — the latter case means the user came from the Templates
+  // page and shouldn't need to re-pick.
+  const templatesEnabled = open && !template
+  const { data: templatesPage, isLoading: loadingTemplates } =
+    useEmailTemplates(templatesEnabled ? { page: 1, limit: 100 } : {})
+  const templates = templatesEnabled ? templatesPage?.data ?? [] : []
+  const activeTemplate = useMemo(() => {
+    if (template) return template
+    return templates.find((t) => t.id === selectedTemplateId) ?? null
+  }, [template, templates, selectedTemplateId])
+
   const { mutate: sendBlast, isPending: isSending } =
     useSendEmailBlast(accountId || null)
 
-  // Reset on open and prefill from template.
+  // Reset on open and prefill from the preset template if any.
   useEffect(() => {
     if (!open) return
     setPage(1)
     setSearch('')
     setSelectedIds(new Set())
+    setSelectedTemplateId(template?.id ?? '')
     setSubject(template?.subject ?? '')
+    setBody(template?.html ?? '')
     setScheduleMode('now')
     setScheduledAt('')
     setDelaySeconds(5)
@@ -91,6 +136,27 @@ export function EmailBlastSheet({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, template])
+
+  // When the user picks a template inside the sheet, prefill the subject from
+  // that template (overrides any prior subject so the picker feels obviously
+  // applied).
+  const handlePickTemplate = (id: string) => {
+    setSelectedTemplateId(id)
+    const tpl = templates.find((t) => t.id === id)
+    if (tpl) {
+      setSubject(tpl.subject)
+      setBody(tpl.html)
+    }
+  }
+
+  // Clear the user's template selection and reset subject/body. Only used
+  // when the parent didn't preset a template (i.e. campaign-driven flow);
+  // when a template is preset, the close button is the way out.
+  const handleClearTemplate = () => {
+    setSelectedTemplateId('')
+    setSubject('')
+    setBody('')
+  }
 
   const leadsWithEmail = useMemo(
     () => (leadsData?.data ?? []).filter((l) => !!l.email),
@@ -129,7 +195,12 @@ export function EmailBlastSheet({
   }
 
   const handleSubmit = () => {
-    if (!template) return
+    if (!activeTemplate) {
+      toast.error(
+        t('email.blast.templateRequired', 'Pick an email template first.'),
+      )
+      return
+    }
     if (!accountId) {
       toast.error(
         t(
@@ -171,10 +242,12 @@ export function EmailBlastSheet({
 
     sendBlast(
       {
-        templateId: template.id,
+        templateId: activeTemplate.id,
         leadIds: Array.from(selectedIds),
         subjectOverride:
-          subject && subject !== template.subject ? subject : undefined,
+          subject && subject !== activeTemplate.subject ? subject : undefined,
+        htmlOverride:
+          body && body !== activeTemplate.html ? body : undefined,
         delaySeconds,
         scheduledAt:
           scheduleMode === 'later'
@@ -235,12 +308,81 @@ export function EmailBlastSheet({
                   'Sending template "{{name}}". Pick recipients, then send.',
                   { name: template.name },
                 )
-              : ''}
+              : t(
+                  'email.blast.subtitleNoTemplate',
+                  'Pick a template, choose your recipients, and send.',
+                )}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {/* 1. Account */}
+          {/* 1. Template (only when not preset by the parent) */}
+          {!template && (
+            <section className="space-y-2">
+              <Label className="text-sm font-semibold uppercase tracking-wide">
+                {t('email.blast.template', 'Template')}
+              </Label>
+              {loadingTemplates ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t('common.loading', 'Loading…')}
+                </div>
+              ) : templates.length === 0 ? (
+                <p className="text-sm text-destructive">
+                  {t(
+                    'email.blast.noTemplates',
+                    'No saved email templates. Create one first.',
+                  )}
+                </p>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Select
+                      value={selectedTemplateId}
+                      onValueChange={handlePickTemplate}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={t(
+                            'email.blast.selectTemplate',
+                            'Pick a template…',
+                          )}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map((tpl) => (
+                          <SelectItem key={tpl.id} value={tpl.id}>
+                            <span className="font-medium">{tpl.name}</span>
+                            <span className="text-muted-foreground ml-2 text-xs">
+                              {tpl.subject}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {selectedTemplateId && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearTemplate}
+                      className="h-9 gap-1 text-xs text-muted-foreground"
+                      title={t(
+                        'email.blast.clearTemplate',
+                        'Clear template selection',
+                      )}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      {t('common.clear', 'Clear')}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* 2. Account */}
           <section className="space-y-2">
             <Label className="text-sm font-semibold uppercase tracking-wide">
               {t('email.blast.fromAccount', 'Send from')}
@@ -286,7 +428,7 @@ export function EmailBlastSheet({
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              placeholder={template?.subject ?? ''}
+              placeholder={activeTemplate?.subject ?? ''}
             />
             <p className="text-xs text-muted-foreground">
               {t(
@@ -296,7 +438,57 @@ export function EmailBlastSheet({
             </p>
           </section>
 
-          {/* 3. Recipients */}
+          {/* 3. Body — preview the chosen template's HTML and edit it
+                inline if needed. Hidden until a template is active. */}
+          {activeTemplate && (
+            <section className="space-y-2">
+              <Label className="text-sm font-semibold uppercase tracking-wide">
+                {t('email.blast.body', 'Email body')}
+              </Label>
+              <Tabs defaultValue="preview">
+                <TabsList className="mb-2">
+                  <TabsTrigger value="preview">
+                    {t('email.blast.tabPreview', 'Preview')}
+                  </TabsTrigger>
+                  <TabsTrigger value="edit">
+                    {t('email.blast.tabEdit', 'Edit HTML')}
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="preview" className="mt-0">
+                  <HtmlEmailFrame
+                    html={renderPreview(body, SAMPLE_PREVIEW_LEAD)}
+                    className="w-full min-h-[280px] max-h-[60vh] bg-white rounded border"
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {t(
+                      'email.blast.previewHint',
+                      'Showing sample data — recipients will see their own values.',
+                    )}
+                  </p>
+                </TabsContent>
+                <TabsContent value="edit" className="mt-0">
+                  <Textarea
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    className="min-h-[280px] font-mono text-xs resize-y"
+                    spellCheck={false}
+                    placeholder={t(
+                      'email.blast.bodyPlaceholder',
+                      'Edit the HTML body for this blast…',
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {t(
+                      'email.blast.bodyHint',
+                      'Edits apply to this blast only — your saved template is not modified. Variables like {firstName} are replaced per recipient.',
+                    )}
+                  </p>
+                </TabsContent>
+              </Tabs>
+            </section>
+          )}
+
+          {/* 4. Recipients */}
           <section className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-semibold uppercase tracking-wide">
@@ -463,7 +655,7 @@ export function EmailBlastSheet({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isSending || !template || selectedIds.size === 0}
+            disabled={isSending || !activeTemplate || selectedIds.size === 0}
             className="gap-2"
           >
             {isSending ? (

@@ -421,6 +421,20 @@ const resources = {
           fromAccount: 'Send from',
           selectAccount: 'Pick an account…',
           noAccounts: 'No connected email accounts. Connect one first.',
+          template: 'Template',
+          selectTemplate: 'Pick a template…',
+          noTemplates: 'No saved email templates. Create one first.',
+          templateRequired: 'Pick an email template first.',
+          subtitleNoTemplate:
+            'Pick a template, choose your recipients, and send.',
+          body: 'Email body',
+          tabPreview: 'Preview',
+          tabEdit: 'Edit HTML',
+          previewHint:
+            'Showing sample data — recipients will see their own values.',
+          bodyPlaceholder: 'Edit the HTML body for this blast…',
+          bodyHint:
+            'Edits apply to this blast only — your saved template is not modified. Variables like {firstName} are replaced per recipient.',
           subject: 'Subject',
           subjectHint: 'Variables like {leadName} are replaced per recipient.',
           recipients: 'Recipients',
@@ -463,6 +477,9 @@ const resources = {
         services: 'Services',
         createdBy: 'Created By',
         leads: 'Leads',
+        blastAction: 'Blast Action',
+        emailBlast: 'Email Blast',
+        noLeadsToBlast: 'No leads in this campaign',
         leadsCount: '{{count}} leads assigned',
         addLead: 'Add Lead',
         importLeads: 'Import',
@@ -1064,6 +1081,21 @@ const resources = {
           fromAccount: 'Kirim dari',
           selectAccount: 'Pilih akun…',
           noAccounts: 'Belum ada akun email terhubung. Hubungkan satu dulu.',
+          template: 'Template',
+          selectTemplate: 'Pilih template…',
+          noTemplates:
+            'Belum ada template email tersimpan. Buat satu terlebih dahulu.',
+          templateRequired: 'Pilih template email terlebih dahulu.',
+          subtitleNoTemplate:
+            'Pilih template, tentukan penerima, lalu kirim.',
+          body: 'Isi email',
+          tabPreview: 'Pratinjau',
+          tabEdit: 'Edit HTML',
+          previewHint:
+            'Menampilkan data contoh — penerima akan melihat data mereka sendiri.',
+          bodyPlaceholder: 'Edit isi HTML untuk blast ini…',
+          bodyHint:
+            'Perubahan hanya berlaku untuk blast ini — template tersimpan tidak ikut berubah. Variabel seperti {firstName} diganti per penerima.',
           subject: 'Subjek',
           subjectHint:
             'Variabel seperti {leadName} diganti per penerima.',
@@ -1108,6 +1140,9 @@ const resources = {
         services: 'Layanan',
         createdBy: 'Dibuat Oleh',
         leads: 'Prospek',
+        blastAction: 'Aksi Blast',
+        emailBlast: 'Blast Email',
+        noLeadsToBlast: 'Tidak ada prospek di kampanye ini',
         leadsCount: '{{count}} prospek ditugaskan',
         addLead: 'Tambah Prospek',
         importLeads: 'Impor',

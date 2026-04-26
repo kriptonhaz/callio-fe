@@ -24,6 +24,8 @@ import { CampaignLeadsTable } from '@/components/campaigns/CampaignLeadsTable'
 import { AddExistingLeadsDialog } from '@/components/campaigns/AddExistingLeadsDialog'
 import { ComposeSmsSheet } from '@/components/campaigns/ComposeSmsSheet'
 import { BlastWhatsAppSheet } from '@/components/campaigns/BlastWhatsAppSheet'
+import { EmailBlastSheet } from '@/components/email/EmailBlastSheet'
+import { EmailBlastJobBanner } from '@/components/email/EmailBlastJobBanner'
 import { AutoDistributeDialog } from '@/components/campaigns/AutoDistributeDialog'
 import { WorkMode } from '@/components/campaigns/WorkMode'
 import { CampaignLayoutView } from '@/components/campaigns/CampaignLayoutView'
@@ -99,6 +101,8 @@ import {
   MessageSquare,
   Send,
   Folder,
+  Mail,
+  Megaphone,
   ChevronDown,
   Shuffle,
   List,
@@ -197,6 +201,10 @@ function CampaignDetailPage() {
   const [isComposeSmsSheetOpen, setIsComposeSmsSheetOpen] = useState(false)
   const [isBlastWhatsAppSheetOpen, setIsBlastWhatsAppSheetOpen] =
     useState(false)
+  const [isEmailBlastSheetOpen, setIsEmailBlastSheetOpen] = useState(false)
+  const [activeEmailBlastJobId, setActiveEmailBlastJobId] = useState<
+    string | null
+  >(null)
   const [isAutoDistributeOpen, setIsAutoDistributeOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'work'>('list')
   const [workModeIndex, setWorkModeIndex] = useState(1)
@@ -547,6 +555,13 @@ function CampaignDetailPage() {
       <div className="space-y-4 md:space-y-6">
         {/* Header content moved to global Header */}
 
+        {activeEmailBlastJobId && (
+          <EmailBlastJobBanner
+            jobId={activeEmailBlastJobId}
+            onDismiss={() => setActiveEmailBlastJobId(null)}
+          />
+        )}
+
         {/* Campaign Details Card - Redesigned */}
 
         {/* Campaign Details Card - Redesigned */}
@@ -777,56 +792,78 @@ function CampaignDetailPage() {
                     </Button>
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
-                  {/* Compose SMS Button - Admin only, only show if campaign has SMS service */}
-                  {isAdmin &&
-                    campaign.campaignServices?.some(
+                  {/* Blast Action — single dropdown gating SMS / WhatsApp /
+                      Email by which services are activated on this campaign. */}
+                  {(() => {
+                    const hasSms = !!campaign.campaignServices?.some(
                       (s) => s.serviceType === ServiceType.SMS,
-                    ) && (
-                      <Button
-                        size="sm"
-                        onClick={() => setIsComposeSmsSheetOpen(true)}
-                        className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none"
-                        disabled={!campaign._count?.leadAssignments}
-                        title={
-                          !campaign._count?.leadAssignments
-                            ? t(
-                                'campaigns.noLeadsToSendSms',
-                                'No leads in this campaign',
-                              )
-                            : undefined
-                        }
-                      >
-                        <MessageSquare className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">
-                          {t('campaigns.composeSms', 'Compose SMS')}
-                        </span>
-                      </Button>
-                    )}
-
-                  {/* WhatsApp Blast Button - All roles, only show if campaign has WhatsApp service */}
-                  {campaign.campaignServices?.some(
-                    (s) => s.serviceType === ServiceType.WHATSAPP,
-                  ) && (
-                    <Button
-                      size="sm"
-                      onClick={() => setIsBlastWhatsAppSheetOpen(true)}
-                      className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none"
-                      disabled={!campaign._count?.leadAssignments}
-                      title={
-                        !campaign._count?.leadAssignments
-                          ? t(
-                              'campaigns.noLeadsToSendWhatsApp',
-                              'No leads in this campaign',
-                            )
-                          : undefined
-                      }
-                    >
-                      <Send className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">
-                        {t('campaigns.whatsappBlast', 'Whatsapp Blast')}
-                      </span>
-                    </Button>
-                  )}
+                    )
+                    const hasWhatsApp = !!campaign.campaignServices?.some(
+                      (s) => s.serviceType === ServiceType.WHATSAPP,
+                    )
+                    const hasEmail = !!campaign.campaignServices?.some(
+                      (s) => s.serviceType === ServiceType.EMAIL,
+                    )
+                    const hasAnyChannel = hasSms || hasWhatsApp || hasEmail
+                    if (!hasAnyChannel) return null
+                    const noLeads = !campaign._count?.leadAssignments
+                    const noLeadsLabel = t(
+                      'campaigns.noLeadsToBlast',
+                      'No leads in this campaign',
+                    )
+                    return (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none gap-2"
+                            disabled={noLeads}
+                            title={noLeads ? noLeadsLabel : undefined}
+                          >
+                            <Megaphone className="h-4 w-4" />
+                            <span className="hidden sm:inline">
+                              {t(
+                                'campaigns.blastAction',
+                                'Blast Action',
+                              )}
+                            </span>
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {isAdmin && hasSms && (
+                            <DropdownMenuItem
+                              onClick={() => setIsComposeSmsSheetOpen(true)}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2 text-green-600" />
+                              {t('campaigns.composeSms', 'Compose SMS')}
+                            </DropdownMenuItem>
+                          )}
+                          {hasWhatsApp && (
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setIsBlastWhatsAppSheetOpen(true)
+                              }
+                            >
+                              <Send className="h-4 w-4 mr-2 text-emerald-600" />
+                              {t(
+                                'campaigns.whatsappBlast',
+                                'Whatsapp Blast',
+                              )}
+                            </DropdownMenuItem>
+                          )}
+                          {isAdmin && hasEmail && (
+                            <DropdownMenuItem
+                              onClick={() => setIsEmailBlastSheetOpen(true)}
+                            >
+                              <Mail className="h-4 w-4 mr-2 text-orange-600" />
+                              {t('campaigns.emailBlast', 'Email Blast')}
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )
+                  })()}
                   {isAdmin && (
                     <>
                       <DropdownMenu>
@@ -1209,6 +1246,13 @@ function CampaignDetailPage() {
           onOpenChange={setIsBlastWhatsAppSheetOpen}
           campaignId={campaignId}
           allLeadAssignments={allLeadAssignments}
+        />
+
+        <EmailBlastSheet
+          open={isEmailBlastSheetOpen}
+          onOpenChange={setIsEmailBlastSheetOpen}
+          campaignId={campaignId}
+          onJobCreated={(jobId) => setActiveEmailBlastJobId(jobId)}
         />
 
         <AutoDistributeDialog
