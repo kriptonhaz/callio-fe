@@ -515,6 +515,11 @@ const resources = {
         status: 'Status',
         noResults: 'No results.',
         cancel: 'Cancel',
+        serviceInactiveTitle: 'Service not yet active',
+        serviceInactiveBody:
+          "You don't have this service activated yet. Please contact our support to activate it.",
+        serviceInactiveBodyNamed:
+          "You don't have {{service}} activated yet. Please contact our support to activate this service.",
         save: 'Save',
         saving: 'Saving...',
         back: 'Back',
@@ -1178,6 +1183,11 @@ const resources = {
         status: 'Status',
         noResults: 'Tidak ada hasil.',
         cancel: 'Batal',
+        serviceInactiveTitle: 'Layanan belum aktif',
+        serviceInactiveBody:
+          'Layanan ini belum diaktifkan. Silakan hubungi tim support kami untuk mengaktifkannya.',
+        serviceInactiveBodyNamed:
+          'Layanan {{service}} belum diaktifkan. Silakan hubungi tim support kami untuk mengaktifkannya.',
         save: 'Simpan',
         saving: 'Menyimpan...',
         back: 'Kembali',

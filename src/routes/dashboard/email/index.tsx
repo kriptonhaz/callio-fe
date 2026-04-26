@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Mail, PenSquare } from 'lucide-react'
+import { Loader2, Mail, PenSquare } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
@@ -8,6 +8,10 @@ import type {ComposeInitialValues} from '@/components/email/ComposeDialog';
 import { RoleGuard } from '@/lib/auth-guard'
 import { Button } from '@/components/ui/button'
 import { emailKeys, useEmailAccounts } from '@/hooks/api/useEmail'
+import { useEnabledServices } from '@/hooks/api/useServices'
+import { useMe } from '@/hooks/api/useAuth'
+import { ServiceType } from '@/lib/api/types/services.types'
+import { ServiceInactiveCard } from '@/components/common/ServiceInactiveCard'
 import { AccountsPanel } from '@/components/email/AccountsPanel'
 import { FolderTree } from '@/components/email/FolderTree'
 import { MessageList } from '@/components/email/MessageList'
@@ -50,6 +54,16 @@ function EmailContent() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const searchParams = Route.useSearch()
+
+  // Gate: client must have email service enabled. Otherwise we show a
+  // contact-support card instead of the inbox UI.
+  const { data: me } = useMe()
+  const { data: enabledServices, isLoading: isLoadingServices } =
+    useEnabledServices(me?.clientId)
+  const hasEmailService = (enabledServices ?? []).some(
+    (s) => s.serviceType === ServiceType.EMAIL && s.isEnabled,
+  )
+
   const { data: accounts } = useEmailAccounts()
 
   const [addOpen, setAddOpen] = useState(false)
@@ -135,6 +149,31 @@ function EmailContent() {
   const handleReply = (init: ComposeInitialValues) => {
     setComposeInitial(init)
     setComposeOpen(true)
+  }
+
+  // Service-loading skeleton — wait until we know whether email is enabled
+  // before deciding what to render so the gate doesn't flash.
+  if (isLoadingServices) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8 min-h-[60vh]">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!hasEmailService) {
+    return (
+      <div className="flex flex-col gap-4 p-4 min-h-[60vh]">
+        <div className="flex items-center gap-2">
+          <Mail className="h-5 w-5" />
+          <h1 className="text-xl font-bold">{t('email.title', 'Email')}</h1>
+        </div>
+        <ServiceInactiveCard
+          serviceLabel={t('services.email', 'Email')}
+          icon={<Mail className="h-6 w-6 text-amber-600 dark:text-amber-400" />}
+        />
+      </div>
+    )
   }
 
   return (
