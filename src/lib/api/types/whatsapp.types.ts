@@ -108,6 +108,13 @@ export interface SendMessageRequest {
   messageType: 'text' | 'image' | 'video' | 'audio' | 'document' | 'sticker'
   mediaUrl?: string
   scheduledAt?: string
+  // When true, the BE attributes this single send to the campaign as a
+  // blast-style record (so reporting counts it alongside true blasts).
+  // Used from Work Mode where each agent-initiated message is part of a
+  // campaign workflow.
+  isBlast?: boolean
+  // Required when `isBlast` is true so the BE can attribute the message.
+  campaignId?: string
 }
 
 export interface BlastWhatsAppRequest {

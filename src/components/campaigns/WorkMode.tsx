@@ -1453,6 +1453,8 @@ export function WorkMode({
           onOpenChange={setWhatsappSheetOpen}
           leadPhone={lead.phone}
           leadName={lead.leadName}
+          campaignId={campaignId}
+          isBlast
         />
       )}
 

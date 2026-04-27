@@ -45,6 +45,11 @@ interface SendWhatsAppSheetProps {
   onOpenChange: (open: boolean) => void
   leadPhone: string
   leadName: string
+  // When provided, the send is attributed to the campaign as a blast-style
+  // record. Used from Work Mode; the standalone WhatsApp instance details
+  // page leaves these undefined so it stays a regular 1:1 chat.
+  campaignId?: string
+  isBlast?: boolean
 }
 
 type MessageType = 'text' | 'image' | 'video' | 'audio' | 'document'
@@ -61,6 +66,8 @@ export function SendWhatsAppSheet({
   onOpenChange,
   leadPhone,
   leadName,
+  campaignId,
+  isBlast,
 }: SendWhatsAppSheetProps) {
   const { t } = useTranslation()
 
@@ -194,6 +201,10 @@ export function SendWhatsAppSheet({
         content,
         messageType,
         mediaUrl,
+        // Forward blast attribution from the parent (Work Mode passes both;
+        // the WhatsApp instance details page leaves these undefined).
+        ...(isBlast !== undefined ? { isBlast } : {}),
+        ...(campaignId ? { campaignId } : {}),
       })
 
       toast.success(
