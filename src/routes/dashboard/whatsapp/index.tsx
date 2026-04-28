@@ -418,8 +418,8 @@ function WhatsAppManagementPage(): React.ReactElement {
                           {t('whatsapp.messages', 'Messages')}
                         </Button>
                       </Link>
-                      {account.status === 'disconnected' &&
-                      account.providerType === 'baileys' ? (
+                      {account.providerType === 'baileys' &&
+                      account.status !== 'connected' ? (
                         <Button
                           size="sm"
                           variant="outline"

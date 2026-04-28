@@ -209,17 +209,19 @@ export const useWhatsAppQR = (id: string | null) =>
     queryFn: () => whatsappApi.getQR(id!),
     enabled: !!id,
     refetchInterval: (query) => {
-      // Stop polling when connected or qrCode is null
-      if (
-        query.state.data?.status === 'connected' ||
-        query.state.data?.qrCode === null
-      ) {
-        return false
-      }
-      // Poll every 3 seconds
-      return 3000
+      // Stop polling only when the instance reaches the connected state.
+      // We MUST keep polling when qrCode is null — that's the brief window
+      // right after `connect` is called and before Baileys emits the QR,
+      // and we want to fetch again to pick up the QR once it's generated.
+      const status = query.state.data?.status
+      if (status === 'connected') return false
+      // Poll every 2 seconds for snappy QR delivery.
+      return 2000
     },
+    // Don't ever serve stale QR data — we want fresh polls.
     staleTime: 0,
+    // Reset to a fresh state whenever the instance id changes (Reconnect flow).
+    refetchOnMount: 'always',
   })
 
 export const useWhatsAppChats = (instanceId: string) =>
