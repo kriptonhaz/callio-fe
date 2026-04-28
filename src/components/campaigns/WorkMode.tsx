@@ -204,6 +204,10 @@ export function WorkMode({
   // WhatsApp sheet state
   // -------------------------------------------------------------------------
   const [whatsappSheetOpen, setWhatsappSheetOpen] = useState(false)
+  // Separate target for the emergency-contact WhatsApp flow. When non-null,
+  // a second SendWhatsAppSheet renders pre-targeted at the contact's phone.
+  const [emergencyWaTarget, setEmergencyWaTarget] =
+    useState<EmergencyContact | null>(null)
   const [emailComposeOpen, setEmailComposeOpen] = useState(false)
   const [emailAccountId, setEmailAccountId] = useState<string | null>(null)
 
@@ -1182,6 +1186,12 @@ export function WorkMode({
               !lead?.id ||
               !campaignHasVoip
             }
+            onWhatsApp={
+              campaignHasWhatsapp
+                ? (contact) => setEmergencyWaTarget(contact)
+                : undefined
+            }
+            whatsAppDisabled={!campaignHasWhatsapp}
           />
 
           {/* WhatsApp History */}
@@ -1453,6 +1463,21 @@ export function WorkMode({
           onOpenChange={setWhatsappSheetOpen}
           leadPhone={lead.phone}
           leadName={lead.leadName}
+          campaignId={campaignId}
+          isBlast
+        />
+      )}
+
+      {/* Emergency Contact WhatsApp — separate sheet so the lead's WA flow
+          isn't disturbed when the agent reaches out to a contact instead. */}
+      {campaignHasWhatsapp && emergencyWaTarget?.phone && (
+        <SendWhatsAppSheet
+          open
+          onOpenChange={(o) => {
+            if (!o) setEmergencyWaTarget(null)
+          }}
+          leadPhone={emergencyWaTarget.phone}
+          leadName={emergencyWaTarget.name}
           campaignId={campaignId}
           isBlast
         />

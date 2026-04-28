@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Phone, ShieldAlert } from 'lucide-react'
+import { ChevronDown, MessageSquare, Phone, ShieldAlert } from 'lucide-react'
 import type {
   EmergencyContact,
   Lead,
@@ -7,22 +7,35 @@ import type {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { isKnownRelation } from '@/lib/leads/relations'
 
 interface Props {
   lead: Lead | null | undefined
-  // Called when the agent clicks the Call button on a contact row.
+  // Called when the agent picks "Call" in the action menu.
   onCall: (contact: EmergencyContact) => void
-  // Disable the Call button when the agent can't initiate a call right now
-  // (e.g., no SIP credentials, lead/campaign context missing, or another call
-  // is already in progress).
-  callDisabled: boolean
+  // True when calls cannot be placed right now (no SIP, missing context, or
+  // another call is in progress). When true the Call menu item is hidden.
+  callDisabled?: boolean
+  // Called when the agent picks "Send WhatsApp" — undefined to hide that
+  // option entirely (e.g. campaign has no WhatsApp service).
+  onWhatsApp?: (contact: EmergencyContact) => void
+  // True when WhatsApp can't be sent right now (e.g. no connected instance).
+  // When true the WhatsApp menu item is hidden.
+  whatsAppDisabled?: boolean
 }
 
 export function EmergencyContactsCard({
   lead,
   onCall,
   callDisabled,
+  onWhatsApp,
+  whatsAppDisabled,
 }: Props) {
   const { t } = useTranslation()
   const contacts = lead?.emergencyContacts ?? []
@@ -47,6 +60,8 @@ export function EmergencyContactsCard({
             contact={c}
             onCall={() => onCall(c)}
             callDisabled={callDisabled}
+            onWhatsApp={onWhatsApp ? () => onWhatsApp(c) : undefined}
+            whatsAppDisabled={whatsAppDisabled}
           />
         ))}
       </CardContent>
@@ -57,10 +72,18 @@ export function EmergencyContactsCard({
 interface RowProps {
   contact: EmergencyContact
   onCall: () => void
-  callDisabled: boolean
+  callDisabled?: boolean
+  onWhatsApp?: () => void
+  whatsAppDisabled?: boolean
 }
 
-function ContactRow({ contact, onCall, callDisabled }: RowProps) {
+function ContactRow({
+  contact,
+  onCall,
+  callDisabled,
+  onWhatsApp,
+  whatsAppDisabled,
+}: RowProps) {
   const { t } = useTranslation()
   const known = isKnownRelation(contact.relation)
   const relationLabel = known
@@ -69,6 +92,10 @@ function ContactRow({ contact, onCall, callDisabled }: RowProps) {
         contact.relation,
       )
     : contact.relation || t('leads.relations.other', 'Other')
+
+  const callAvailable = !callDisabled && !!contact.phone
+  const waAvailable = !!onWhatsApp && !whatsAppDisabled && !!contact.phone
+  const noActions = !callAvailable && !waAvailable
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border p-3">
@@ -88,17 +115,43 @@ function ContactRow({ contact, onCall, callDisabled }: RowProps) {
           {contact.phone}
         </span>
       </div>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        className="gap-1.5 shrink-0"
-        onClick={onCall}
-        disabled={callDisabled || !contact.phone}
-      >
-        <Phone className="h-3.5 w-3.5" />
-        {t('common.call', 'Call')}
-      </Button>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1.5 shrink-0"
+            disabled={noActions}
+            title={
+              noActions
+                ? t(
+                    'leads.emergencyNoActions',
+                    'No actions available for this contact right now.',
+                  )
+                : undefined
+            }
+          >
+            {t('common.action', 'Action')}
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {callAvailable && (
+            <DropdownMenuItem onClick={onCall}>
+              <Phone className="h-4 w-4 mr-2 text-green-600" />
+              {t('common.call', 'Call')}
+            </DropdownMenuItem>
+          )}
+          {waAvailable && onWhatsApp && (
+            <DropdownMenuItem onClick={onWhatsApp}>
+              <MessageSquare className="h-4 w-4 mr-2 text-emerald-600" />
+              {t('workMode.sendWhatsApp', 'Send WhatsApp')}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
