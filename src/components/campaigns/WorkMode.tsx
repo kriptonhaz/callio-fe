@@ -638,6 +638,27 @@ export function WorkMode({
   )
 
   // -------------------------------------------------------------------------
+  // SMS masking — must run unconditionally to keep hook order stable across
+  // the loading / empty-list early-return paths below.
+  // -------------------------------------------------------------------------
+  const campaignHasSms = !!campaignServices?.some(
+    (s) => s.serviceType === ServiceType.SMS || s.serviceType === 'sms',
+  )
+  const { data: smsMaskingData } = useSmsMasking(undefined, campaignHasSms)
+  const smsMaskingOptions = useMemo(() => {
+    return (smsMaskingData?.data ?? [])
+      .filter((m) => m.isActive)
+      .map((m) => ({ id: m.id, name: m.name }))
+  }, [smsMaskingData])
+  const smsDefaultMaskingId = useMemo(() => {
+    const list = smsMaskingData?.data ?? []
+    const active = list.filter((m) => m.isActive)
+    if (active.length === 1) return active[0].id
+    const primary = active.find((m) => m.clientMaskings?.[0]?.isPrimary)
+    return primary?.id ?? ''
+  }, [smsMaskingData])
+
+  // -------------------------------------------------------------------------
   // Loading state
   // -------------------------------------------------------------------------
   if (isLoading) {
@@ -702,25 +723,6 @@ export function WorkMode({
     (s) => s.serviceType === ServiceType.EMAIL || s.serviceType === 'email',
   )
 
-  const campaignHasSms = !!campaignServices?.some(
-    (s) => s.serviceType === ServiceType.SMS || s.serviceType === 'sms',
-  )
-
-  // SMS masking — fetched only when the campaign has SMS active so we don't
-  // send a needless request for every Work Mode session.
-  const { data: smsMaskingData } = useSmsMasking(undefined, campaignHasSms)
-  const smsMaskingOptions = useMemo(() => {
-    return (smsMaskingData?.data ?? [])
-      .filter((m) => m.isActive)
-      .map((m) => ({ id: m.id, name: m.name }))
-  }, [smsMaskingData])
-  const smsDefaultMaskingId = useMemo(() => {
-    const list = smsMaskingData?.data ?? []
-    const active = list.filter((m) => m.isActive)
-    if (active.length === 1) return active[0].id
-    const primary = active.find((m) => m.clientMaskings?.[0]?.isPrimary)
-    return primary?.id ?? ''
-  }, [smsMaskingData])
   const canSendSms = campaignHasSms && smsMaskingOptions.length > 0
 
   // -------------------------------------------------------------------------
