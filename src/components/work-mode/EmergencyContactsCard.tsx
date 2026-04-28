@@ -1,5 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, MessageSquare, Phone, ShieldAlert } from 'lucide-react'
+import {
+  ChevronDown,
+  MessageCircle,
+  MessageSquare,
+  Phone,
+  ShieldAlert,
+} from 'lucide-react'
 import type {
   EmergencyContact,
   Lead,
@@ -28,6 +34,10 @@ interface Props {
   // True when WhatsApp can't be sent right now (e.g. no connected instance).
   // When true the WhatsApp menu item is hidden.
   whatsAppDisabled?: boolean
+  // Called when the agent picks "Send SMS" — undefined to hide that option
+  // entirely (e.g. campaign has no SMS service or no active masking).
+  onSms?: (contact: EmergencyContact) => void
+  smsDisabled?: boolean
 }
 
 export function EmergencyContactsCard({
@@ -36,6 +46,8 @@ export function EmergencyContactsCard({
   callDisabled,
   onWhatsApp,
   whatsAppDisabled,
+  onSms,
+  smsDisabled,
 }: Props) {
   const { t } = useTranslation()
   const contacts = lead?.emergencyContacts ?? []
@@ -62,6 +74,8 @@ export function EmergencyContactsCard({
             callDisabled={callDisabled}
             onWhatsApp={onWhatsApp ? () => onWhatsApp(c) : undefined}
             whatsAppDisabled={whatsAppDisabled}
+            onSms={onSms ? () => onSms(c) : undefined}
+            smsDisabled={smsDisabled}
           />
         ))}
       </CardContent>
@@ -75,6 +89,8 @@ interface RowProps {
   callDisabled?: boolean
   onWhatsApp?: () => void
   whatsAppDisabled?: boolean
+  onSms?: () => void
+  smsDisabled?: boolean
 }
 
 function ContactRow({
@@ -83,6 +99,8 @@ function ContactRow({
   callDisabled,
   onWhatsApp,
   whatsAppDisabled,
+  onSms,
+  smsDisabled,
 }: RowProps) {
   const { t } = useTranslation()
   const known = isKnownRelation(contact.relation)
@@ -95,7 +113,8 @@ function ContactRow({
 
   const callAvailable = !callDisabled && !!contact.phone
   const waAvailable = !!onWhatsApp && !whatsAppDisabled && !!contact.phone
-  const noActions = !callAvailable && !waAvailable
+  const smsAvailable = !!onSms && !smsDisabled && !!contact.phone
+  const noActions = !callAvailable && !waAvailable && !smsAvailable
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border p-3">
@@ -146,8 +165,14 @@ function ContactRow({
           )}
           {waAvailable && onWhatsApp && (
             <DropdownMenuItem onClick={onWhatsApp}>
-              <MessageSquare className="h-4 w-4 mr-2 text-emerald-600" />
+              <MessageCircle className="h-4 w-4 mr-2 text-emerald-600" />
               {t('workMode.sendWhatsApp', 'Send WhatsApp')}
+            </DropdownMenuItem>
+          )}
+          {smsAvailable && onSms && (
+            <DropdownMenuItem onClick={onSms}>
+              <MessageSquare className="h-4 w-4 mr-2 text-violet-600" />
+              {t('workMode.sendSms', 'Send SMS')}
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

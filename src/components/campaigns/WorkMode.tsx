@@ -17,6 +17,7 @@ import {
   XCircle,
   HelpCircle,
   MessageSquare,
+  MessageCircle,
   Mail,
   Search,
   X,
@@ -73,6 +74,8 @@ import { WhatsAppHistoryCard } from '@/components/work-mode/WhatsAppHistoryCard'
 import { EmailHistoryCard } from '@/components/work-mode/EmailHistoryCard'
 import { EmergencyContactsCard } from '@/components/work-mode/EmergencyContactsCard'
 import type { EmergencyContact } from '@/lib/api/types/leads.types'
+import { SendSmsSheet } from './SendSmsSheet'
+import { useSmsMasking } from '@/hooks/api/useIpWhitelist'
 import { ComposeDialog } from '@/components/email/ComposeDialog'
 import { useEmailAccounts } from '@/hooks/api/useEmail'
 import {
@@ -204,9 +207,12 @@ export function WorkMode({
   // WhatsApp sheet state
   // -------------------------------------------------------------------------
   const [whatsappSheetOpen, setWhatsappSheetOpen] = useState(false)
+  const [smsSheetOpen, setSmsSheetOpen] = useState(false)
   // Separate target for the emergency-contact WhatsApp flow. When non-null,
   // a second SendWhatsAppSheet renders pre-targeted at the contact's phone.
   const [emergencyWaTarget, setEmergencyWaTarget] =
+    useState<EmergencyContact | null>(null)
+  const [emergencySmsTarget, setEmergencySmsTarget] =
     useState<EmergencyContact | null>(null)
   const [emailComposeOpen, setEmailComposeOpen] = useState(false)
   const [emailAccountId, setEmailAccountId] = useState<string | null>(null)
@@ -696,6 +702,27 @@ export function WorkMode({
     (s) => s.serviceType === ServiceType.EMAIL || s.serviceType === 'email',
   )
 
+  const campaignHasSms = !!campaignServices?.some(
+    (s) => s.serviceType === ServiceType.SMS || s.serviceType === 'sms',
+  )
+
+  // SMS masking — fetched only when the campaign has SMS active so we don't
+  // send a needless request for every Work Mode session.
+  const { data: smsMaskingData } = useSmsMasking(undefined, campaignHasSms)
+  const smsMaskingOptions = useMemo(() => {
+    return (smsMaskingData?.data ?? [])
+      .filter((m) => m.isActive)
+      .map((m) => ({ id: m.id, name: m.name }))
+  }, [smsMaskingData])
+  const smsDefaultMaskingId = useMemo(() => {
+    const list = smsMaskingData?.data ?? []
+    const active = list.filter((m) => m.isActive)
+    if (active.length === 1) return active[0].id
+    const primary = active.find((m) => m.clientMaskings?.[0]?.isPrimary)
+    return primary?.id ?? ''
+  }, [smsMaskingData])
+  const canSendSms = campaignHasSms && smsMaskingOptions.length > 0
+
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -929,7 +956,7 @@ export function WorkMode({
                   {isCallActive ? (
                     <Button
                       variant="destructive"
-                      className="gap-2"
+                      className="w-full gap-2"
                       onClick={() => hangup()}
                     >
                       <PhoneOff className="h-4 w-4" />
@@ -939,7 +966,7 @@ export function WorkMode({
                   recordingCallLogId ? (
                     <Button
                       variant="destructive"
-                      className="gap-2"
+                      className="w-full gap-2"
                       disabled={isHangingUp}
                       onClick={() => {
                         hangupCall(
@@ -980,7 +1007,7 @@ export function WorkMode({
                       <PopoverTrigger asChild>
                         <Button
                           variant="default"
-                          className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                          className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white"
                           disabled={
                             !!activeCallData ||
                             isPollingForCall ||
@@ -993,11 +1020,11 @@ export function WorkMode({
                             <Phone className="h-4 w-4" />
                           )}
                           {t('leads.call', 'Call')}
-                          <ChevronDown className="h-4 w-4" />
+                          <ChevronDown className="h-4 w-4 ml-auto" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent
-                        className="w-44 p-1"
+                        className="w-[--radix-popover-trigger-width] p-1"
                         side="bottom"
                         align="start"
                       >
@@ -1138,39 +1165,76 @@ export function WorkMode({
                 </div>
               )}
 
-              {/* WhatsApp button */}
-              {campaignHasWhatsapp && lead?.phone && (
-                <Button
-                  variant="outline"
-                  className="gap-2 self-start"
-                  onClick={() => setWhatsappSheetOpen(true)}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  {t('workMode.sendWhatsApp', 'Send WhatsApp')}
-                </Button>
-              )}
-
-              {/* Send Email button — only when the campaign has email service
-                  AND the user has at least one connected email account. */}
-              {campaignHasEmail && (emailAccounts?.length ?? 0) > 0 && (
-                <Button
-                  variant="outline"
-                  className="gap-2 self-start"
-                  disabled={!lead?.email}
-                  title={
-                    lead?.email
-                      ? undefined
-                      : t(
-                          'workMode.emailDisabled',
-                          "This lead has no email address — fill it in first to send email.",
-                        )
-                  }
-                  onClick={() => setEmailComposeOpen(true)}
-                >
-                  <Mail className="h-4 w-4" />
-                  {t('workMode.sendEmail', 'Send Email')}
-                </Button>
-              )}
+              {/* Messaging channels — uniform-width chips for visual parity.
+                  Hidden when none of the channels are available. */}
+              {(() => {
+                const showWa = campaignHasWhatsapp && !!lead?.phone
+                const showSms = canSendSms && !!assignment?.id
+                const showEmail =
+                  campaignHasEmail && (emailAccounts?.length ?? 0) > 0
+                if (!showWa && !showSms && !showEmail) return null
+                return (
+                  <div className="flex items-stretch gap-2">
+                    {showWa && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5 h-9"
+                        onClick={() => setWhatsappSheetOpen(true)}
+                      >
+                        <MessageCircle className="h-4 w-4 text-emerald-600" />
+                        <span className="truncate">
+                          {t('workMode.whatsapp', 'WhatsApp')}
+                        </span>
+                      </Button>
+                    )}
+                    {showSms && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5 h-9"
+                        onClick={() => setSmsSheetOpen(true)}
+                        disabled={!lead?.phone}
+                        title={
+                          lead?.phone
+                            ? undefined
+                            : t(
+                                'workMode.smsDisabled',
+                                'This lead has no phone number — fill it in first to send SMS.',
+                              )
+                        }
+                      >
+                        <MessageSquare className="h-4 w-4 text-violet-600" />
+                        <span className="truncate">
+                          {t('workMode.sms', 'SMS')}
+                        </span>
+                      </Button>
+                    )}
+                    {showEmail && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1.5 h-9"
+                        disabled={!lead?.email}
+                        title={
+                          lead?.email
+                            ? undefined
+                            : t(
+                                'workMode.emailDisabled',
+                                "This lead has no email address — fill it in first to send email.",
+                              )
+                        }
+                        onClick={() => setEmailComposeOpen(true)}
+                      >
+                        <Mail className="h-4 w-4 text-orange-500" />
+                        <span className="truncate">
+                          {t('workMode.email', 'Email')}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                )
+              })()}
             </CardContent>
           </Card>
 
@@ -1192,6 +1256,12 @@ export function WorkMode({
                 : undefined
             }
             whatsAppDisabled={!campaignHasWhatsapp}
+            onSms={
+              canSendSms
+                ? (contact) => setEmergencySmsTarget(contact)
+                : undefined
+            }
+            smsDisabled={!canSendSms}
           />
 
           {/* WhatsApp History */}
@@ -1480,6 +1550,46 @@ export function WorkMode({
           leadName={emergencyWaTarget.name}
           campaignId={campaignId}
           isBlast
+        />
+      )}
+
+      {/* Send SMS sheet — single-recipient SMS to the current lead. Hits
+          the same compose endpoint as the campaign-level bulk SMS, just
+          with a leadAssignmentIds array of length 1. */}
+      {canSendSms && assignment?.id && lead && (
+        <SendSmsSheet
+          open={smsSheetOpen}
+          onOpenChange={setSmsSheetOpen}
+          campaignId={campaignId}
+          target={{
+            mode: 'leadAssignment',
+            leadAssignmentId: assignment.id,
+            name: lead.leadName,
+            phone: lead.phone,
+          }}
+          maskingOptions={smsMaskingOptions}
+          defaultMaskingId={smsDefaultMaskingId}
+        />
+      )}
+
+      {/* Emergency Contact SMS — separate sheet pre-targeted to the contact's
+          phone. Hits the new send-to-phone endpoint that the BE needs to add. */}
+      {canSendSms && emergencySmsTarget && (
+        <SendSmsSheet
+          open
+          onOpenChange={(o) => {
+            if (!o) setEmergencySmsTarget(null)
+          }}
+          campaignId={campaignId}
+          target={{
+            mode: 'phone',
+            phone: emergencySmsTarget.phone,
+            name: emergencySmsTarget.name,
+            relatedLeadId: lead?.id,
+            relatedLeadAssignmentId: assignment?.id,
+          }}
+          maskingOptions={smsMaskingOptions}
+          defaultMaskingId={smsDefaultMaskingId}
         />
       )}
 

@@ -67,6 +67,21 @@ export interface ComposeSmsRequest {
   leadAssignmentIds: string[]
 }
 
+// Ad-hoc SMS to a phone that isn't a tracked lead-assignment (e.g. an
+// emergency contact). The BE must store the resulting history row with a
+// null leadAssignmentId so reporting still works without a fake assignment.
+export interface SendSmsToPhoneRequest {
+  phone: string
+  message: string
+  maskingId: string
+  timing?: SmsTiming
+  scheduledAt?: string
+  // Optional context — when set, attributes the send to a related lead in
+  // reporting without changing the destination phone.
+  relatedLeadId?: string
+  relatedLeadAssignmentId?: string
+}
+
 export interface ComposeSmsResponse {
   success: boolean
   message: string

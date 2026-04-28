@@ -3,6 +3,7 @@ import { apiClient } from '@/lib/api/client'
 import type {
   ComposeSmsRequest,
   ComposeSmsResponse,
+  SendSmsToPhoneRequest,
   SmsHistory,
   SmsHistoryQueryParams,
   SmsAnalyticsQueryParams,
@@ -28,6 +29,14 @@ const smsApi = {
   ): Promise<ComposeSmsResponse> => {
     return await apiClient
       .post(`sms/campaigns/${campaignId}/compose`, { json: data })
+      .json<ComposeSmsResponse>()
+  },
+  sendToPhone: async (
+    campaignId: string,
+    data: SendSmsToPhoneRequest,
+  ): Promise<ComposeSmsResponse> => {
+    return await apiClient
+      .post(`sms/campaigns/${campaignId}/send-to-phone`, { json: data })
       .json<ComposeSmsResponse>()
   },
   getHistory: async (
@@ -72,6 +81,21 @@ export const useComposeSms = () => {
       campaignId: string
       data: ComposeSmsRequest
     }) => smsApi.compose(campaignId, data),
+  })
+}
+
+// Single SMS to an arbitrary phone number (used for emergency contacts).
+// Hits a separate endpoint so the BE can model the no-lead-assignment case
+// explicitly.
+export const useSendSmsToPhone = () => {
+  return useMutation({
+    mutationFn: ({
+      campaignId,
+      data,
+    }: {
+      campaignId: string
+      data: SendSmsToPhoneRequest
+    }) => smsApi.sendToPhone(campaignId, data),
   })
 }
 
